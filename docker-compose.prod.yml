@@ -9,6 +9,8 @@ services:
     image: vinops-web:latest
     environment:
       - NODE_ENV=production
+      - TEST_VINS=WAUZZZAAAAAAAAAAA
+      - NEXT_PUBLIC_SITE_URL=https://vinops.online
       - PORT=3000
     restart: unless-stopped
     healthcheck:
