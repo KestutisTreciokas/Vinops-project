@@ -1,0 +1,17 @@
+# Внешние и мусор
+.git
+.gitignore
+Dockerfile
+docker-compose*.yml
+node_modules
+.npmrc
+*.log
+.cache
+
+# Артефакты
+.next
+dist
+out
+
+# ВАЖНО: исходники должны остаться в контексте!
+# НЕ исключайте app/, public/, server.js, tsconfig*, next.config.*
