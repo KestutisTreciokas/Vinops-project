@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://vinops.online/sitemap.xml
