@@ -1,21 +1,27 @@
-import { NextResponse } from "next/server"
-import { getPool } from "../../_lib/db"
+// Lightweight health endpoint for uptime checks and load balancers.
+// Next.js App Router (app/.../route.ts)
+import type { NextRequest } from "next/server";
 
-// Не кешировать — всегда живой чек
-export const dynamic = "force-dynamic"
-
-export async function GET() {
-  const started = Date.now()
-  const db = { up: false as boolean, latencyMs: null as number | null, error: null as string | null }
-
-  try {
-    const pool = getPool()
-    await pool.query("SELECT 1")
-    db.up = true
-    db.latencyMs = Date.now() - started
-  } catch (e: any) {
-    db.error = e?.message ?? String(e)
-  }
-
-  return NextResponse.json({ ok: true, ts: Date.now(), db })
+function payload() {
+  return {
+    status: "ok",
+    service: "vinops-web",
+    now: new Date().toISOString(),
+    uptime_sec: Math.round(process.uptime()),
+    version: process.env.APP_VERSION ?? "dev",
+    commit: process.env.GIT_SHA ?? null,
+    env: process.env.NODE_ENV ?? "development",
+  };
 }
+
+export async function GET(_req: NextRequest) {
+  return new Response(JSON.stringify(payload()), {
+    status: 200,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+export const dynamic = "force-dynamic";

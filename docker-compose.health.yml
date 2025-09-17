@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  web:
+    environment:
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://vinops.online}
+      TEST_VINS: ${TEST_VINS:-WAUZZZAAAAAAAAAAA}
+      APP_VERSION: ${APP_VERSION:-prod-local}
+      GIT_SHA: ${GIT_SHA:-unknown}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health | grep -q '\"status\":\"ok\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
