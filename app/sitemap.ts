@@ -1,22 +1,12 @@
-import type { MetadataRoute } from 'next';
+// Next.js App Router dynamic sitemap
+import type { MetadataRoute } from "next"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://vinops.online';
-  const now = new Date();
-
-  const paths = [
-    '',             // /
-    '/en', '/ru',
-    '/en/cars', '/ru/cars',
-    '/en/contacts', '/ru/contacts',
-    '/en/about', '/ru/about',
-    '/en/terms', '/ru/terms'
-  ];
-
-  return paths.map((p) => ({
-    url: `${base}${p}`,
-    lastModified: now,
-    changeFrequency: 'daily',
-    priority: p === '' ? 1 : 0.7
-  }));
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://vinops.online"
+  const now = new Date()
+  return [
+    { url: `${base}/`,       lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${base}/en`,     lastModified: now, changeFrequency: "weekly", priority: 1.0 },
+    { url: `${base}/en/cars`,lastModified: now, changeFrequency: "daily",  priority: 0.8 },
+  ]
 }
