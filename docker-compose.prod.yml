@@ -8,6 +8,7 @@ services:
       dockerfile: Dockerfile
     image: vinops-web:latest
     environment:
+      - TEST_VINS=WAUZZZAAAAAAAAAAA
       - NODE_ENV=production
       - PORT=3000
     restart: unless-stopped
