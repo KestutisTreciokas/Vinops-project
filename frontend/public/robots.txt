@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Укажем sitemap (может быть пустым/стаб до Sprint 3)
+Sitemap: https://vinops.online/sitemap.xml

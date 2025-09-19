@@ -1,32 +1,38 @@
-'use client'
-import { useEffect, useState } from 'react'
+'use client';
 
-type T = 'light' | 'dark'
-const getSystem = (): T =>
-  window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+import { useEffect, useState } from 'react';
+
+const STORAGE_KEY = 'theme'; // 'light' | 'dark'
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<T>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
+  // применяем тему только к <html>
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('theme') as T | null
-      const t = stored || getSystem()
-      document.documentElement.setAttribute('data-theme', t)
-      setTheme(t)
-    } catch {}
-  }, [])
+    const saved = (typeof window !== 'undefined'
+      ? (localStorage.getItem(STORAGE_KEY) as 'light' | 'dark' | null)
+      : null) || 'light';
+    applyTheme(saved);
+  }, []);
 
-  const toggle = () => {
-    const next: T = theme === 'dark' ? 'light' : 'dark'
-    document.documentElement.setAttribute('data-theme', next)
-    try { localStorage.setItem('theme', next) } catch {}
-    setTheme(next)
+  function applyTheme(next: 'light' | 'dark') {
+    setTheme(next);
+    const root = document.documentElement;
+    // убираем возможные «старые» механизмы, если они вдруг остались
+    root.classList.remove('dark');
+    root.removeAttribute('class'); // если где-то ставили 'dark' как единственный класс
+    root.setAttribute('data-theme', next);
+    localStorage.setItem(STORAGE_KEY, next);
   }
 
   return (
-    <button type="button" className="btn btn-secondary h-8 px-3 text-xs" onClick={toggle}>
+    <button
+      type="button"
+      className="btn btn-secondary h-8 px-3 text-xs"
+      onClick={() => applyTheme(theme === 'light' ? 'dark' : 'light')}
+      aria-pressed={theme === 'dark'}
+    >
       {theme === 'dark' ? 'Light' : 'Dark'}
     </button>
-  )
+  );
 }

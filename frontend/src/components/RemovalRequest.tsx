@@ -1,21 +1,46 @@
-export default function RemovalRequest({ t }: { t: (en:string,ru:string)=>string }) {
-  const email = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'request@vinops.online'
-  const tg    = process.env.NEXT_PUBLIC_TELEGRAM || '@keustis'
-  const tgUrl = `https://t.me/${tg.replace('@','')}`
+import React from 'react';
 
+export default function RemovalRequest({
+  lang,
+  vin,
+}: {
+  lang?: string;
+  vin?: string;
+}) {
+  const isRu = (lang || 'en').toLowerCase() === 'ru';
+  const V = (vin || '').toUpperCase();
   return (
-    <div className="card p-5 mt-6">
-      <h2 className="font-semibold mb-2">{t('Removal request','Запрос на удаление')}</h2>
-      <p className="text-sm text-fg-muted mb-3">
-        {t(
-          'If you want this page to be removed from vinops, contact us:',
-          'Если вы хотите удалить эту карточку с vinops — свяжитесь с нами:'
+    <section id="removal-request" className="card p-4 mt-8">
+      <h3 className="card-title mb-2">
+        {isRu ? 'Removal request (удаление)' : 'Removal request'}
+      </h3>
+      <p className="text-sm text-fg-muted">
+        {isRu ? (
+          <>
+            Напишите на{' '}
+            <a href="mailto:request@vinops.online">request@vinops.online</a> или в
+            Telegram{' '}
+            <a href="https://t.me/keustis" target="_blank" rel="noreferrer">
+              @keustis
+            </a>. Укажите VIN {V || '—'} и причину.
+          </>
+        ) : (
+          <>
+            Email <a href="mailto:request@vinops.online">request@vinops.online</a> or
+            Telegram{' '}
+            <a href="https://t.me/keustis" target="_blank" rel="noreferrer">
+              @keustis
+            </a>. Include VIN {V || '—'} and reason.
+          </>
         )}
       </p>
-      <div className="flex flex-wrap gap-3">
-        <a className="btn btn-secondary btn-lg" href={`mailto:${email}`}>{email}</a>
-        <a className="btn btn-secondary btn-lg" href={tgUrl} target="_blank" rel="noreferrer">{tg}</a>
-      </div>
-    </div>
-  )
+      <ul className="text-sm list-disc pl-5 mt-2">
+        <li>{isRu ? 'Прикрепите подтверждение владения (при наличии).' : 'Attach proof of ownership if applicable.'}</li>
+        <li>{isRu ? 'Мы скрываем VIN и фото полностью.' : 'We hide VIN and photos entirely.'}</li>
+      </ul>
+      <p className="text-xs text-fg-muted mt-2">
+        {isRu ? 'SLA: 410 + очистка CDN ≤ 10 минут.' : 'SLA: 410 + CDN purge ≤ 10 minutes.'}
+      </p>
+    </section>
+  );
 }

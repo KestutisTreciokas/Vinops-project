@@ -1,0 +1,45 @@
+import VinStructuredData from '@/components/VinStructuredData';
+export const dynamic = "force-dynamic";
+import RemovalRequest from '../../../../components/RemovalRequest';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: { lang: string; vin: string } }): Promise<Metadata> {
+  const lang = (params.lang || 'en').toLowerCase();
+  const vin  = (params.vin  || '').toUpperCase();
+  const base = 'https://vinops.online';
+  return {
+    title: `VIN ${vin} РІР‚вЂќ vinops`,
+    description: lang === 'ru'
+      ? `Р С™Р В°РЎР‚РЎвЂљР С•РЎвЂЎР С”Р В° VIN ${vin} РЎРѓ РЎвЂћР С•РЎвЂљР С• Р С‘ Р В°РЎС“Р С”РЎвЂ Р С‘Р С•Р Р…Р Р…Р С•Р в„– Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р ВµР в„–`
+      : `VIN ${vin} page with photos and auction history`,
+    alternates: {
+      canonical: `${base}/${lang}/vin/${vin}`,
+      languages: {
+        en: `${base}/en/vin/${vin}`,
+        ru: `${base}/ru/vin/${vin}`,
+        'x-default': `${base}/en/vin/${vin}`,
+      },
+    },
+    openGraph: { url: `${base}/${lang}/vin/${vin}`, title: `VIN ${vin} РІР‚вЂќ vinops` },
+  };
+}
+import LotInfo from '@/components/vin2/LotInfo'
+import Specs from '@/components/vin2/Specs'
+import History from '@/components/vin2/History'
+import VinGallery from '@/components/vin2/Gallery'
+import sample from '@/mock/vin-sample'
+
+export default function VinPage({ params }: { params: { lang: 'ru'|'en', vin: string } }) {
+  const { lang, vin } = params
+  const data = sample
+  const specs: any = undefined;
+  const lot: any = undefined;
+  const history: any = undefined;
+  const photos: any = undefined;
+return (
+    <div className="container mx-auto px-4">
+      <VinStructuredData lang={lang} vin={vin} specs={data?.specs} lot={data?.lot} photos={data?.photos} history={data?.history} />
+        <h1 className="h1 mb-2">VIN: {vin}</h1>
+      <p className="lead mb-6">
+        {lang === 'ru'
+          ? 'Р С’Р С”РЎвЂљРЎС“Р В°Р В»РЎРЉР Р…Р В°РЎРЏ Р С‘Р Р…РЎвЂћР С•РЎР‚Р С
