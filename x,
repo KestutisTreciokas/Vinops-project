@@ -1,0 +1,10 @@
+[33ma2675a8[m[33m ([m[1;36mHEAD -> [m[1;32mfeat/sprint1-seo-basics[m[33m)[m WIP before rollback
+[33m7a7f74e[m fix(page): correct Home signature and declare {lang} from params
+[33m7b38282[m fix(page): declare { lang } from params and use it everywhere
+[33m62fee7a[m fix(page): declare const { lang } = params; use it; pass to <Features />
+[33m6523414[m fix: pass lang to <Features> (TS)
+[33m3b9ee39[m fix: inputMode latin -> text (unbreak CI)
+[33m8c64ad9[m[33m ([m[1;31morigin/fix/home-use-client[m[33m)[m home: move 'use client' to the top of the file
+[33m0a5ed8a[m home: add “What you get” section (3 cards) per design
+[33mfc43568[m[33m ([m[1;31morigin/chore/frontend-home-polish[m[33m)[m frontend: polish home hero (heading/lead and larger VIN input/button)
+[33md542775[m[33m ([m[1;31morigin/chore/frontend-home[m[33m)[m frontend: add localized home page with VIN search and SearchAction JSON-LD
