@@ -1,0 +1,100 @@
+// DAL: read-only Pool + GUC + JSON logs
+import { Pool, PoolClient, PoolConfig } from 'pg'
+import crypto from 'node:crypto'
+
+let _pool: Pool | null = null
+
+function isReadonlySQL(sql: string): boolean {
+  const s = (sql || '').trim().toUpperCase()
+  return s.startsWith('SELECT ') || s.startsWith('WITH ')
+}
+
+export function getPool(): Pool {
+  if (_pool) return _pool
+  const cs = process.env.DATABASE_URL
+  if (!cs) throw new Error('DATABASE_URL is not set')
+
+  // NB: application_name не указываем в типизированном PoolConfig — выставим через SET
+  const cfg: PoolConfig = {
+    connectionString: cs,
+    ssl: { rejectUnauthorized: true },
+    max: 10,
+    idleTimeoutMillis: 15_000,
+  }
+  const pool = new Pool(cfg)
+
+  pool.on('connect', async (client) => {
+    try {
+      // Обязательные GUC
+      await client.query("SET TIME ZONE 'UTC'")
+      await client.query("SET application_name = 'vinops.frontend'")
+      await client.query("SET default_transaction_read_only = on")
+      await client.query("SET statement_timeout = 2000")
+      await client.query("SET lock_timeout = 1000")
+      await client.query("SET idle_in_transaction_session_timeout = 5000")
+    } catch (e) {
+      // Логируем, но не падаем — соединение может быть переустановлено пулом
+      console.warn(JSON.stringify({ level:'warn', msg:'db.guc.fail', err: String(e) }))
+    }
+  })
+
+  pool.on('error', (err) => {
+    console.error(JSON.stringify({ level:'error', msg:'db.pool.error', err: String(err) }))
+  })
+
+  _pool = pool
+  return pool
+}
+
+export async function query<T = any>(
+  sql: string,
+  params: any[] = [],
+  ctx?: { traceId?: string, requestId?: string }
+): Promise<{ rows: T[], rowCount: number, ms: number }> {
+  if (!isReadonlySQL(sql)) {
+    const err = new Error('READ_ONLY_ENFORCED')
+    console.warn(JSON.stringify({ level:'warn', msg:'db.query.blocked', sample: (sql||'').slice(0,120) }))
+    throw err
+  }
+  const started = Date.now()
+  const traceId = ctx?.traceId || crypto.randomUUID()
+  const requestId = ctx?.requestId
+
+  const pool = getPool()
+  let client: PoolClient | null = null
+  try {
+    client = await pool.connect()
+    const res = await client.query({ text: sql, values: params })
+    const ms = Date.now() - started
+    console.log(JSON.stringify({
+      level:'info', msg:'db.query.ok', traceId, requestId, ms, rowCount: res.rowCount,
+      sample: (sql||'').replace(/\s+/g,' ').slice(0,160)
+    }))
+    return { rows: res.rows as T[], rowCount: res.rowCount, ms }
+  } catch (e: any) {
+    const ms = Date.now() - started
+    console.warn(JSON.stringify({
+      level:'warn', msg:'db.query.fail', traceId, requestId, ms, err: String(e),
+      sample: (sql||'').replace(/\s+/g,' ').slice(0,160)
+    }))
+    // Один лёгкий ретрай на транзиентные ошибки
+    if (/(ECONNRESET|terminating connection|timeout|read ECONNRESET)/i.test(String(e))) {
+      try {
+        const res2 = await pool.query({ text: sql, values: params })
+        const ms2 = Date.now() - started
+        console.log(JSON.stringify({
+          level:'info', msg:'db.query.retry.ok', traceId, requestId, ms: ms2, rowCount: res2.rowCount
+        }))
+        return { rows: res2.rows as T[], rowCount: res2.rowCount, ms: ms2 }
+      } catch (e2: any) {
+        console.error(JSON.stringify({ level:'error', msg:'db.query.retry.fail', traceId, requestId, err: String(e2) }))
+        throw e2
+      }
+    }
+    throw e
+  } finally {
+    try { client?.release() } catch { /* ignore */ }
+  }
+}
+
+export function hasDb(): boolean { return !!process.env.DATABASE_URL }

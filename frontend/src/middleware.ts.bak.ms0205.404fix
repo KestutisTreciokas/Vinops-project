@@ -1,0 +1,85 @@
+// MS-02-05: enforce X-Robots-Tag and proper 404/410 on VIN routes and "noindex,follow" for complex /cars
+import { NextRequest, NextResponse } from 'next/server';
+
+function isVinValid(raw: string): boolean {
+  const vin = (raw || '').toUpperCase();
+  if (vin.length < 11 || vin.length > 17) return false;
+  if (vin.length === 17 && /[IOQ]/.test(vin)) return false;
+  return /^[A-Z0-9-]+$/.test(vin);
+}
+function isComplexCarsQuery(sp: URLSearchParams): boolean {
+  const wl = new Set(['make','model','year_from','year_to','status','damage','title_brand','runs_drives','has_keys','sort']);
+  let active = 0;
+  sp.forEach((v,k) => { if ((v ?? '').trim() !== '') active += wl.has(k) ? 1 : 2; });
+  return active > 2 || sp.has('cursor');
+}
+function htmlStatus(lang: 'en'|'ru', title: string): string {
+  return `<!doctype html><html lang="${lang}"><head>
+<meta charset="utf-8"><meta name="robots" content="noindex,follow">
+<title>${title}</title></head><body><h1>${title}</h1></body></html>`;
+}
+export async function middleware(req: NextRequest) {
+  const url = req.nextUrl;
+  const path = url.pathname;
+
+  // /cars: комплексные фильтры -> noindex,follow
+  if (path.startsWith('/en/cars') || path.startsWith('/ru/cars')) {
+    const res = NextResponse.next();
+    if (isComplexCarsQuery(url.searchParams)) res.headers.set('X-Robots-Tag', 'noindex, follow');
+    return res;
+  }
+
+  // /{lang}/vin/{vin}
+  const m = path.match(/^\/(en|ru)\/vin\/([A-Za-z0-9-]{1,32})$/);
+  if (m) {
+    const lang = (m[1] as 'en'|'ru');
+    const vin  = (m[2] || '').toUpperCase();
+
+    // INVALID VIN -> 404 + noindex,follow (SSR 404 ожидается DoD)
+    if (!isVinValid(vin)) {
+      return new NextResponse(htmlStatus(lang, lang === 'ru'
+        ? `Страница VIN ${vin} не найдена (404)`
+        : `VIN ${vin} page not found (404)`), {
+        status: 404,
+        headers: { 'content-type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, follow' }
+      });
+    }
+
+    // SUPPRESS (stub trigger) -> 410 + noindex,follow
+    if (vin === 'ZZZSUPPRESSZZZ') {
+      return new NextResponse(htmlStatus(lang, lang === 'ru'
+        ? `Страница VIN ${vin} удалена (410)` 
+        : `VIN ${vin} page is gone (410)`), {
+        status: 410,
+        headers: { 'content-type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, follow' }
+      });
+    }
+
+    // Если API уже отдаёт 410 — уважаем его
+    try {
+      const api = new URL(`/api/v1/vehicles/${vin}`, url.origin);
+      const r = await fetch(api.toString(), { method: 'GET', headers: { 'accept': 'application/json' }, cache: 'no-store' });
+      if (r.status === 410) {
+        return new NextResponse(htmlStatus(lang, lang === 'ru'
+          ? `Страница VIN ${vin} удалена (410)` 
+          : `VIN ${vin} page is gone (410)`), {
+          status: 410,
+          headers: { 'content-type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, follow' }
+        });
+      }
+    } catch (_e) { /* fail-open */ }
+    return NextResponse.next();
+  }
+
+  return NextResponse.next();
+}
+
+// Ограничим действие middleware только на нужные маршруты и исключим статику/API/assets:
+export const config = {
+  matcher: [
+    '/en/cars/:path*',
+    '/ru/cars/:path*',
+    '/en/vin/:path*',
+    '/ru/vin/:path*',
+  ],
+};

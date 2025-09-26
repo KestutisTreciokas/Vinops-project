@@ -1,0 +1,155 @@
+import { Pool, PoolClient, QueryResult } from 'pg';
+
+// ---- Singleton pool ----
+type GlobalWithPool = typeof globalThis & { __vinops_pool?: Pool, __vinops_schemaProbe?: {hasHidden:boolean, hasSuppress:boolean, hasVinNorm:boolean} };
+const g = globalThis as GlobalWithPool;
+
+function buildPool(): Pool {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL is not set');
+
+  const pool = new Pool({
+    connectionString: url,
+    max: 10,
+    idleTimeoutMillis: 10_000,
+    ssl: { rejectUnauthorized: true }, // verify-full (SNI + CN/SAN)
+    application_name: 'vinops.frontend',
+  } as any);
+
+  // GUC на каждое соединение (read-only + timeouts + TZ + app_name)
+  pool.on('connect', async (client: PoolClient) => {
+    try {
+      await client.query(`
+        SET TIME ZONE 'UTC';
+        SET application_name = 'vinops.frontend';
+        SET default_transaction_read_only = on;
+        SET statement_timeout = 2000;                      -- 2s
+        SET lock_timeout = 1000;                           -- 1s
+        SET idle_in_transaction_session_timeout = 5000;    -- 5s
+      `);
+    } catch (e) {
+      // Коннект не должен падать из-за GUC — логируем и продолжаем
+      console.error(JSON.stringify({ lvl:'warn', msg:'db.connect.guc.fail', err: (e as any)?.message }));
+    }
+  });
+
+  return pool;
+}
+
+export function getPool(): Pool {
+  if (!g.__vinops_pool) g.__vinops_pool = buildPool();
+  return g.__vinops_pool!;
+}
+
+function stripLeading(sql: string): string {
+  // Уберём ведущие комментарии/пробелы
+  let s = sql.replace(/^\s+/,'');
+  // удаляем /* ... */ в начале
+  while (s.startsWith('/*')) {
+    const i = s.indexOf('*/');
+    if (i < 0) break;
+    s = s.slice(i+2).replace(/^\s+/,'');
+  }
+  // удаляем -- до конца строки (только ведущие)
+  while (s.startsWith('--')) {
+    const i = s.indexOf('\n');
+    if (i < 0) return '';
+    s = s.slice(i+1).replace(/^\s+/,'');
+  }
+  return s;
+}
+
+function isReadonlySQL(sql: string): boolean {
+  const s = stripLeading(sql).toLowerCase();
+  return s.startsWith('select') || s.startsWith('with');   // только SELECT/WITH
+}
+
+function sleep(ms:number){ return new Promise(r => setTimeout(r, ms)); }
+
+function isTransient(err:any): boolean {
+  const code = err?.code || err?.errno || '';
+  const msg  = (err?.message||'').toLowerCase();
+  return [
+    'ETIMEDOUT','ECONNRESET','EAI_AGAIN',
+    '57P01',     // admin_shutdown
+    '53300',     // too_many_connections
+    '08006','08000'
+  ].some(x => code===x) || msg.includes('timeout') || msg.includes('terminated');
+}
+
+export type QueryCtx = { traceId?: string, requestId?: string };
+export async function query<T = any>(text: string, params: any[] = [], ctx: QueryCtx = {}): Promise<QueryResult<T>> {
+  const t0 = Date.now();
+  if (!isReadonlySQL(text)) {
+    const err = new Error('WRITE_SQL_BLOCKED');
+    console.error(JSON.stringify({ lvl:'error', msg:'db.query.blocked', traceId:ctx.traceId, requestId:ctx.requestId, sqlSample: text.slice(0,120) }));
+    throw err;
+  }
+
+  const pool = getPool();
+  const ABORT_MS = 2500; // дополнительный програмный таймаут
+  const controller = new AbortController();
+  const to = setTimeout(() => controller.abort(), ABORT_MS);
+
+  let attempt = 0;
+  while (true) {
+    attempt++;
+    try {
+      const res = await pool.query({ text, values: params, /* pg supports query_timeout but TS types lag */ }, /* no options */);
+      clearTimeout(to);
+      console.log(JSON.stringify({
+        lvl:'info', msg:'db.query.ok', traceId:ctx.traceId, requestId:ctx.requestId,
+        durMs: Date.now()-t0, rowCount: res.rowCount, attempt
+      }));
+      return res;
+    } catch (err:any) {
+      const dur = Date.now()-t0;
+      const meta = { lvl:'warn', msg:'db.query.fail', traceId:ctx.traceId, requestId:ctx.requestId, durMs:dur, attempt, code:err?.code, err: err?.message };
+      console.warn(JSON.stringify(meta));
+      if (attempt < 2 && isTransient(err)) { await sleep(120); continue; }
+      clearTimeout(to);
+      throw err;
+    }
+  }
+}
+
+// ---- вспомогательное: одноразовая проверка схемы vehicles ----
+async function probeSchema(): Promise<{hasHidden:boolean, hasSuppress:boolean, hasVinNorm:boolean}> {
+  if (g.__vinops_schemaProbe) return g.__vinops_schemaProbe;
+  const sql = `
+    SELECT
+      BOOL_OR(column_name='is_hidden')  AS has_hidden,
+      BOOL_OR(column_name='suppress')   AS has_suppress,
+      BOOL_OR(column_name='vin_normalized') AS has_vin_norm
+    FROM information_schema.columns
+    WHERE table_name='vehicles'
+  `;
+  try {
+    const r = await query(sql);
+    const row = r.rows[0] as any || {};
+    g.__vinops_schemaProbe = {
+      hasHidden:   !!row.has_hidden,
+      hasSuppress: !!row.has_suppress,
+      hasVinNorm:  !!row.has_vin_norm
+    };
+  } catch {
+    // не удалось — считаем, что ничего нет (безопасно)
+    g.__vinops_schemaProbe = { hasHidden:false, hasSuppress:false, hasVinNorm:false };
+  }
+  return g.__vinops_schemaProbe!;
+}
+export async function readPresence(vin: string): Promise<{exists:boolean, suppressed:boolean}> {
+  const s = await probeSchema();
+  const colsHidden   = s.hasHidden   ? 'COALESCE(is_hidden,false)'  : 'false';
+  const colsSuppress = s.hasSuppress ? 'COALESCE(suppress,false)'   : 'false';
+  const whereVin = s.hasVinNorm ? '(vin = $1 OR vin_normalized = $1)' : '(vin = $1)';
+  const sql = `SELECT ${colsHidden} AS is_hidden, ${colsSuppress} AS is_suppress FROM vehicles WHERE ${whereVin} LIMIT 1`;
+  const r = await query(sql, [vin]);
+  if (r.rowCount === 0) return { exists:false, suppressed:false };
+  const row:any = r.rows[0] || {};
+  return { exists:true, suppressed: !!(row.is_hidden || row.is_suppress) };
+}
+
+export async function hasDb(): Promise<boolean> {
+  try { await query('SELECT 1'); return true; } catch { return false; }
+}

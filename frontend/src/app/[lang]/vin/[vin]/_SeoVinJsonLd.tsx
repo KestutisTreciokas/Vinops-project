@@ -1,39 +1,19 @@
-/**
- * MS-04: VIN JSON-LD (Vehicle + BreadcrumbList), server-rendered.
- * Без 'use client' — скрипт попадает в SSR HTML.
- */
-import React from 'react'
-
-export default function SeoVinJsonLd({ lang, vin }: { lang: 'en'|'ru', vin: string }) {
-  const base = 'https://vinops.online'
-  const url  = `${base}/${lang}/vin/${vin}`
-  const t = (en: string, ru: string) => (lang === 'ru' ? ru : en)
-
-  const vehicle = {
-    '@context': 'https://schema.org',
-    '@type': 'Vehicle',
-    name: t(`Vehicle by VIN ${vin}`, `Авто по VIN ${vin}`),
-    vehicleIdentificationNumber: vin,
-    url,
-    inLanguage: lang,
+'use client';
+// Исторический компонент для JSON-LD на VIN-странице.
+// Делает НИЧЕГО, если нет валидных данных; пустой <script id="ld-vehicle"> не рендерим.
+import React from 'react';
+type LD = Record<string, any>;
+export default function SeoVinJsonLd({ vehicle, breadcrumb }: { vehicle?: LD, breadcrumb?: LD }) {
+  const blocks: LD[] = [];
+  if (vehicle && (vehicle.brand?.name || vehicle.model || vehicle.productionDate)) {
+    blocks.push(vehicle);
   }
-
-  const breadcrumbs = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: t('Home','Главная'), item: `${base}/${lang}` },
-      { '@type': 'ListItem', position: 2, name: t('VIN page','Страница VIN'), item: url },
-    ],
+  if (breadcrumb && Array.isArray(breadcrumb.itemListElement) && breadcrumb.itemListElement.length > 0) {
+    blocks.push(breadcrumb);
   }
-
-  const payload = [vehicle, breadcrumbs]
-
+  if (blocks.length === 0) return null;
   return (
-    <script
-      type="application/ld+json"
-      // stringify один раз; попадает в SSR
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }}
-    />
-  )
+    <script type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(blocks) }} />
+  );
 }

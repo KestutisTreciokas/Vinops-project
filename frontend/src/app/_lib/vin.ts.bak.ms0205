@@ -1,0 +1,7 @@
+export function isVinValid(vin: string): boolean {
+  if (!vin) return false;
+  const v = vin.toUpperCase();
+  if (!/^[A-Z0-9]{11,17}$/.test(v)) return false;
+  if (v.length === 17 && /[IOQ]/.test(v)) return false;
+  return true;
+}

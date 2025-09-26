@@ -392,3 +392,159 @@ components:
         nextCursor:
           type: string
           nullable: true
+
+  /api/v1/search:
+    get:
+      tags: [search]
+      summary: Search lots with filters and cursor pagination
+      operationId: searchLots
+      parameters:
+        - in: query
+          name: make
+          schema: { type: string }
+          description: Filter by make (exact)
+        - in: query
+          name: model
+          schema: { type: string }
+          description: Filter by model (exact)
+        - in: query
+          name: year_from
+          schema: { type: integer, minimum: 1900, maximum: 2100 }
+          description: Inclusive production year lower bound
+        - in: query
+          name: year_to
+          schema: { type: integer, minimum: 1900, maximum: 2100 }
+          description: Inclusive production year upper bound (must be >= year_from)
+        - in: query
+          name: damage
+          schema: { type: string }
+          description: Primary damage code (EN-code)
+        - in: query
+          name: title_brand
+          schema: { type: string }
+          description: Title brand code (EN-code)
+        - in: query
+          name: runs_drives
+          schema: { type: boolean }
+          description: Vehicle runs & drives
+        - in: query
+          name: has_keys
+          schema: { type: boolean }
+          description: Keys available
+        - in: query
+          name: sort
+          schema: { type: string, enum: [asc, desc], default: desc }
+          description: Sort by (auction_datetime_utc, lot_id) deterministic
+        - in: query
+          name: cursor
+          schema: { type: string }
+          description: Base64url-encoded cursor {dir,ts,id}
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+          description: Page size (<=50)
+        - in: query
+          name: lang
+          schema: { type: string, enum: [en, ru], default: en }
+          description: i18n labels language
+      responses:
+        "200":
+          description: OK
+          headers:
+            Cache-Control: { schema: { type: string }, description: "public, max-age=30, s-w-r=120" }
+            X-Api-Version: { schema: { type: string }, example: "1" }
+            X-RateLimit-Limit: { schema: { type: integer }, example: 60 }
+            X-RateLimit-Remaining: { schema: { type: integer }, example: 59 }
+            X-RateLimit-Reset: { schema: { type: integer }, description: seconds to reset window, example: 30 }
+            Vary: { schema: { type: string }, example: "Origin, Accept-Language" }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        lotId: { type: integer }
+                        vin: { type: string }
+                        year: { type: integer, nullable: true }
+                        make: { type: string, nullable: true }
+                        model:{ type: string, nullable: true }
+                        trim: { type: string, nullable: true }
+                        status:{ type: string, nullable: true }
+                        auctionDateTimeUtc: { type: string, format: date-time, nullable: true }
+                        estRetailValueUsd: { type: number, nullable: true }
+                        runsDrives: { type: boolean, nullable: true }
+                        hasKeys: { type: boolean, nullable: true }
+                        primaryImageUrl: { type: string, nullable: true }
+                        imageCount: { type: integer, nullable: true }
+                        primaryDamage: { type: string, nullable: true }
+                        titleBrand: { type: string, nullable: true }
+                        labelStatus: { type: string, nullable: true }
+                        labelDamage: { type: string, nullable: true }
+                        labelTitle:  { type: string, nullable: true }
+                  nextCursor:
+                    type: string
+                    nullable: true
+              examples:
+                sample:
+                  value:
+                    items:
+                      - lotId: 12345678
+                        vin: "WAUZZZAAAAAAAAAAA"
+                        year: 2019
+                        make: "Toyota"
+                        model: "Camry"
+                        trim: "SE"
+                        status: "SCHEDULED"
+                        auctionDateTimeUtc: "2025-10-02T17:00:00Z"
+                        estRetailValueUsd: 17850
+                        runsDrives: true
+                        hasKeys: true
+                        primaryImageUrl: "https://img.vinops.online/img/copart/WAUZZZAAAAAAAAAAA/12345678/xl/1.webp"
+                        imageCount: 10
+                        primaryDamage: "FRONT_END"
+                        titleBrand: "SALVAGE"
+                        labelStatus: "Active"
+                        labelDamage: "Front end"
+                        labelTitle: "Salvage"
+                    nextCursor: "eyJkaXIiOiJkZXNjIiwidHMiOiIyMDI1LTEwLTAyVDE3OjAwOjAwWiIsImlkIjoxMjM0NTY3OH0"
+        "400":
+          description: Bad request (e.g. invalid limit)
+          content:
+            application/json:
+              schema: { type: object, properties: { error: { type: object, properties: { code: { type: string }, message: { type: string } } }, traceId: { type: string } } }
+              examples: { bad_limit: { value: { error: { code: "bad_request", message: "limit must be >=1 and <=50" } } } }
+        "422":
+          description: Unprocessable (invalid filters or cursor)
+          content:
+            application/json:
+              schema: { type: object, properties: { error: { type: object, properties: { code: { type: string }, message: { type: string } } }, traceId: { type: string } } }
+              examples:
+                invalid_range: { value: { error: { code: "invalid_range", message: "year_from must be <= year_to" } } }
+                invalid_cursor: { value: { error: { code: "invalid_cursor", message: "cursor is malformed" } } }
+        "429":
+          description: Rate limit exceeded
+          headers:
+            X-RateLimit-Limit: { schema: { type: integer } }
+            X-RateLimit-Remaining: { schema: { type: integer } }
+            X-RateLimit-Reset: { schema: { type: integer } }
+          content:
+            application/json:
+              schema: { type: object, properties: { error: { type: object, properties: { code: { type: string }, message: { type: string } } }, traceId: { type: string } } }
+              examples: { rl: { value: { error: { code: "rate_limited", message: "Too Many Requests" } } } }
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema: { type: object, properties: { error: { type: object, properties: { code: { type: string }, message: { type: string } } }, traceId: { type: string } } }
+      description: |
+        Read-only. Deterministic order by (auction_datetime_utc, lot_id) with stable cursors.
+        Invariants:
+        - limit <= 50
+        - sort = asc|desc (default desc)
+        - cursor is base64url of {dir,ts,id}; 422 on malformed
+        - i18n labels returned according to ?lang (en|ru).
+

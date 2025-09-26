@@ -1,0 +1,6 @@
+## CMD: bash -lc lsb_release -a 2>/dev/null || cat /etc/os-release 2>/dev/null || true
+## TIME(Europe/Warsaw): 2025-09-26 18:08:37 CEST
+Distributor ID:	Ubuntu
+Description:	Ubuntu 22.04.5 LTS
+Release:	22.04
+Codename:	jammy

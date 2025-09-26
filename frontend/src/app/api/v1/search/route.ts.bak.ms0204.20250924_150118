@@ -1,0 +1,285 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getPool, hasDb } from '../../_lib/db';
+import { allow } from '../../_lib/rateLimit';
+import { okJson, errJson, pickIp } from '../../_lib/http';
+import { normLang, labelStatus, labelDamage, labelTitle } from '../../_lib/i18n';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+type LotRow = {
+  lot_id: number;
+  vin: string;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  trim: string | null;
+  status: string | null;
+  auction_datetime_utc: string | null;
+  est_retail_value_usd: number | null;
+  runs_drives: boolean | null;
+  has_keys: boolean | null;
+  primary_image_url: string | null;
+  image_count: number | null;
+  primary_damage: string | null;
+  title_brand: string | null;
+};
+
+type Cursor = { dir: 'asc'|'desc'; ts: string; id: number };
+
+function strictDecodeCursor(raw: string): Cursor | null {
+  try {
+    const obj = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
+    if ((obj.dir === 'asc' || obj.dir === 'desc') && typeof obj.ts === 'string' && typeof obj.id === 'number') {
+      return obj as Cursor;
+    }
+    return null;
+  } catch { return null; }
+}
+function encodeCursor(c: Cursor): string {
+  return Buffer.from(JSON.stringify(c), 'utf8').toString('base64url');
+}
+function parseBool(v: string | null): boolean | null {
+  if (v == null) return null;
+  const t = v.toLowerCase();
+  if (t === 'true') return true;
+  if (t === 'false') return false;
+  return null;
+}
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  const allow =
+    origin === 'https://vinops.online' || origin === 'https://www.vinops.online'
+      ? origin : undefined;
+  const h: Record<string, string> = {
+    Vary: 'Origin, Accept-Language',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, Accept-Language',
+  };
+  if (allow) h['Access-Control-Allow-Origin'] = allow;
+  return h;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const h = new Headers(corsHeaders(req.headers.get('origin')));
+  h.set('Access-Control-Max-Age', '600');
+  return new NextResponse(null, { status: 204, headers: h });
+}
+
+// --- map OpenAPI aliases ---
+function getStr(sp: URLSearchParams, a: string, b?: string): string | null {
+  return sp.get(a) ?? (b ? sp.get(b) : null);
+}
+function getInt(sp: URLSearchParams, a: string, b?: string): number | null {
+  const raw = getStr(sp, a, b);
+  return raw != null ? Number(raw) : null;
+}
+function getBoolStr(sp: URLSearchParams, a: string, b?: string): string | null {
+  return getStr(sp, a, b);
+}
+function resolveSort(sp: URLSearchParams): 'asc'|'desc' {
+  const s = sp.get('sort');
+  if (!s) return 'desc';
+  if (s === 'asc' || s === 'desc') return s;
+  if (s === '+auctionDateTimeUtc') return 'asc';
+  if (s === '-auctionDateTimeUtc') return 'desc';
+  return 'desc';
+}
+
+// --- deterministic smoke stub dataset (until DB is connected) ---
+const STUB_ROWS: LotRow[] = [
+  {
+    lot_id: 101,
+    vin: '4T1B11HK5JU123456',
+    year: 2018,
+    make: 'TOYOTA',
+    model: 'CAMRY',
+    trim: 'SE',
+    status: 'SCHEDULED',
+    auction_datetime_utc: '2025-10-01T15:00:00Z',
+    est_retail_value_usd: 16250,
+    runs_drives: true,
+    has_keys: true,
+    primary_image_url: 'https://img.vinops.online/demo/101-xl.jpg',
+    image_count: 12,
+    primary_damage: 'FRONT END',
+    title_brand: 'SALVAGE',
+  },
+  {
+    lot_id: 102,
+    vin: 'WBA5R1C06LF123456',
+    year: 2020,
+    make: 'BMW',
+    model: '330I',
+    trim: 'SPORT',
+    status: 'FUTURE',
+    auction_datetime_utc: '2025-09-30T13:00:00Z',
+    est_retail_value_usd: 23800,
+    runs_drives: true,
+    has_keys: false,
+    primary_image_url: 'https://img.vinops.online/demo/102-xl.jpg',
+    image_count: 9,
+    primary_damage: 'REAR END',
+    title_brand: 'SALVAGE',
+  },
+  {
+    lot_id: 103,
+    vin: '1FTEW1EG7GFA12345',
+    year: 2016,
+    make: 'FORD',
+    model: 'F-150',
+    trim: 'LARIAT',
+    status: 'LIVE',
+    auction_datetime_utc: '2025-09-29T17:30:00Z',
+    est_retail_value_usd: 28500,
+    runs_drives: false,
+    has_keys: true,
+    primary_image_url: 'https://img.vinops.online/demo/103-xl.jpg',
+    image_count: 15,
+    primary_damage: 'HAIL',
+    title_brand: 'CLEAN',
+  },
+];
+
+function cmpDesc(a: LotRow, b: LotRow): number {
+  const ta = a.auction_datetime_utc ?? '1970-01-01T00:00:00Z';
+  const tb = b.auction_datetime_utc ?? '1970-01-01T00:00:00Z';
+  if (ta !== tb) return ta > tb ? -1 : 1;
+  return b.lot_id - a.lot_id;
+}
+function cmpAsc(a: LotRow, b: LotRow): number {
+  const ta = a.auction_datetime_utc ?? '1970-01-01T00:00:00Z';
+  const tb = b.auction_datetime_utc ?? '1970-01-01T00:00:00Z';
+  if (ta !== tb) return ta < tb ? -1 : 1;
+  return a.lot_id - b.lot_id;
+}
+function keyAfter(c: Cursor, row: LotRow): boolean {
+  const t = row.auction_datetime_utc ?? '1970-01-01T00:00:00Z';
+  if (c.dir === 'desc') {
+    return (t < c.ts) || (t === c.ts && row.lot_id < c.id);
+  } else {
+    return (t > c.ts) || (t === c.ts && row.lot_id > c.id);
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  const baseHeaders = { ...corsHeaders(origin), 'X-Api-Version': '1' } as Record<string,string>;
+  const okCache  = { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' } as Record<string,string>;
+  const errCache = { 'Cache-Control': 'no-store, must-revalidate' } as Record<string,string>;
+
+  const ip = pickIp(req) || '0.0.0.0';
+  const rl = await allow({ key: `s:search:${ip}`, limit: 60, windowSec: 60 });
+  const rlHeaders = {
+    'X-RateLimit-Limit': '60',
+    'X-RateLimit-Remaining': String(rl.remaining),
+    'X-RateLimit-Reset': String(rl.reset),
+  };
+  if (!rl.ok) {
+    return errJson(req, 429, 'rate_limited', 'Too Many Requests', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+
+  const url = new URL(req.url);
+  const sp = url.searchParams;
+  const lang = normLang(sp.get('lang'));
+
+  const limitParam = Number(sp.get('limit') ?? 20);
+  if (!Number.isFinite(limitParam) || limitParam < 1) {
+    return errJson(req, 400, 'bad_request', 'limit must be >=1 and <=50', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+  const limit = Math.min(limitParam, 50);
+
+  const make  = getStr(sp, 'make');
+  const model = getStr(sp, 'model');
+
+  const yearFrom = getInt(sp, 'year_from', 'yearFrom');
+  const yearTo   = getInt(sp, 'year_to',   'yearTo');
+
+  if (yearFrom && yearTo && yearFrom > yearTo) {
+    return errJson(req, 422, 'invalid_range', 'year_from must be <= year_to', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+
+  const damage     = getStr(sp, 'damage');
+  const titleBrand = getStr(sp, 'title_brand', 'titleBrand');
+
+  const runsDrives = parseBool(getBoolStr(sp, 'runs_drives', 'runsDrives'));
+  const hasKeys    = parseBool(getBoolStr(sp, 'has_keys',    'hasKeys'));
+
+  const sort: 'asc'|'desc' = resolveSort(sp);
+
+  // cursor (opaque)
+  const cursorRaw = sp.get('cursor');
+  let cursor: Cursor | null = null;
+  if (cursorRaw) {
+    cursor = strictDecodeCursor(cursorRaw);
+    if (!cursor) {
+      return errJson(req, 422, 'invalid_cursor', 'cursor is malformed', {
+        ...baseHeaders, ...errCache, ...rlHeaders,
+      });
+    }
+  }
+
+  // === Smoke-stub при отсутствии БД: выдаём детерминированные элементы с курсором и i18n-лейблами ===
+  if (!hasDb) {
+    let rows = STUB_ROWS.slice(0);
+
+    // простые фильтры
+    if (make)  rows = rows.filter(r => (r.make||'')  === make.toUpperCase());
+    if (model) rows = rows.filter(r => (r.model||'') === model.toUpperCase());
+    if (yearFrom) rows = rows.filter(r => (r.year ?? 0) >= yearFrom);
+    if (yearTo)   rows = rows.filter(r => (r.year ?? 9999) <= yearTo);
+    if (damage) rows = rows.filter(r => (r.primary_damage||'') === damage);
+    if (titleBrand) rows = rows.filter(r => (r.title_brand||'') === titleBrand);
+    if (runsDrives !== null) rows = rows.filter(r => r.runs_drives === runsDrives);
+    if (hasKeys    !== null) rows = rows.filter(r => r.has_keys    === hasKeys);
+
+    rows.sort(sort === 'desc' ? cmpDesc : cmpAsc);
+
+    if (cursor) {
+      rows = rows.filter(r => keyAfter(cursor as Cursor, r));
+    }
+
+    const page = rows.slice(0, limit);
+    const last = page[page.length - 1] || null;
+    const nextCursor = (last && rows.length > limit)
+      ? encodeCursor({ dir: sort, ts: last.auction_datetime_utc ?? '1970-01-01T00:00:00Z', id: last.lot_id })
+      : null;
+
+    const items = page.map(r => ({
+      lotId: r.lot_id,
+      vin: r.vin,
+      year: r.year,
+      make: r.make,
+      model: r.model,
+      trim: r.trim,
+      status: r.status,
+      auctionDateTimeUtc: r.auction_datetime_utc,
+      estRetailValueUsd: r.est_retail_value_usd,
+      runsDrives: r.runs_drives,
+      hasKeys: r.has_keys,
+      primaryImageUrl: r.primary_image_url,
+      imageCount: r.image_count,
+      labels: {
+        status: r.status ? labelStatus(lang, r.status) : null,
+        primaryDamage: r.primary_damage ? labelDamage(lang, r.primary_damage) : null,
+        titleBrand: r.title_brand ? labelTitle(lang, r.title_brand) : null,
+      },
+    }));
+
+    const headers = { ...baseHeaders, ...okCache, ...rlHeaders, 'X-Fallback': 'stub' };
+    return okJson(req, { items, nextCursor }, headers);
+  }
+
+  // === Ниже — реализация против БД (подключится в MS-02-02/03) ===
+  const pool = getPool();
+  // Реальный SQL сюда подключим позже. Пока возвращаем пустую, чтобы контракт/заголовки соответствовали.
+  return okJson(req, { items: [], nextCursor: null }, {
+    ...baseHeaders, ...okCache, ...rlHeaders, 'X-Fallback': 'db-not-implemented',
+  });
+}

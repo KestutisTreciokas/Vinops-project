@@ -18,13 +18,13 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN adduser -D -H -s /sbin/nologin nextjs
-# runtime deps
+# tools for in-container health/smokes
+RUN apk add --no-cache curl && adduser -D -H -s /sbin/nologin nextjs
+# runtime deps + app
 COPY --from=build /app/node_modules ./node_modules
-# app
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
-# configs (любая из них может отсутствовать — это нормально)
+# optional configs
 COPY --from=build /app/next.config.mjs ./next.config.mjs
 COPY --from=build /app/next.config.js ./next.config.js
 COPY --from=build /app/package.json ./package.json

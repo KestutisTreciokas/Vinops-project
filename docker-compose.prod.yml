@@ -1,4 +1,3 @@
-
 services:
   web:
     build:
@@ -6,8 +5,10 @@ services:
       dockerfile: Dockerfile
     image: vinops-web:latest
     environment:
+      - NEXT_CACHE_DIR=/tmp/next-cache
       - NODE_ENV=production
       - PORT=3000
+      # DATABASE_URL задаётся через env/секреты окружения (не в репо)
     restart: unless-stopped
     networks: [webnet]
 

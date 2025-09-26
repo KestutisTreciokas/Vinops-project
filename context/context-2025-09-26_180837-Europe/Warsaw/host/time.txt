@@ -1,0 +1,11 @@
+## CMD: bash -lc "'echo Local: Fri Sep 26 07:08:37 PM MSK 2025; TZ=Europe/Warsaw date'"
+
+# --------- 2. Git ---------
+run_to "git/branch_status.txt" bash -lc git -C '/root/work/vinops.restore' rev-parse --abbrev-ref HEAD
+## TIME(Europe/Warsaw): 2025-09-26 18:08:37 CEST
+Fri: -c: line 1: unexpected EOF while looking for matching `"'
+Fri: -c: line 2: syntax error: unexpected end of file
+[WARN] command failed: bash -lc "'echo Local: Fri Sep 26 07:08:37 PM MSK 2025; TZ=Europe/Warsaw date'"
+
+# --------- 2. Git ---------
+run_to "git/branch_status.txt" bash -lc git -C '/root/work/vinops.restore' rev-parse --abbrev-ref HEAD

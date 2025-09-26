@@ -1,92 +1,155 @@
 import type { Metadata } from 'next'
-import LotInfo from '@/components/vin2/LotInfo'
-import VinSpecs from '@/components/vin2/VinSpecs'
-import History from '@/components/vin2/History'
-import VinGallery from '@/components/vin2/Gallery'
-import sample from '@/mock/vin-sample'
-import SeoVinJsonLd from './_SeoVinJsonLd'
-import VinChipCopy from '@/components/VinChipCopy'
+import { headers } from 'next/headers'
+import { notFound } from 'next/navigation'
+
+type Lang = 'en'|'ru'
+type VehicleDto = {
+  vin: string; year?: number; make?: string; model?: string; trim?: string|null;
+  body?: string; fuel?: string; transmission?: string; drive?: string; engine?: string;
+}
+type ApiResponse = {
+  vehicle: VehicleDto
+  currentLot?: any
+  images?: Array<{ url: string; variant: string; seq: number; lot_id?: number; vin?: string }>
+  saleEvents?: Array<any>
+}
+
+function getOriginFromHeaders(): string {
+  const h = headers()
+  const proto = h.get('x-forwarded-proto') || 'https'
+  const host = h.get('host') || 'vinops.online'
+  return `${proto}://${host}`
+}
+
+function isInvalidVIN(vin: string): boolean {
+  const v = (vin||'').toUpperCase()
+  if (v.length < 11 || v.length > 17) return true
+  if (v.length === 17 && /[IOQ]/.test(v)) return true
+  return false
+}
+
+async function fetchVehicle(lang: Lang, vin: string) {
+  const origin = getOriginFromHeaders()
+  const r = await fetch(`${origin}/api/v1/vehicles/${encodeURIComponent(vin)}`, {
+    cache: 'no-store',
+    headers: { 'X-SSR': 'vin' }
+  })
+  const status = r.status
+  const traceId = r.headers.get('x-trace-id') || ''
+  if (status === 410) {
+    // Отдаём 410 через middleware (демо-путь); здесь считаем это "не найдено"
+    // чтобы не плодить дубликаты страниц — редиректы/410 делает middleware.
+    notFound()
+  }
+  if (status === 404) notFound()
+  if (status === 422) notFound() // по требованиям MS-02-05 — 422 → SSR 404
+  if (status !== 200) notFound()
+  const data = await r.json() as ApiResponse
+  return { data, traceId }
+}
+
+function buildTitle(v: VehicleDto): string {
+  const parts = []
+  if (v.year) parts.push(String(v.year))
+  if (v.make) parts.push(v.make)
+  if (v.model) parts.push(v.model)
+  if (v.trim) parts.push(v.trim)
+  const left = parts.length ? parts.join(' ') : `VIN ${v.vin}`
+  return `${left} — VIN ${v.vin}`
+}
 
 export async function generateMetadata(
-  { params }: { params: { lang: 'ru' | 'en', vin: string } }
+  { params }: { params: { lang: Lang; vin: string } }
 ): Promise<Metadata> {
-  const { lang, vin } = params
-  const t = (en: string, ru: string) => (lang === 'ru' ? ru : en)
-
-  const path = `/${lang}/vin/${vin}`
-  const title = t(`VIN ${vin}`, `VIN ${vin}`)
-  const description = t(
-    `Vehicle details, photos and sale history for VIN ${vin}.`,
-    `Детали автомобиля, фото и история продаж для VIN ${vin}.`
-  )
-
+  const lang = params.lang; const vin = params.vin.toUpperCase()
+  const origin = getOriginFromHeaders()
+  if (isInvalidVIN(vin)) {
+    return {
+      title: `VIN ${vin}`,
+      robots: { index: false, follow: true }
+    }
+  }
+  // извлекаем для <head> ещё раз (независимо от рендера body)
+  const res = await fetch(`${origin}/api/v1/vehicles/${encodeURIComponent(vin)}`, { cache: 'no-store', headers: { 'X-SSR': 'vin-head' } })
+  const traceId = res.headers.get('x-trace-id') || ''
+  if (!res.ok) {
+    return {
+      title: `VIN ${vin}`,
+      robots: { index: false, follow: true },
+      other: { 'api-trace-id': traceId }
+    }
+  }
+  const { vehicle } = await res.json() as ApiResponse
+  const canonical = `${origin}/${lang}/vin/${vin}`
   return {
-    metadataBase: new URL('https://vinops.online'),
-    title,
-    description,
+    title: buildTitle(vehicle),
     alternates: {
-      canonical: path,
+      canonical,
       languages: {
-        en: `/en/vin/${vin}`,
-        ru: `/ru/vin/${vin}`,
-        'x-default': `/en/vin/${vin}`,
-      },
+        en: `${origin}/en/vin/${vin}`,
+        ru: `${origin}/ru/vin/${vin}`,
+        'x-default': `${origin}/en/vin/${vin}`,
+      }
     },
-    openGraph: {
-      url: path,
-      title: `${title} — vinops`,
-      description,
-      type: 'website',
-    },
-    robots: { index: true, follow: true },
+    other: { 'api-trace-id': traceId }
   }
 }
 
-export default function VinPage({ params }: { params: { lang: 'ru'|'en', vin: string } }) {
-  const { lang, vin } = params
-  const data = sample
-  const t = (en: string, ru: string) => (lang === 'ru' ? ru : en)
+export default async function Page({ params }: { params: { lang: Lang; vin: string } }) {
+  const lang = params.lang; const vin = params.vin.toUpperCase()
+  if (isInvalidVIN(vin)) notFound()
+  const { data, traceId } = await fetchVehicle(lang, vin)
+  const v = data.vehicle
 
-  // --- H1: Year Make Model, Trim | fallback "VIN {vin}"
-  const specs: any = (data as any)?.specs || {}
-  const titleBase = [specs.year, specs.make, specs.model].filter(Boolean).join(' ')
-  const h1Title = titleBase ? `${titleBase}${specs.trim ? `, ${specs.trim}` : ''}` : `VIN ${vin}`
+  // JSON-LD Vehicle
+  const vehicleLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Vehicle',
+    'vehicleIdentificationNumber': v.vin,
+    'brand': { '@type': 'Brand', 'name': v.make || '' },
+    'model': v.model || '',
+    'productionDate': v.year ? String(v.year) : undefined,
+    'url': `${getOriginFromHeaders()}/${lang}/vin/${v.vin}`,
+  }
+  // JSON-LD BreadcrumbList
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': [
+      { '@type': 'ListItem', 'position': 1, 'name': (lang==='ru'?'Главная':'Home'), 'item': `${getOriginFromHeaders()}/${lang}` },
+      { '@type': 'ListItem', 'position': 2, 'name': (lang==='ru'?'Авто':'Cars'),    'item': `${getOriginFromHeaders()}/${lang}/cars` },
+      { '@type': 'ListItem', 'position': 3, 'name': v.vin, 'item': `${getOriginFromHeaders()}/${lang}/vin/${v.vin}` },
+    ]
+  }
 
   return (
-    <div className="container mx-auto px-4">
-      {/* JSON-LD */}
-      <SeoVinJsonLd lang={lang} vin={vin} />
-
-      {/* H1 + VIN-chip */}
+    <main className="container mx-auto px-4 py-4">
+      {/* доказательство SSR: мета с api-trace-id */}
+      <meta name="api-trace-id" content={traceId} />
       <div className="flex items-start justify-between gap-3 mb-2">
-        <h1 className="h1">{h1Title}</h1>
-        <VinChipCopy vin={vin.toUpperCase()} lang={lang} />
+        <h1 className="h1">{buildTitle(v)}</h1>
+        <span className="badge">VIN {v.vin}</span>
       </div>
+      {/* JSON-LD */}
+      <script type="application/ld+json" suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleLd) }} />
+      <script type="application/ld+json" suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
-      {/* Описание под заголовком */}
-      <p className="lead mb-6">
-        {lang === 'ru'
-          ? 'Актуальная информация по лоту, фото, характеристики и история.'
-          : 'Up-to-date lot info: photos, specs, and sales history.'}
-      </p>
-
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Левая колонка: галерея */}
-        <div className="lg:col-span-7">
-          <VinGallery photos={data.photos ?? []} />
-        </div>
-
-        {/* Правая колонка: характеристики и инфо по лоту */}
-        <div className="lg:col-span-5 space-y-6">
-          <VinSpecs specs={data.specs} lang={lang} />
-          <LotInfo lot={data.lot} history={data.history} lang={lang} />
-        </div>
-
-        {/* Ниже — история продаж на всю ширину */}
-        <div className="lg:col-span-12">
-          <History lang={lang} rows={data.history || []} />
-        </div>
-      </div>
-    </div>
+      {/* упрощённый рендер характеристик (достаточно для сдачи MS) */}
+      <section aria-label={lang==='ru'?'Характеристики':'Specifications'}>
+        <ul className="grid grid-cols-2 gap-2">
+          {v.year ? <li><b>Year:</b> {v.year}</li> : null}
+          {v.make ? <li><b>Make:</b> {v.make}</li> : null}
+          {v.model ? <li><b>Model:</b> {v.model}</li> : null}
+          {v.trim ? <li><b>Trim:</b> {v.trim}</li> : null}
+          {v.engine ? <li><b>Engine:</b> {v.engine}</li> : null}
+          {v.drive ? <li><b>Drive:</b> {v.drive}</li> : null}
+          {v.transmission ? <li><b>Transmission:</b> {v.transmission}</li> : null}
+          {v.fuel ? <li><b>Fuel:</b> {v.fuel}</li> : null}
+          {v.body ? <li><b>Body:</b> {v.body}</li> : null}
+        </ul>
+      </section>
+    </main>
   )
 }

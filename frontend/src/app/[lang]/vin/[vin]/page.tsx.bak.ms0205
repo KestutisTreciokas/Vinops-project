@@ -1,0 +1,141 @@
+import { headers } from 'next/headers';
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import React from 'react';
+
+export const dynamic = 'force-dynamic';
+
+type AnyObj = Record<string, any>;
+
+function getOrigin() {
+  const h = headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'vinops.online';
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  return `${proto}://${host}`;
+}
+
+function pickFirst<T=any>(o: AnyObj, cands: string[], def: T|null=null): T|null {
+  for (const k of cands) if (o && Object.prototype.hasOwnProperty.call(o,k)) return o[k] as T;
+  return def;
+}
+
+async function fetchVehicleAbs(origin: string, vin: string, lang: 'en'|'ru') {
+  return await fetch(new URL(`/api/v1/vehicles/${vin}`, origin), {
+    headers: { 'Accept-Language': lang },
+    cache: 'no-store',
+  });
+}
+async function fetchVehicleRel(vin: string, lang: 'en'|'ru') {
+  return await fetch(`/api/v1/vehicles/${vin}`, {
+    headers: { 'Accept-Language': lang },
+    cache: 'no-store',
+  });
+}
+
+export async function generateMetadata(
+  { params }: { params: { lang: 'en'|'ru', vin: string } }
+): Promise<Metadata> {
+  const { lang, vin } = params;
+  const origin = getOrigin();
+  const r = await fetchVehicleAbs(origin, vin, lang);
+  const canonical = `${origin}/${lang}/vin/${vin}`;
+
+  let robots: Metadata['robots'] | undefined;
+  let title = `VIN ${vin} — vinops`;
+
+  if (r.status === 200) {
+    const data: AnyObj = await r.json();
+    const root = data.vehicle ?? data ?? {};
+    const year = pickFirst<number>(root, ['year','productionYear']);
+    const make = pickFirst<string>(root, ['make','brand','brandName']);
+    const model = pickFirst<string>(root, ['model','modelName']);
+    const trim = pickFirst<string>(root, ['trim','series']);
+    const left = [year, make, model].filter(Boolean).join(' ');
+    if (left) title = `${left}${trim ? `, ${trim}` : ''} — VIN ${vin}`;
+  } else if (r.status === 404 || r.status === 410 || r.status === 422) {
+    robots = { index: false, follow: true };
+  }
+
+  return {
+    title,
+    alternates: {
+      canonical,
+      languages: {
+        en: `${origin}/en/vin/${vin}`,
+        ru: `${origin}/ru/vin/${vin}`,
+        'x-default': canonical,
+      },
+    },
+    robots,
+  };
+}
+
+export default async function Page({ params }: { params: { lang: 'en'|'ru', vin: string } }) {
+  const { lang, vin } = params;
+  const r = await fetchVehicleRel(vin, lang);
+
+  if (r.status === 404 || r.status === 422) return notFound();
+  if (r.status === 410) {
+    // Обычно перехватывается middleware, но на случай обхода:
+    // отдаём 404 в SSR + noindex через generateMetadata, чтобы не индексировалось.
+    return notFound();
+  }
+  if (r.status !== 200) return notFound();
+
+  const data: AnyObj = await r.json();
+  const root = data.vehicle ?? data ?? {};
+  const year = pickFirst<number>(root, ['year','productionYear']);
+  const make = (pickFirst<string>(root, ['make','brand','brandName']) ?? '').toString();
+  const model = (pickFirst<string>(root, ['model','modelName']) ?? '').toString();
+  const trim = (pickFirst<string>(root, ['trim','series']) ?? '').toString();
+  const titleH1 = [year, make, model].filter(Boolean).join(' ') + (trim ? `, ${trim}` : '');
+  const origin = getOrigin();
+  const pageUrl = `${origin}/${lang}/vin/${vin}`;
+
+  const ldVehicle: AnyObj = {
+    '@context': 'https://schema.org',
+    '@type': 'Vehicle',
+    vehicleIdentificationNumber: vin,
+    brand: make ? { '@type': 'Brand', name: make } : undefined,
+    model: model || undefined,
+    productionDate: year ? String(year) : undefined,
+    url: pageUrl,
+  };
+  const ldBreadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${origin}/${lang}` },
+      { '@type': 'ListItem', position: 2, name: 'Cars', item: `${origin}/${lang}/cars` },
+      { '@type': 'ListItem', position: 3, name: titleH1 || `VIN ${vin}`, item: pageUrl },
+    ],
+  };
+
+  return (
+    <main className="container mx-auto px-4 py-6">
+      <h1 className="text-2xl font-semibold">{titleH1 || `VIN ${vin}`}</h1>
+      <div className="text-sm text-gray-500 mt-1">VIN: {vin}</div>
+
+      <section className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 rounded-xl border">
+          <h2 className="font-medium mb-2">Specifications</h2>
+          <ul className="space-y-1 text-sm">
+            <li><strong>Year:</strong> {year ?? '—'}</li>
+            <li><strong>Make:</strong> {make || '—'}</li>
+            <li><strong>Model:</strong> {model || '—'}</li>
+            <li><strong>Trim:</strong> {trim || '—'}</li>
+          </ul>
+        </div>
+      </section>
+
+      {(make || model || year) && (
+        <>
+          <script type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(ldVehicle) }} />
+          <script type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumb) }} />
+        </>
+      )}
+    </main>
+  );
+}

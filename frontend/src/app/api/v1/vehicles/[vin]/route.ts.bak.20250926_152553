@@ -1,0 +1,168 @@
+import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
+import { query, hasDb } from '../../_lib/db';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const API_VERSION = '1';
+const ORIGINS = new Set(['https://vinops.online','https://www.vinops.online']);
+const RL_LIMIT = 60;
+const rl: Map<string, { ts: number; cnt: number }> = (globalThis as any).__vinops_rl_v || new Map();
+(globalThis as any).__vinops_rl_v = rl;
+
+function nowSec(){ return Math.floor(Date.now()/1000); }
+function clientIp(req: NextRequest){
+  return req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'anon';
+}
+function cors(origin: string|null){
+  const h: Record<string,string> = {
+    'Access-Control-Allow-Methods': 'GET,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, If-None-Match, If-Modified-Since, Accept-Language',
+    'Vary': 'Origin, Accept-Language',
+    'X-Api-Version': API_VERSION
+  };
+  if (origin && ORIGINS.has(origin)) h['Access-Control-Allow-Origin'] = origin;
+  return h;
+}
+function normalizeVin(v: string){
+  const up = (v||'').toUpperCase().trim();
+  if (up.length < 11 || up.length > 17) return { ok:false, reason:'LEN' as const };
+  if (!/^[A-Z0-9]+$/.test(up)) return { ok:false, reason:'CHAR' as const };
+  if (up.length === 17 && /[IOQ]/.test(up)) return { ok:false, reason:'IOQ' as const };
+  return { ok:true, vin: up };
+}
+function stableStringify(obj: any): string {
+  const seen = new WeakSet();
+  const sortKeys = (x: any): any => {
+    if (x && typeof x === 'object') {
+      if (seen.has(x)) return null;
+      seen.add(x);
+      if (Array.isArray(x)) return x.map(sortKeys);
+      return Object.keys(x).sort().reduce((acc: any, k) => { acc[k] = sortKeys(x[k]); return acc; }, {});
+    }
+    return x;
+  };
+  return JSON.stringify(sortKeys(obj));
+}
+function weakETagFrom(obj: unknown) {
+  const h = crypto.createHash('sha1').update(stableStringify(obj)).digest('hex');
+  return `W/"${h}"`;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  return new NextResponse(null, { status: 204, headers: cors(origin) });
+}
+
+export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
+  const origin = req.headers.get('origin');
+  const headers = cors(origin);
+
+  // === Rate limit (per IP, 60 rpm) ===
+  const ip = clientIp(req);
+  const b = rl.get(ip) || { ts: nowSec(), cnt: 0 };
+  if (nowSec() - b.ts >= 60) { b.ts = nowSec(); b.cnt = 0; }
+  b.cnt += 1; rl.set(ip, b);
+  headers['X-RateLimit-Limit'] = `${RL_LIMIT}`;
+  headers['X-RateLimit-Remaining'] = `${Math.max(0, RL_LIMIT - b.cnt)}`;
+  headers['X-RateLimit-Reset'] = `${b.ts + 60}`;
+  if (b.cnt > RL_LIMIT) {
+    return NextResponse.json({ error:{ code:'RATE_LIMIT', message:'Too many requests' }}, { status: 429, headers });
+  }
+
+  // === VIN validation ===
+  const n = normalizeVin(ctx.params.vin);
+  if (!n.ok) {
+    headers['Cache-Control'] = 'no-store, must-revalidate';
+    return NextResponse.json(
+      { error:{ code:'INVALID_VIN', message:'VIN must be 11–17 uppercase, excluding I/O/Q' } },
+      { status: 422, headers }
+    );
+  }
+  const vin = n.vin;
+
+  // DEV overlay for 410 (не влияет на prod):
+  if (process.env.DEV_SUPPRESS_VIN && process.env.DEV_SUPPRESS_VIN.toUpperCase() === vin) {
+    headers['Cache-Control'] = 'no-store, must-revalidate';
+    return NextResponse.json({ status: 'suppressed' }, { status: 410, headers });
+  }
+
+  // === Read-model query (read-only) ===
+  try {
+    if (!hasDb()) throw Object.assign(new Error('NO_DB'), { code: 'NO_DB' });
+
+    // Селект агрегирует карточку VIN; поля sup/is_hidden трактуем как suppress
+    const q = `
+      with cur_lot as (
+        select l.*
+        from core.lots l
+        where l.vin = $1
+        order by (l.auction_datetime_utc) desc nulls last
+        limit 1
+      )
+      select
+        v.vin, v.year, v.make, v.model, v.trim, v.body, v.fuel, v.transmission, v.drive, v.engine,
+        (v.is_hidden or coalesce(v.suppress,false)) as suppressed,
+        v.updated_at as updated_at,
+        cl.lot_id, cl.status as lot_status, cl.site_code, cl.city, cl.region, cl.country,
+        cl.auction_datetime_utc, cl.est_retail_value_usd, cl.runs_drives, cl.has_keys
+      from core.vehicles v
+      left join cur_lot cl on true
+      where v.vin = $1
+      limit 1
+    `;
+    const r = await query(q, [vin], { traceId: req.headers.get('x-trace-id') || undefined });
+
+    if (r.rowCount === 0) {
+      headers['Cache-Control'] = 'no-store, must-revalidate';
+      return NextResponse.json({ error:{ code:'NOT_FOUND', message:'VIN not found' }}, { status: 404, headers });
+    }
+
+    const row = r.rows[0] as any;
+    if (row.suppressed) {
+      headers['Cache-Control'] = 'no-store, must-revalidate';
+      return NextResponse.json({ status: 'suppressed' }, { status: 410, headers });
+    }
+
+    // Собираем DTO (минимум, по контракту v1)
+    const dto: any = {
+      vin: row.vin,
+      year: row.year, make: row.make, model: row.model, trim: row.trim,
+      body: row.body, fuel: row.fuel, transmission: row.transmission, drive: row.drive, engine: row.engine,
+      currentLot: row.lot_id ? {
+        lotId: row.lot_id, status: row.lot_status, siteCode: row.site_code,
+        city: row.city, region: row.region, country: row.country,
+        auctionDateTimeUtc: row.auction_datetime_utc,
+        estRetailValueUsd: row.est_retail_value_usd,
+        runsDrives: row.runs_drives, hasKeys: row.has_keys
+      } : null,
+      images: [],        // изображения подтягиваем отдельным вызовом в следующей итерации
+      saleEvents: [],    // история тоже в следующей итерации
+      updatedAt: row.updated_at || null,
+      lang: (req.headers.get('accept-language') || 'en').split(',')[0].startsWith('ru') ? 'ru' : 'en'
+    };
+
+    // Cache/ETag/Last-Modified
+    const etag = weakETagFrom(dto);
+    const inm = req.headers.get('if-none-match');
+    if (inm && inm === etag) {
+      const h304 = { ...headers, 'ETag': etag, 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' };
+      if (dto.updatedAt) (h304 as any)['Last-Modified'] = new Date(dto.updatedAt).toUTCString();
+      return new NextResponse(null, { status: 304, headers: h304 });
+    }
+    headers['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300';
+    headers['ETag'] = etag;
+    if (dto.updatedAt) headers['Last-Modified'] = new Date(dto.updatedAt).toUTCString();
+
+    return NextResponse.json(dto, { status: 200, headers });
+  } catch (e: any) {
+    // Фоллбек (только для DEV) — гарантируем 404 вместо 500 на валидный/отсутствующий VIN
+    if (e?.code === 'NO_DB') {
+      headers['Cache-Control'] = 'no-store, must-revalidate';
+      return NextResponse.json({ error:{ code:'NOT_FOUND', message:'VIN not found' }}, { status: 404, headers });
+    }
+    headers['Cache-Control'] = 'no-store, must-revalidate';
+    return NextResponse.json({ error:{ code:'INTERNAL', message:'Internal error' }}, { status: 500, headers });
+  }
+}

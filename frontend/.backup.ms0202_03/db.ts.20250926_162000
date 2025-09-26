@@ -1,0 +1,92 @@
+import { Pool, PoolClient, QueryResult } from 'pg';
+import crypto from 'node:crypto';
+
+type Ctx = { traceId?: string; requestId?: string; timeoutMs?: number };
+
+let pool: Pool | null = null;
+
+export function hasDb(): boolean {
+  const u = process.env.DATABASE_URL || '';
+  return /^postgresql?:\/\//i.test(u);
+}
+
+export function getPool(): Pool {
+  if (pool) return pool;
+  if (!hasDb()) throw new Error('DATABASE_URL is not set or unsupported');
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: true },
+    max: Number(process.env.PG_POOL_MAX || 10),
+    idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS || 10000),
+  });
+  // GUCs на подключении
+  pool.on('connect', async (client: PoolClient) => {
+    const app = process.env.PG_APP_NAME || 'vinops.frontend';
+    try {
+      await client.query(`
+        SET TIME ZONE 'UTC';
+        SET application_name = $1;
+        SET default_transaction_read_only = on;
+        SET statement_timeout = 2000;
+        SET lock_timeout = 1000;
+        SET idle_in_transaction_session_timeout = 5000;
+      `, [app]);
+    } catch (_) { /* не роняем процесс */ }
+  });
+  return pool;
+}
+
+function stripSqlComments(sql: string): string {
+  return sql
+    .replace(/--.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .trim();
+}
+
+function isReadonlySQL(sql: string): boolean {
+  const s = stripSqlComments(sql).toLowerCase();
+  // Разрешаем только select/with, без опасных ключевых слов
+  if (!/^(with|select)\b/.test(s)) return false;
+  if (/\b(insert|update|delete|merge|grant|revoke|create|alter|drop|truncate|vacuum|analyze|refresh\s+materialized)\b/.test(s)) return false;
+  return true;
+}
+
+function logJson(event: string, data: Record<string, unknown>) {
+  try {
+    // лёгкий, без циклов
+    process.stdout.write(JSON.stringify({ ts: new Date().toISOString(), event, ...data }) + '\n');
+  } catch {}
+}
+
+export async function query<T = unknown>(sql: string, params: any[] = [], ctx: Ctx = {}): Promise<QueryResult<T>> {
+  if (!isReadonlySQL(sql)) {
+    const err = new Error('READ_ONLY_VIOLATION');
+    logJson('db.query.reject', { reason: 'not_readonly', requestId: ctx.requestId, traceId: ctx.traceId, sample: sql.slice(0, 120) });
+    throw err;
+  }
+  const p = getPool();
+  const started = process.hrtime.bigint();
+  const sample = sql.slice(0, 120).replace(/\s+/g, ' ');
+  const run = async (): Promise<QueryResult<T>> => p.query(sql, params);
+  let attempt = 0;
+  while (true) {
+    try {
+      const res = await run();
+      const durMs = Number((process.hrtime.bigint() - started) / 1000000n);
+      logJson('db.query.ok', { requestId: ctx.requestId, traceId: ctx.traceId, durMs, rowCount: res.rowCount, sample });
+      return res;
+    } catch (e: any) {
+      const code = e?.code || e?.name || 'ERR';
+      const transient = ['ETIMEDOUT','ECONNRESET','57P01','53300','08006'].includes(code);
+      logJson(attempt === 0 ? 'db.query.fail' : 'db.query.retry.fail', {
+        requestId: ctx.requestId, traceId: ctx.traceId, code, msg: String(e?.message || e), sample
+      });
+      if (transient && attempt < 1) {
+        attempt++;
+        logJson('db.query.retry', { requestId: ctx.requestId, traceId: ctx.traceId, attempt });
+        continue;
+      }
+      throw e;
+    }
+  }
+}

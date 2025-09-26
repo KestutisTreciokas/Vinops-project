@@ -1,0 +1,74 @@
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import React from 'react';
+
+export const dynamic = 'force-dynamic';
+
+function getOrigin() {
+  const h = headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'vinops.online';
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  return `${proto}://${host}`;
+}
+
+function isComplex(sp: URLSearchParams): boolean {
+  const keys = ['make','model','year_from','year_to','status','damage','title_brand','runs_drives','has_keys','sort','cursor'];
+  const active = keys.filter(k => sp.has(k) && (sp.get(k) ?? '') !== '');
+  const onlySimple = active.every(k => ['make','model','year_from','year_to'].includes(k));
+  return sp.has('cursor') || (active.length > 2 && !(onlySimple && active.length <= 2));
+}
+
+export async function generateMetadata(
+  { params, searchParams }: { params: { lang: 'en'|'ru' }, searchParams: Record<string, string | string[] | undefined> }
+): Promise<Metadata> {
+  const { lang } = params;
+  const origin = getOrigin();
+  const sp = new URLSearchParams();
+  Object.entries(searchParams).forEach(([k,v]) => { if (typeof v === 'string') sp.set(k, v); });
+  const robots = isComplex(sp) ? { index: false, follow: true } : undefined;
+  return {
+    title: 'Cars — vinops',
+    alternates: {
+      canonical: `${origin}/${lang}/cars${sp.toString()?`?${sp.toString()}`:''}`,
+      languages: {
+        en: `${origin}/en/cars`,
+        ru: `${origin}/ru/cars`,
+        'x-default': `${origin}/${lang}/cars`,
+      },
+    },
+    robots,
+  };
+}
+
+export default async function Page(
+  { params, searchParams }: { params: { lang: 'en'|'ru' }, searchParams: Record<string, string | string[] | undefined> }
+) {
+  const { lang } = params;
+  const sp = new URLSearchParams();
+  Object.entries(searchParams).forEach(([k,v]) => { if (typeof v === 'string') sp.set(k, v); });
+  if (!sp.has('limit')) sp.set('limit','12');
+  if (!sp.has('lang')) sp.set('lang', lang);
+
+  // Прямой серверный fetch к API
+  const r = await fetch(`/api/v1/search?${sp.toString()}`, {
+    headers: { 'Accept-Language': lang },
+    cache: 'no-store',
+  });
+  const data = await r.json();
+
+  return (
+    <main className="container mx-auto px-4 py-6">
+      <h1 className="text-2xl font-semibold mb-4">Cars</h1>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {(data.items ?? []).map((it: any) => (
+          <article key={it.lot_id ?? it.lotId ?? `${it.vin}:${it.year}:${it.model}`} className="border rounded-xl p-3">
+            <div className="text-sm font-medium">
+              {[it.year, it.make, it.model].filter(Boolean).join(' ')}
+            </div>
+            <div className="text-xs text-gray-500">VIN: {it.vin}</div>
+          </article>
+        ))}
+      </div>
+    </main>
+  );
+}

@@ -1,0 +1,92 @@
+import { Pool, PoolClient } from 'pg';
+
+type Ctx = { traceId?: string; requestId?: string };
+
+let _pool: Pool | null = null;
+
+function isReadonlySQL(sql: string): boolean {
+  const s = (sql || '').replace(/\/\*[\s\S]*?\*\/|--.*$/gm, '').trim();
+  return /^(with|select)\b/i.test(s);
+}
+
+function transient(err: any): boolean {
+  const code = err?.code || err?.errno || '';
+  const name = err?.name || '';
+  const msg  = err?.message || '';
+  return [
+    '57P01', // admin_shutdown
+    '40001', // serialization_failure
+    '53300', // too_many_connections
+  ].includes(code) || /ECONNRESET|ETIMEDOUT/i.test(code+name+msg);
+}
+
+function jlog(event: string, data: Record<string, any>) {
+  try {
+    const base = { ts: new Date().toISOString(), lvl:'info', ev:event };
+    // eslint-disable-next-line no-console
+    console.log(JSON.stringify({ ...base, ...data }));
+  } catch { /* noop */ }
+}
+
+export function getPool(): Pool {
+  if (_pool) return _pool;
+  const cs = process.env.DATABASE_URL;
+  if (!cs) throw new Error('DATABASE_URL is not set');
+  _pool = new Pool({
+    connectionString: cs,
+    ssl: { rejectUnauthorized: true },
+    application_name: 'vinops.frontend',
+    // global timeouts can be put here if needed
+  });
+  _pool.on('connect', async (client: PoolClient) => {
+    try {
+      await client.query("SET TIME ZONE 'UTC'");
+      await client.query("SET application_name = 'vinops.frontend'");
+      await client.query("SET default_transaction_read_only = on");
+      await client.query("SET statement_timeout = '2000ms'");
+      await client.query("SET lock_timeout = '1000ms'");
+      await client.query("SET idle_in_transaction_session_timeout = '5000ms'");
+    } catch (e:any) {
+      jlog('db.connect.guc.fail', { code:e?.code, msg:e?.message });
+    }
+  });
+  return _pool;
+}
+
+export async function hasDb(): Promise<boolean> {
+  try {
+    const r = await getPool().query('select 1');
+    return !!r?.rows?.length;
+  } catch {
+    return false;
+  }
+}
+
+export async function query<T = any>(sql: string, params: any[] = [], ctx: Ctx = {}): Promise<{ rows: T[]; rowCount: number; }> {
+  if (!isReadonlySQL(sql)) {
+    const err = new Error('READONLY_GUARD: only SELECT/WITH are allowed');
+    jlog('db.query.block', { sql: sql.slice(0,120), reason:'not_readonly', traceId:ctx.traceId, requestId:ctx.requestId });
+    throw err;
+  }
+  const pool = getPool();
+  const started = process.hrtime.bigint();
+  let attempt = 0;
+  // one retry on transient errors
+  while (true) {
+    try {
+      const res = await pool.query(sql, params);
+      const durMs = Number(process.hrtime.bigint() - started) / 1e6;
+      jlog('db.query.ok', { durMs: +durMs.toFixed(1), rows: res.rowCount, traceId:ctx.traceId, requestId:ctx.requestId, sample: sql.slice(0,120) });
+      return { rows: res.rows as T[], rowCount: res.rowCount };
+    } catch (e:any) {
+      const durMs = Number(process.hrtime.bigint() - started) / 1e6;
+      if (attempt === 0 && transient(e)) {
+        attempt++;
+        jlog('db.query.retry', { durMs: +durMs.toFixed(1), code:e?.code, traceId:ctx.traceId, sample: sql.slice(0,120) });
+        continue;
+      }
+      jlog('db.query.fail', { durMs: +durMs.toFixed(1), code:e?.code, msg:e?.message, traceId:ctx.traceId, sample: sql.slice(0,120) });
+      throw e;
+    }
+  }
+}

@@ -1,0 +1,25 @@
+type Bucket = { resetAt: number; count: number; limit: number; windowSec: number }
+const buckets = new Map<string, Bucket>()
+
+type AllowOpts = { key: string; limit: number; windowSec: number }
+
+export async function allow(opts: AllowOpts): Promise<{ ok: boolean; remaining: number; reset: number }>
+export async function allow(key: string, limit: number, windowSec: number): Promise<{ ok: boolean; remaining: number; reset: number }>
+export async function allow(a: any, b?: any, c?: any) {
+  const key = typeof a === 'string' ? a : a.key
+  const limit = typeof a === 'string' ? Number(b) : Number(a.limit)
+  const windowSec = typeof a === 'string' ? Number(c) : Number(a.windowSec)
+
+  const now = Date.now()
+  const bucket = buckets.get(key)
+  if (!bucket || now >= bucket.resetAt) {
+    const resetAt = now + windowSec * 1000
+    buckets.set(key, { resetAt, count: 1, limit, windowSec })
+    return { ok: true, remaining: Math.max(0, limit - 1), reset: Math.floor(resetAt/1000) }
+  }
+  if (bucket.count < bucket.limit) {
+    bucket.count += 1
+    return { ok: true, remaining: Math.max(0, bucket.limit - bucket.count), reset: Math.floor(bucket.resetAt/1000) }
+  }
+  return { ok: false, remaining: 0, reset: Math.floor(bucket.resetAt/1000) }
+}

@@ -1,0 +1,5 @@
+## CMD: bash -lc free -h || true
+## TIME(Europe/Warsaw): 2025-09-26 18:08:37 CEST
+               total        used        free      shared  buff/cache   available
+Mem:           7.8Gi       1.5Gi       780Mi       1.0Mi       5.5Gi       6.0Gi
+Swap:             0B          0B          0B

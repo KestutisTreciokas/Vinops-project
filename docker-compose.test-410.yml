@@ -1,0 +1,4 @@
+services:
+  web:
+    environment:
+      - VINOPS_SUPPRESSED_TEST_VINS=1HGCM82633A004352

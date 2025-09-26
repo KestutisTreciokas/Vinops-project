@@ -1,0 +1,4 @@
+services:
+  web:
+    environment:
+      - SUPPRESS_VIN_LIST=1HGCM82633A004352

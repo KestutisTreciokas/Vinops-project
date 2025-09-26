@@ -1,0 +1,37 @@
+import 'server-only';
+
+export type Lang = 'en'|'ru';
+
+export async function fetchVehicleSSR(vin: string, lang: Lang = 'en'): Promise<any> {
+  const res = await fetch(`/api/v1/vehicles/${vin}`, {
+    method: 'GET',
+    headers: { 'Accept-Language': lang },
+    cache: 'no-store',
+    next: { revalidate: 0 },
+  }).catch(() => null as any);
+
+  if (!res) return null;
+  if (res.status === 200) return await res.json();
+  if (res.status === 410) return { __gone: true };
+  if (res.status === 404) return null;
+  if (res.status === 422) return { __invalid: true };
+  return null;
+}
+
+export async function searchLotsSSR(params: Record<string,string|number|boolean|undefined>): Promise<any> {
+  const sp = new URLSearchParams();
+  for (const [k,v] of Object.entries(params)) {
+    if (v === undefined || v === null) continue;
+    sp.set(k, String(v));
+  }
+  const url = `/api/v1/search${sp.toString() ? `?${sp.toString()}` : ''}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { 'Accept-Language': (params.lang as string) || 'en' },
+    cache: 'no-store',
+    next: { revalidate: 0 },
+  }).catch(() => null as any);
+
+  if (!res || !res.ok) return { items: [], nextCursor: null };
+  return await res.json();
+}

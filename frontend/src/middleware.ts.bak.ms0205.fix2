@@ -1,0 +1,42 @@
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{11,17}$/
+
+export async function middleware(req: NextRequest) {
+  const { pathname, origin, search } = req.nextUrl
+  // match /en/vin/{VIN} или /ru/vin/{VIN}
+  const m = pathname.match(/^\/(en|ru)\/vin\/([A-Za-z0-9]{11,17})$/)
+  if (!m) return NextResponse.next()
+
+  const lang = (m[1] as 'en'|'ru')
+  const vin = m[2].toUpperCase()
+  if (!VIN_RE.test(vin)) {
+    // для явно невалидных — отдаём обычную страницу 404 (обработает page.tsx)
+    return NextResponse.next()
+  }
+
+  // Проверяем suppress через API
+  try {
+    const res = await fetch(`${origin}/api/v1/vehicles/${vin}`, {
+      headers: { 'Accept-Language': lang },
+      cache: 'no-store',
+    })
+    if (res.status === 410) {
+      const h = new Headers()
+      h.set('X-Robots-Tag', 'noindex, noarchive')
+      h.set('Content-Type', 'text/html; charset=utf-8')
+      return new NextResponse(
+        '<!doctype html><title>410 Gone</title><h1>410 — Removed</h1><p>This VIN is removed/suppressed.</p>',
+        { status: 410, headers: h }
+      )
+    }
+  } catch { /* fail-open: продолжаем на страницу */ }
+
+  return NextResponse.next()
+}
+
+// Ограничиваем на нужный маршрут
+export const config = {
+  matcher: ['/en/vin/:vin*', '/ru/vin/:vin*'],
+}

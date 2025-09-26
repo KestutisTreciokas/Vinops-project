@@ -1,0 +1,8 @@
+== GREP HSTS summary ==
+fonts_external.txt     : HSTS=MISS
+robots.txt.txt         : HSTS=HIT
+robots_txt.txt         : HSTS=MISS
+root.txt               : HSTS=HIT
+sitemap.xml.txt        : HSTS=HIT
+sitemap_xml.txt        : HSTS=MISS
+summary.txt            : HSTS=MISS

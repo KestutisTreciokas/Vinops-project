@@ -1,0 +1,127 @@
+import { Pool, PoolClient, QueryResult } from 'pg';
+import crypto from 'node:crypto';
+
+type Ctx = { traceId?: string; requestId?: string };
+
+declare global { // singleton pool in dev/prod
+  // eslint-disable-next-line no-var
+  var __vinops_pool__: Pool | undefined;
+}
+
+const CONN = process.env.DATABASE_URL || '';
+if (!CONN) throw new Error('DATABASE_URL is required');
+
+function makePool(): Pool {
+  const p = new Pool({
+    connectionString: CONN,
+    ssl: { rejectUnauthorized: true }, // TLS verify-full semantics
+    max: 10,
+    idleTimeoutMillis: 30_000,
+    allowExitOnIdle: false,
+  });
+
+  p.on('connect', async (client: PoolClient) => {
+    try {
+      await client.query(`SET TIME ZONE 'UTC'`);
+      await client.query(`SET application_name = 'vinops.frontend'`);
+      await client.query(`SET default_transaction_read_only = on`);
+      await client.query(`SET statement_timeout = 2000`);                 /* 2s */
+      await client.query(`SET lock_timeout = 1000`);                       /* 1s */
+      await client.query(`SET idle_in_transaction_session_timeout = 5000`);/* 5s */
+    } catch {
+      // ignore GUC failures, keep app-level read-only guard
+    }
+  });
+
+  return p;
+}
+
+export function getPool(): Pool {
+  if (!global.__vinops_pool__) global.__vinops_pool__ = makePool();
+  return global.__vinops_pool__!;
+}
+
+function stripLeadingComments(sql: string): string {
+  let s = sql.trimStart();
+  // strip /* ... */ and -- ...\n at the start
+  // do it conservatively (only leading)
+  for (;;) {
+    if (s.startsWith('--')) {
+      const i = s.indexOf('\n');
+      s = (i === -1) ? '' : s.slice(i + 1).trimStart();
+      continue;
+    }
+    if (s.startsWith('/*')) {
+      const i = s.indexOf('*/');
+      s = (i === -1) ? '' : s.slice(i + 2).trimStart();
+      continue;
+    }
+    break;
+  }
+  return s;
+}
+
+function isReadonlySQL(sql: string): boolean {
+  const s = stripLeadingComments(sql).toLowerCase();
+  return s.startsWith('select ') || s.startsWith('with ');
+}
+
+function sampleSQL(sql: string): string {
+  const one = sql.replace(/\s+/g, ' ').trim();
+  return one.length > 300 ? one.slice(0, 297) + '...' : one;
+}
+
+function isTransient(err: any): boolean {
+  const code = err?.code || '';
+  // PG restart / connection / timeout / too many connections etc.
+  return ['57P01','57P02','57P03','53300','53400','08006','08000','ETIMEDOUT','ECONNRESET'].includes(code);
+}
+
+export async function query<T = any>(sql: string, params: any[] = [], ctx: Ctx = {}): Promise<QueryResult<T>> {
+  if (!isReadonlySQL(sql)) {
+    const e = new Error('READ_ONLY_VIOLATION');
+    (e as any).code = 'READ_ONLY_VIOLATION';
+    throw e;
+  }
+
+  const pool = getPool();
+  const traceId = ctx.traceId || crypto.randomUUID();
+  const started = Date.now();
+  let attempt = 0;
+
+  // 1 retry on transient errors
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      const res = await pool.query<T>(sql, params);
+      const dur = Date.now() - started;
+      // structured JSON log
+      console.log(JSON.stringify({
+        type: 'db.query.ok', traceId, requestId: ctx.requestId,
+        durMs: dur, rowCount: res.rowCount, sql: sampleSQL(sql)
+      }));
+      return res;
+    } catch (err: any) {
+      const dur = Date.now() - started;
+      console.log(JSON.stringify({
+        type: 'db.query.fail', traceId, requestId: ctx.requestId,
+        durMs: dur, sql: sampleSQL(sql), code: err?.code || '', message: String(err?.message || err)
+      }));
+      if (attempt === 0 && isTransient(err)) {
+        attempt++;
+        console.log(JSON.stringify({ type: 'db.query.retry', traceId }));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+export async function hasDb(): Promise<boolean> {
+  try {
+    await query('select 1', []);
+    return true;
+  } catch {
+    return false;
+  }
+}

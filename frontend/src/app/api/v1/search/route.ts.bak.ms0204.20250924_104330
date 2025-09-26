@@ -1,0 +1,273 @@
+// Invariants: read-only, 200/400/422/429, CORS (our origins), RL, cache, X-Api-Version: 1
+import { NextRequest, NextResponse } from 'next/server';
+import { getPool, hasDb } from '../../_lib/db';
+import { allow } from '../../_lib/rateLimit';
+import { okJson, errJson, pickIp } from '../../_lib/http';
+import { normLang, labelStatus, labelDamage, labelTitle } from '../../_lib/i18n';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+type LotRow = {
+  lot_id: number;
+  vin: string;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  trim: string | null;
+  status: string | null;
+  auction_datetime_utc: string | null;
+  est_retail_value_usd: number | null;
+  runs_drives: boolean | null;
+  has_keys: boolean | null;
+  primary_image_url: string | null;
+  image_count: number | null;
+  primary_damage: string | null;
+  title_brand: string | null;
+};
+
+type Cursor = { dir: 'asc'|'desc'; ts: string; id: number };
+
+function strictDecodeCursor(raw: string): Cursor | null {
+  try {
+    const obj = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
+    if ((obj.dir === 'asc' || obj.dir === 'desc') && typeof obj.ts === 'string' && typeof obj.id === 'number') {
+      return obj as Cursor;
+    }
+    return null;
+  } catch { return null; }
+}
+function encodeCursor(c: Cursor): string {
+  return Buffer.from(JSON.stringify(c), 'utf8').toString('base64url');
+}
+
+function parseBool(v: string | null): boolean | null {
+  if (v == null) return null;
+  const t = v.toLowerCase();
+  if (t === 'true') return true;
+  if (t === 'false') return false;
+  return null;
+}
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  const allow =
+    origin === 'https://vinops.online' || origin === 'https://www.vinops.online'
+      ? origin : undefined;
+  const h: Record<string, string> = {
+    Vary: 'Origin, Accept-Language',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, Accept-Language',
+  };
+  if (allow) h['Access-Control-Allow-Origin'] = allow;
+  return h;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const h = new Headers(corsHeaders(req.headers.get('origin')));
+  h.set('Access-Control-Max-Age', '600');
+  return new NextResponse(null, { status: 204, headers: h });
+}
+
+export async function GET(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  const baseHeaders = { ...corsHeaders(origin), 'X-Api-Version': '1' } as Record<string,string>;
+  const okCache  = { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' } as Record<string,string>;
+  const errCache = { 'Cache-Control': 'no-store, must-revalidate' } as Record<string,string>;
+
+  // --- Rate limit per-IP 60 rpm ---
+  const ip = pickIp(req) || '0.0.0.0';
+  const rl = await allow({ key: `s:search:${ip}`, limit: 60, windowSec: 60 });
+  const rlHeaders = {
+    'X-RateLimit-Limit': '60',
+    'X-RateLimit-Remaining': String(rl.remaining),
+    'X-RateLimit-Reset': String(rl.reset),
+  };
+  if (!rl.ok) {
+    return errJson(req, 429, 'rate_limited', 'Too Many Requests', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+
+  const url = new URL(req.url);
+
+  // lang: explicit ?lang=… OR Accept-Language fallback
+  const urlLang = url.searchParams.get('lang');
+  const headerLang = req.headers.get('accept-language') || undefined;
+  const lang = normLang(urlLang || headerLang || '');
+
+  // ---- Query params with OpenAPI aliases (camelCase & snake_case) ----
+  const qp = (k: string) => url.searchParams.get(k);
+  const qpNum = (k: string): number | null => {
+    const v = qp(k);
+    if (v == null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : NaN;
+  };
+  const firstNum = (...keys: string[]) => {
+    for (const k of keys) {
+      const n = qpNum(k);
+      if (n === null) continue;
+      return n;
+    }
+    return null;
+  };
+  const firstStr = (...keys: string[]) => {
+    for (const k of keys) {
+      const v = qp(k);
+      if (v != null) return v;
+    }
+    return null;
+  };
+
+  // limit
+  const rawLimit = qp('limit') ?? '20';
+  const limitParam = Number(rawLimit);
+  if (!Number.isFinite(limitParam) || limitParam < 1) {
+    return errJson(req, 400, 'bad_request', 'limit must be >=1 and <=50', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+  const limit = Math.min(limitParam, 50);
+
+  const make        = firstStr('make');
+  const model       = firstStr('model');
+  const status      = firstStr('status');
+  const damage      = firstStr('damage');
+  const titleBrand  = firstStr('title_brand', 'titleBrand');
+  const runsDrives  = parseBool(firstStr('runs_drives', 'runsDrives'));
+  const hasKeys     = parseBool(firstStr('has_keys', 'hasKeys'));
+
+  const yearFromVal = firstNum('year_from', 'yearFrom');
+  const yearToVal   = firstNum('year_to',   'yearTo');
+
+  // numeric format validation when provided
+  if (yearFromVal !== null && Number.isNaN(yearFromVal)) {
+    return errJson(req, 400, 'bad_request', 'yearFrom must be integer', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+  if (yearToVal !== null && Number.isNaN(yearToVal)) {
+    return errJson(req, 400, 'bad_request', 'yearTo must be integer', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+  const yearFrom = (yearFromVal !== null && !Number.isNaN(yearFromVal)) ? yearFromVal : null;
+  const yearTo   = (yearToVal   !== null && !Number.isNaN(yearToVal))   ? yearToVal   : null;
+
+  if (yearFrom !== null && yearTo !== null && yearFrom > yearTo) {
+    return errJson(req, 422, 'invalid_range', 'year_from/yearFrom must be <= year_to/yearTo', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+
+  // sort mapping: 'asc'|'desc' OR OpenAPI aliases ±auctionDateTimeUtc
+  const sortRaw = firstStr('sort') || '-auctionDateTimeUtc';
+  let sort: 'asc'|'desc' = 'desc';
+  if (sortRaw === 'asc' || sortRaw === 'desc') sort = sortRaw as 'asc'|'desc';
+  else if (sortRaw === '+auctionDateTimeUtc') sort = 'asc';
+  else if (sortRaw === '-auctionDateTimeUtc') sort = 'desc';
+
+  // cursor must be validated EARLY (even without DB)
+  const cursorRaw = qp('cursor');
+  let cursor: Cursor | null = null;
+  if (cursorRaw) {
+    cursor = strictDecodeCursor(cursorRaw);
+    if (!cursor) {
+      return errJson(req, 422, 'invalid_cursor', 'cursor is malformed', {
+        ...baseHeaders, ...errCache, ...rlHeaders,
+      });
+    }
+  }
+
+  // no-db fallback AFTER cursor validation
+  if (!hasDb) {
+    return okJson(req, { items: [], nextCursor: null }, {
+      ...baseHeaders, ...okCache, ...rlHeaders, 'X-Fallback': 'no-db',
+    });
+  }
+
+  // ----------------- DB path -----------------
+  const pool = getPool();
+  const params: any[] = [];
+  const where: string[] = ['l.status IS NOT NULL'];
+
+  if (make)       { params.push(make);       where.push(`l.make = $${params.length}`); }
+  if (model)      { params.push(model);      where.push(`l.model = $${params.length}`); }
+  if (status)     { params.push(status);     where.push(`l.status = $${params.length}`); }
+  if (yearFrom)   { params.push(yearFrom);   where.push(`l.year >= $${params.length}`); }
+  if (yearTo)     { params.push(yearTo);     where.push(`l.year <= $${params.length}`); }
+  if (damage)     { params.push(damage);     where.push(`l.primary_damage = $${params.length}`); }
+  if (titleBrand) { params.push(titleBrand); where.push(`l.title_brand = $${params.length}`); }
+  if (runsDrives !== null) { params.push(runsDrives); where.push(`l.runs_drives = $${params.length}`); }
+  if (hasKeys    !== null) { params.push(hasKeys);    where.push(`l.has_keys = $${params.length}`); }
+
+  if (cursor) {
+    if (sort === 'desc') {
+      params.push(cursor.ts, cursor.id);
+      where.push(`(l.auction_datetime_utc < $${params.length-1} OR (l.auction_datetime_utc = $${params.length-1} AND l.lot_id < $${params.length}))`);
+    } else {
+      params.push(cursor.ts, cursor.id);
+      where.push(`(l.auction_datetime_utc > $${params.length-1} OR (l.auction_datetime_utc = $${params.length-1} AND l.lot_id > $${params.length}))`);
+    }
+  }
+
+  const order =
+    sort === 'asc'
+      ? `ORDER BY l.auction_datetime_utc ASC NULLS FIRST, l.lot_id ASC`
+      : `ORDER BY l.auction_datetime_utc DESC NULLS LAST, l.lot_id DESC`;
+
+  const sql = `
+    SELECT
+      l.lot_id, l.vin, l.year, l.make, l.model, l.trim, l.status,
+      l.auction_datetime_utc, l.est_retail_value_usd, l.runs_drives, l.has_keys,
+      l.primary_image_url, l.image_count, l.primary_damage, l.title_brand
+    FROM lots l
+    WHERE ${where.join(' AND ')}
+    ${order}
+    LIMIT ${limit + 1};
+  `;
+
+  try {
+    const { rows } = await pool.query<LotRow>(sql, params);
+    const slice = rows.slice(0, limit);
+
+    const items = slice.map(row => ({
+      lotId: row.lot_id,
+      vin: row.vin,
+      year: row.year,
+      make: row.make,
+      model: row.model,
+      trim: row.trim,
+      status: row.status,
+      auctionDateTimeUtc: row.auction_datetime_utc,
+      estRetailValueUsd: row.est_retail_value_usd,
+      runsDrives: row.runs_drives,
+      hasKeys: row.has_keys,
+      primaryImageUrl: row.primary_image_url,
+      imageCount: row.image_count,
+      primaryDamage: row.primary_damage,
+      titleBrand: row.title_brand,
+      // i18n labels:
+      labelStatus: labelStatus(row.status, lang),
+      labelDamage: labelDamage(row.primary_damage, lang),
+      labelTitle:  labelTitle(row.title_brand, lang),
+    }));
+
+    let nextCursor: string | null = null;
+    if (rows.length > limit && slice.length > 0) {
+      const last = slice[slice.length - 1];
+      const c: Cursor = {
+        dir: sort,
+        ts: last.auctionDateTimeUtc || '',
+        id: last.lotId,
+      };
+      nextCursor = encodeCursor(c);
+    }
+
+    return okJson(req, { items, nextCursor }, { ...baseHeaders, ...okCache, ...rlHeaders });
+  } catch (e: any) {
+    return errJson(req, 500, 'internal_error', 'Internal Server Error', {
+      ...baseHeaders, ...errCache, ...rlHeaders,
+    });
+  }
+}

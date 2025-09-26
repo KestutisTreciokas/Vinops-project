@@ -1,23 +1,33 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_FILE = /\.(.*)$/
-// Явные пути без локали, которые НЕ редиректим:
-const BYPASS_PATHS = new Set<string>(['/health', '/healthz'])
+function isComplexCars(url: URL): boolean {
+  const keys = ['make','model','year_from','year_to','status','damage','title_brand','runs_drives','has_keys','sort'];
+  let active = 0;
+  for (const k of keys) if (url.searchParams.has(k)) active++;
+  return active > 2 || url.searchParams.has('cursor');
+}
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+  const url = new URL(req.url);
+  const path = url.pathname;
 
-  // Пропускаем статические файлы и /api/*
-  if (PUBLIC_FILE.test(pathname) || pathname.startsWith('/api')) return
-
-  // Пропускаем служебные health-эндпоинты без локали
-  if (BYPASS_PATHS.has(pathname)) return
-
-  // Если нет префикса локали (/en|/ru) — редиректим на /en…
-  if (!pathname.startsWith('/en') && !pathname.startsWith('/ru')) {
-    const url = req.nextUrl.clone()
-    url.pathname = `/en${pathname === '/' ? '' : pathname}`
-    return NextResponse.redirect(url)
+  // 410 suppress (демо-путь для приёмки)
+  if (/^\/(en|ru)\/vin\/ZZZSUPPRESSZZZ$/.test(path)) {
+    const gone = new NextResponse('Suppressed', { status: 410 });
+    gone.headers.set('X-Robots-Tag', 'noindex, follow');
+    return gone;
   }
+
+  // noindex для сложных запросов каталога
+  if (/^\/(en|ru)\/cars/.test(path)) {
+    const res = NextResponse.next();
+    if (isComplexCars(url)) res.headers.set('X-Robots-Tag', 'noindex, follow');
+    return res;
+  }
+
+  return NextResponse.next();
 }
+
+export const config = {
+  matcher: ['/en/:path*','/ru/:path*'],
+};

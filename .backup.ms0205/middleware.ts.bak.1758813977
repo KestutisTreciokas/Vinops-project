@@ -1,0 +1,75 @@
+// middleware.ts — VIN 404/410 + robots for /cars (complex); маркер X-MW-Active
+import { NextRequest, NextResponse } from 'next/server';
+import { isVinValid } from './app/_lib/vin';
+
+export const config = {
+  matcher: [
+    '/en/vin/:vin*',
+    '/ru/vin/:vin*',
+    '/en/cars',
+    '/ru/cars',
+  ],
+};
+
+function mark(res: NextResponse) {
+  res.headers.set('X-MW-Active', '1');
+  return res;
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname, searchParams, origin } = req.nextUrl;
+  const parts = pathname.split('/').filter(Boolean); // [lang,'vin'|'cars',...]
+  const lang = parts[0] === 'ru' ? 'ru' : 'en';
+
+  // VIN-gate: 404 для невалидного; 410 если API так отвечает
+  if (parts.length >= 3 && parts[1] === 'vin') {
+    const vin = (parts[2] || '').toUpperCase();
+
+    // INVALID → 404 + noindex
+    if (!isVinValid(vin)) {
+      const res = new NextResponse(null, { status: 404 });
+      res.headers.set('X-Robots-Tag', 'noindex, follow');
+      return mark(res);
+    }
+
+    // SUPPRESS → 410 + noindex (если API так ответил)
+    try {
+      const apiUrl = `${origin}/api/v1/vehicles/${vin}`;
+      const r = await fetch(apiUrl, {
+        method: 'GET',
+        headers: { 'Accept-Language': lang, 'X-MW-Probe': '1' },
+        cache: 'no-store',
+      });
+      if (r.status === 410) {
+        const res = new NextResponse(null, { status: 410 });
+        res.headers.set('X-Robots-Tag', 'noindex, follow');
+        return mark(res);
+      }
+      // Если API вернул 422, трактуем как 404
+      if (r.status === 422) {
+        const res = new NextResponse(null, { status: 404 });
+        res.headers.set('X-Robots-Tag', 'noindex, follow');
+        return mark(res);
+      }
+    } catch {
+      // недоступность API не должна блокировать валидный VIN — пропускаем
+    }
+    return mark(NextResponse.next());
+  }
+
+  // /cars: noindex для "сложных" фильтров (cursor или >2 несущих фильтра)
+  if (parts.length >= 2 && parts[1] === 'cars') {
+    const keys = ['make','model','year_from','year_to','status','damage','title_brand','runs_drives','has_keys','sort','cursor'];
+    const active = keys.filter(k => searchParams.has(k) && (searchParams.get(k) ?? '') !== '');
+    const onlySimple = active.every(k => ['make','model','year_from','year_to'].includes(k));
+    const complex = searchParams.has('cursor') || (active.length > 2 && !(onlySimple && active.length <= 2));
+    if (complex) {
+      const res = NextResponse.next();
+      res.headers.set('X-Robots-Tag', 'noindex, follow');
+      return mark(res);
+    }
+    return mark(NextResponse.next());
+  }
+
+  return mark(NextResponse.next());
+}

@@ -1,0 +1,221 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getPool, hasDb } from '../../_lib/db';
+import { allow } from '../../_lib/rateLimit';
+import { okJson, errJson, pickIp } from '../../_lib/http';
+import { normLang, labelStatus, labelDamage, labelTitle } from '../../_lib/i18n';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+type LotRow = {
+  lot_id: number;
+  vin: string;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  trim: string | null;
+  status: string | null;
+  auction_datetime_utc: string | null;
+  est_retail_value_usd: number | null;
+  runs_drives: boolean | null;
+  has_keys: boolean | null;
+  primary_image_url: string | null;
+  image_count: number | null;
+  primary_damage: string | null;
+  title_brand: string | null;
+};
+
+type Cursor = { dir: 'asc'|'desc'; ts: string; id: number };
+
+function strictDecodeCursor(raw: string): Cursor | null {
+  try {
+    const obj = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
+    if ((obj.dir === 'asc' || obj.dir === 'desc') && typeof obj.ts === 'string' && typeof obj.id === 'number') {
+      return obj as Cursor;
+    }
+    return null;
+  } catch { return null; }
+}
+function encodeCursor(c: Cursor): string {
+  return Buffer.from(JSON.stringify(c), 'utf8').toString('base64url');
+}
+function parseBool(v: string | null): boolean | null {
+  if (v == null) return null;
+  const t = v.toLowerCase();
+  if (t === 'true') return true;
+  if (t === 'false') return false;
+  return null;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin') || 'https://vinops.online';
+  const allow =
+    origin === 'https://vinops.online' || origin === 'https://www.vinops.online'
+      ? origin : undefined;
+  const h = new Headers();
+  h.set('Vary', 'Origin, Accept-Language');
+  h.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  h.set('Access-Control-Allow-Headers', 'Content-Type, Accept, Accept-Language');
+  h.set('Access-Control-Max-Age', '600');
+  if (allow) h.set('Access-Control-Allow-Origin', allow);
+  return new NextResponse(null, { status: 204, headers: h });
+}
+
+export async function GET(req: NextRequest) {
+  const ip = pickIp(req) || '0.0.0.0';
+  const rl = await allow({ key: `s:search:${ip}`, limit: 60, windowSec: 60 });
+  if (!rl.ok) {
+    return errJson(req, 429, 'rate_limited', 'Too Many Requests', {
+      'X-RateLimit-Limit': '60',
+      'X-RateLimit-Remaining': String(rl.remaining),
+      'X-RateLimit-Reset': String(rl.reset),
+    });
+  }
+
+  const url = new URL(req.url);
+  const lang = normLang(url.searchParams.get('lang'));
+
+  const limitParam = Number(url.searchParams.get('limit') ?? 20);
+  if (!Number.isFinite(limitParam) || limitParam < 1) {
+    return errJson(req, 400, 'bad_request', 'limit must be >=1 and <=50', {
+      'X-RateLimit-Limit': '60',
+      'X-RateLimit-Remaining': String(rl.remaining),
+      'X-RateLimit-Reset': String(rl.reset),
+    });
+  }
+  const limit = Math.min(limitParam, 50);
+
+  const make  = url.searchParams.get('make')  || null;
+  const model = url.searchParams.get('model') || null;
+  const yearFrom = url.searchParams.get('year_from') ? Number(url.searchParams.get('year_from')) : null;
+  const yearTo   = url.searchParams.get('year_to')   ? Number(url.searchParams.get('year_to'))   : null;
+  if (yearFrom && yearTo && yearFrom > yearTo) {
+    return errJson(req, 422, 'invalid_range', 'year_from must be <= year_to', {
+      'X-RateLimit-Limit': '60',
+      'X-RateLimit-Remaining': String(rl.remaining),
+      'X-RateLimit-Reset': String(rl.reset),
+    });
+  }
+  const damage     = url.searchParams.get('damage') || null;
+  const titleBrand = url.searchParams.get('title_brand') || null;
+  const runsDrives = parseBool(url.searchParams.get('runs_drives'));
+  const hasKeys    = parseBool(url.searchParams.get('has_keys'));
+  const sort: 'asc'|'desc' = url.searchParams.get('sort') === 'asc' ? 'asc' : 'desc';
+
+  // --- EARLY cursor validation (must run BEFORE no-db fallback) ---
+  const cursorRaw = url.searchParams.get('cursor');
+  let cursor: Cursor | null = null;
+  if (cursorRaw) {
+    cursor = strictDecodeCursor(cursorRaw);
+    if (!cursor) {
+      return errJson(req, 422, 'invalid_cursor', 'cursor is malformed', {
+        'X-RateLimit-Limit': '60',
+        'X-RateLimit-Remaining': String(rl.remaining),
+        'X-RateLimit-Reset': String(rl.reset),
+      });
+    }
+  }
+  // --- /EARLY cursor validation ---
+
+  // no-db fallback AFTER cursor validation
+  if (!hasDb) {
+    return okJson(req, { items: [], nextCursor: null }, {
+      'X-RateLimit-Limit': '60',
+      'X-RateLimit-Remaining': String(rl.remaining),
+      'X-RateLimit-Reset': String(rl.reset),
+      'X-Fallback': 'no-db',
+    });
+  }
+
+  const pool = getPool();
+  const params: any[] = [];
+  const where: string[] = ['l.status IS NOT NULL'];
+
+  if (make)       { params.push(make);       where.push(`l.make = $${params.length}`); }
+  if (model)      { params.push(model);      where.push(`l.model = $${params.length}`); }
+  if (yearFrom)   { params.push(yearFrom);   where.push(`l.year >= $${params.length}`); }
+  if (yearTo)     { params.push(yearTo);     where.push(`l.year <= $${params.length}`); }
+  if (damage)     { params.push(damage);     where.push(`l.primary_damage = $${params.length}`); }
+  if (titleBrand) { params.push(titleBrand); where.push(`l.title_brand = $${params.length}`); }
+  if (runsDrives !== null) { params.push(runsDrives); where.push(`l.runs_drives = $${params.length}`); }
+  if (hasKeys    !== null) { params.push(hasKeys);    where.push(`l.has_keys = $${params.length}`); }
+
+  if (cursor) {
+    if (sort === 'desc') {
+      params.push(cursor.ts, cursor.id);
+      where.push(`(l.auction_datetime_utc < $${params.length-1} OR (l.auction_datetime_utc = $${params.length-1} AND l.lot_id < $${params.length}))`);
+    } else {
+      params.push(cursor.ts, cursor.id);
+      where.push(`(l.auction_datetime_utc > $${params.length-1} OR (l.auction_datetime_utc = $${params.length-1} AND l.lot_id > $${params.length}))`);
+    }
+  }
+
+  const order =
+    sort === 'asc'
+      ? `ORDER BY l.auction_datetime_utc ASC NULLS FIRST, l.lot_id ASC`
+      : `ORDER BY l.auction_datetime_utc DESC NULLS LAST, l.lot_id DESC`;
+
+  const sql = `
+    SELECT
+      l.lot_id, l.vin, l.year, l.make, l.model, l.trim, l.status,
+      l.auction_datetime_utc, l.est_retail_value_usd, l.runs_drives, l.has_keys,
+      l.primary_image_url, l.image_count, l.primary_damage, l.title_brand
+    FROM lots l
+    WHERE ${where.join(' AND ')}
+    ${order}
+    LIMIT $${params.push(limit + 1)}
+  `;
+
+  try {
+    const r = await pool.query(sql, params);
+    const rows: LotRow[] = r.rows as any;
+    const slice = rows.slice(0, limit);
+
+    const items = slice.map(row => ({
+      lotId: row.lot_id,
+      vin: row.vin,
+      year: row.year,
+      make: row.make,
+      model: row.model,
+      trim: row.trim,
+      status: row.status,
+      auctionDateTimeUtc: row.auction_datetime_utc,
+      estRetailValueUsd: row.est_retail_value_usd,
+      runsDrives: row.runs_drives,
+      hasKeys: row.has_keys,
+      primaryImageUrl: row.primary_image_url,
+      imageCount: row.image_count,
+      primaryDamage: row.primary_damage,
+      titleBrand: row.title_brand,
+      labelStatus: labelStatus(row.status, lang),
+      labelDamage: labelDamage(row.primary_damage, lang),
+      labelTitle:  labelTitle(row.title_brand, lang),
+    }));
+
+    let nextCursor: string | null = null;
+    if (rows.length > limit && slice.length > 0) {
+      // ВАЖНО: используем snake_case поля LotRow, а не camelCase DTO
+      const lastRow = slice[slice.length - 1];
+      if (lastRow.auction_datetime_utc != null) {
+        nextCursor = encodeCursor({
+          ts: lastRow.auction_datetime_utc,
+          id: lastRow.lot_id,
+          dir: sort,
+        });
+      }
+    }
+
+    return okJson(req, { items, nextCursor }, {
+      'X-RateLimit-Limit': '60',
+      'X-RateLimit-Remaining': String(rl.remaining),
+      'X-RateLimit-Reset': String(rl.reset),
+    });
+  } catch (e: any) {
+    console.error('[search] db error:', e?.message || e);
+    return errJson(req, 500, 'internal', 'Internal Server Error', {
+      'X-RateLimit-Limit': '60',
+      'X-RateLimit-Remaining': String(rl.remaining),
+      'X-RateLimit-Reset': String(rl.reset),
+    });
+  }
+}

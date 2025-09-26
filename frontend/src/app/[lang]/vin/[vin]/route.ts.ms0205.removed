@@ -1,0 +1,36 @@
+import type { NextRequest } from 'next/server';
+
+function isVinValid(vin: string): boolean {
+  const v = vin.toUpperCase();
+  if (v.length < 11 || v.length > 17) return false;
+  if (v.length === 17 && /[IOQ]/.test(v)) return false;
+  return /^[A-HJ-NPR-Z0-9]+$/.test(v);
+}
+
+async function passThroughToDetails(req: NextRequest, lang: string, vin: string) {
+  const url = new URL(`/${lang}/vin/${vin}/details`, req.url);
+  const resp = await fetch(url, { headers: { 'x-internal-ssr': '1' } });
+  const body = await resp.text();
+  const headers = new Headers(resp.headers);
+  // На 404 добавляем noindex в заголовок.
+  if (resp.status === 404) headers.set('X-Robots-Tag', 'noindex, follow');
+  return new Response(body, { status: resp.status, headers });
+}
+
+export async function GET(req: NextRequest, { params }: { params: { lang: string; vin: string }}) {
+  const { lang, vin } = params;
+  if (!isVinValid(vin)) {
+    return new Response('Not found', { status: 404, headers: { 'X-Robots-Tag': 'noindex, follow', 'content-type':'text/plain; charset=utf-8' } });
+  }
+  // Временный заглушечный маркер suppress, пока API не возвращает 410.
+  if (vin.toUpperCase() === 'ZZZSUPPRESSZZZ') {
+    return new Response('Gone', { status: 410, headers: { 'X-Robots-Tag': 'noindex, follow', 'content-type':'text/plain; charset=utf-8' } });
+  }
+  return passThroughToDetails(req, lang, vin);
+}
+
+export async function HEAD(req: NextRequest, { params }: { params: { lang: string; vin: string }}) {
+  // Реплика логики GET, но без тела.
+  const get = await GET(req, { params });
+  return new Response(null, { status: get.status, headers: get.headers });
+}

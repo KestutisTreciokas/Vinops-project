@@ -1,0 +1,26 @@
+import { Pool } from 'pg'
+
+/**
+ * Singleton Pool for API routes.
+ * - Named export: { pool }
+ * - TLS verify in production
+ * - Reasonable timeouts
+ */
+const _g = globalThis as any
+let pool: Pool = _g.__vinopsPgPool
+
+if (!pool) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,        // read-only role app_ro
+    ssl: process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: true }
+      : undefined,
+    application_name: 'vinops-web-api-v1',
+    max: 10,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 5_000
+  })
+  _g.__vinopsPgPool = pool
+}
+
+export { pool }

@@ -1,0 +1,17 @@
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: public, max-age=0, must-revalidate
+content-type: application/xml
+date: Fri, 26 Sep 2025 19:25:01 GMT
+referrer-policy: strict-origin-when-cross-origin
+referrer-policy: strict-origin-when-cross-origin
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+
+-----
+UTC: 2025-09-26 19:25:01

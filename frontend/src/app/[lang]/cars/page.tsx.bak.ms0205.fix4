@@ -1,0 +1,69 @@
+import { Suspense } from 'react'
+import type { Metadata } from 'next'
+import PageClient from './PageClient'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const dynamicParams = true
+export default function Page({ params }: { params: { lang: 'en'|'ru' } }) {
+export default function Page({ params }: { params: { lang: 'en'|'ru' } }) {
+  return (
+    <Suspense fallback={<div className="container-prose py-8 text-sm text-fg-muted">Loading…</div>}>
+      <PageClient params={params} />
+    </Suspense>
+  )
+}
+
+function isComplex(searchParams: Record<string, string | string[] | undefined>): boolean {
+  const keys = Object.keys(searchParams).filter(k => searchParams[k] !== undefined)
+  if (keys.length === 0) return false
+  if (keys.includes('cursor')) return true
+  const WHITELIST = new Set(['make','model','year_from','year_to'])
+  const allowed = keys.filter(k => WHITELIST.has(k))
+  return !(allowed.length <= 2 && keys.every(k => WHITELIST.has(k)))
+}
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const dynamicParams = true
+
+export async function generateMetadata(
+  { params, searchParams }: { params: { lang: 'en'|'ru' }, searchParams: Record<string, any> }
+) {
+  const { lang } = params
+  const PATH = '/cars'
+  const canonical = `/${lang}${PATH}`
+  const t = (en: string, ru: string) => (lang === 'ru' ? ru : en)
+  const title = t('Car catalog', 'Каталог автомобилей')
+  const description = t('Browse cars and filter by attributes.', 'Просматривайте автомобили и фильтруйте по параметрам.')
+
+  function isComplex(sp: Record<string, any>): boolean {
+    const keys = Object.keys(sp || {}).filter(k => sp[k] !== undefined && sp[k] !== '')
+    const baseAllowed = new Set(['make', 'model', 'year_from', 'year_to'])
+    const hasCursor = !!sp.cursor
+    const complexCount = keys.filter(k => !baseAllowed.has(k)).length + (keys.filter(k => baseAllowed.has(k)).length > 2 ? 1 : 0)
+    return hasCursor || complexCount > 0
+  }
+
+  const robots = isComplex(searchParams) ? { index: false, follow: true } : { index: true, follow: true }
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+      languages: {
+        en: `/en${PATH}`,
+        ru: `/ru${PATH}`,
+        'x-default': `/en${PATH}`,
+      },
+    },
+    openGraph: {
+      url: canonical,
+      title: `${title} — vinops`,
+      description,
+      type: 'website',
+    },
+    robots,
+  }
+}

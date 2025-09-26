@@ -1,0 +1,4 @@
+services:
+  web:
+    environment:
+      - DEV_SUPPRESS_VIN=4T1B11HK5JU123456

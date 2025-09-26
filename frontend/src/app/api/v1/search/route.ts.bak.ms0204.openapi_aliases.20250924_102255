@@ -1,0 +1,230 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getPool, hasDb } from '../../_lib/db'
+import { allow } from '../../_lib/rateLimit'
+import { okJson, errJson, pickIp } from '../../_lib/http'
+import { normLang, labelStatus, labelDamage, labelTitle } from '../../_lib/i18n'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+// --- Types & helpers ---
+type LotRow = {
+  lot_id: number; vin: string; year: number|null; make: string|null; model: string|null; trim: string|null;
+  status: string|null; auction_datetime_utc: string|null; est_retail_value_usd: number|null;
+  runs_drives: boolean|null; has_keys: boolean|null; primary_image_url: string|null; image_count: number|null;
+  primary_damage: string|null; title_brand: string|null
+}
+type Cursor = { dir: 'asc'|'desc'; ts: string; id: number }
+
+const ALLOWED_ORIGINS = new Set(['https://vinops.online','https://www.vinops.online'])
+const OK_CACHE  = { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' }
+const ERR_CACHE = { 'Cache-Control': 'no-store, must-revalidate' }
+const RATE_LIMIT = { limit: 60, windowSec: 60 } // 60 rpm
+
+const STATUSES = new Set([
+  'FUTURE','SCHEDULED','LIVE','ON_APPROVAL','SOLD','NO_SALE','CANCELLED','RELISTED'
+])
+
+function corsHeaders(origin: string|null): Record<string,string> {
+  const h: Record<string,string> = {
+    Vary: 'Origin, Accept-Language',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, Accept-Language',
+  }
+  if (origin && ALLOWED_ORIGINS.has(origin)) h['Access-Control-Allow-Origin'] = origin
+  return h
+}
+
+function parseBool(v: string|null): boolean|null {
+  if (v == null) return null
+  const t = v.toLowerCase()
+  if (t === 'true') return true
+  if (t === 'false') return false
+  return null
+}
+
+function strictDecodeCursor(raw: string): Cursor|null {
+  try {
+    const obj = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'))
+    if ((obj.dir === 'asc' || obj.dir === 'desc') && typeof obj.ts === 'string' && typeof obj.id === 'number') {
+      return obj as Cursor
+    }
+    return null
+  } catch { return null }
+}
+function encodeCursor(c: Cursor): string {
+  return Buffer.from(JSON.stringify(c), 'utf8').toString('base64url')
+}
+function normTs(s: string|null): string {
+  return s ?? '1970-01-01T00:00:00.000Z'
+}
+
+function pick<T>(...vals: (T|null)[]): T|undefined {
+  for (const v of vals) if (v != null) return v as T
+  return undefined
+}
+
+// ===== OPTIONS (CORS preflight) =====
+export async function OPTIONS(req: NextRequest) {
+  const h = new Headers(corsHeaders(req.headers.get('origin')))
+  h.set('Access-Control-Max-Age', '600')
+  return new NextResponse(null, { status: 204, headers: h })
+}
+
+// ===== GET /api/v1/search =====
+export async function GET(req: NextRequest) {
+  const origin = req.headers.get('origin')
+  const acceptLang = req.headers.get('accept-language') ?? undefined
+  const baseHeaders = { ...corsHeaders(origin), 'X-Api-Version': '1' } as Record<string,string>
+
+  // Rate limit per IP
+  const ip = pickIp(req) || '0.0.0.0'
+  const rl = await allow({ key: `s:search:${ip}`, limit: RATE_LIMIT.limit, windowSec: RATE_LIMIT.windowSec })
+  const rlHeaders = {
+    'X-RateLimit-Limit': String(RATE_LIMIT.limit),
+    'X-RateLimit-Remaining': String(rl.remaining),
+    'X-RateLimit-Reset': String(rl.reset),
+  }
+  if (!rl.ok) {
+    return errJson(req, 429, 'rate_limited', 'Too Many Requests', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+  }
+
+  const url = new URL(req.url)
+
+  // --- Parameters (OpenAPI camelCase + backward-compat snake_case) ---
+  const lang = normLang(pick(url.searchParams.get('lang'), acceptLang) ?? null)
+
+  const limitParam = Number(pick(url.searchParams.get('limit'), '20'))
+  if (!Number.isFinite(limitParam) || limitParam < 1) {
+    return errJson(req, 400, 'bad_request', 'limit must be >=1 and <=50', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+  }
+  const limit = Math.min(limitParam, 50)
+
+  const make  = url.searchParams.get('make')  || null
+  const model = url.searchParams.get('model') || null
+
+  const yearFrom = (pick(url.searchParams.get('yearFrom'), url.searchParams.get('year_from')) ?? null)
+  const yearTo   = (pick(url.searchParams.get('yearTo'),   url.searchParams.get('year_to'))   ?? null)
+  const yFrom = yearFrom != null ? Number(yearFrom) : null
+  const yTo   = yearTo   != null ? Number(yearTo)   : null
+  if ((yFrom && !Number.isFinite(yFrom)) || (yTo && !Number.isFinite(yTo))) {
+    return errJson(req, 400, 'bad_request', 'yearFrom/yearTo must be integers', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+  }
+  if (yFrom && yTo && yFrom > yTo) {
+    return errJson(req, 422, 'invalid_range', 'yearFrom must be <= yearTo', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+  }
+
+  const statusParam = url.searchParams.get('status')
+  const status = statusParam ? statusParam.toUpperCase() : null
+  if (status && !STATUSES.has(status)) {
+    return errJson(req, 400, 'invalid_status', 'status is not allowed', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+  }
+
+  const damage = url.searchParams.get('damage') || null
+  const titleBrand = (pick(url.searchParams.get('titleBrand'), url.searchParams.get('title_brand')) ?? null)
+  const runsDrives = parseBool(pick(url.searchParams.get('runsDrives'), url.searchParams.get('runs_drives')) ?? null)
+  const hasKeys    = parseBool(pick(url.searchParams.get('hasKeys'),    url.searchParams.get('has_keys'))    ?? null)
+
+  const sortRaw = url.searchParams.get('sort') || '-auctionDateTimeUtc'
+  let dir: 'asc'|'desc'
+  if (sortRaw === '+auctionDateTimeUtc') dir = 'asc'
+  else if (sortRaw === '-auctionDateTimeUtc') dir = 'desc'
+  else return errJson(req, 400, 'invalid_sort', 'sort must be one of: ±auctionDateTimeUtc', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+
+  // Cursor (validate before DB/no-DB split)
+  const cursorRaw = url.searchParams.get('cursor')
+  let cursor: Cursor|null = null
+  if (cursorRaw) {
+    cursor = strictDecodeCursor(cursorRaw)
+    if (!cursor) {
+      return errJson(req, 422, 'invalid_cursor', 'cursor is malformed', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+    }
+    // forbid mixing cursor direction and sort
+    if (cursor.dir !== dir) {
+      return errJson(req, 422, 'invalid_cursor', 'cursor direction mismatches sort', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+    }
+  }
+
+  // No-DB fallback (for early QA smoke)
+  if (!hasDb) {
+    return okJson(req, { items: [], nextCursor: null }, { ...baseHeaders, ...OK_CACHE, ...rlHeaders, 'X-Fallback': 'no-db' })
+  }
+
+  // --- Build SQL (keyset on auction_datetime_utc, lot_id) ---
+  const pool = getPool()
+  const params: any[] = []
+  const where: string[] = ['l.status IS NOT NULL']
+
+  if (make)       { params.push(make);     where.push(`l.make = $${params.length}`) }
+  if (model)      { params.push(model);    where.push(`l.model = $${params.length}`) }
+  if (yFrom)      { params.push(yFrom);    where.push(`l.year >= $${params.length}`) }
+  if (yTo)        { params.push(yTo);      where.push(`l.year <= $${params.length}`) }
+  if (status)     { params.push(status);   where.push(`l.status = $${params.length}`) }
+  if (damage)     { params.push(damage);   where.push(`l.primary_damage = $${params.length}`) }
+  if (titleBrand) { params.push(titleBrand); where.push(`l.title_brand = $${params.length}`) }
+  if (runsDrives !== null) { params.push(runsDrives); where.push(`l.runs_drives = $${params.length}`) }
+  if (hasKeys    !== null) { params.push(hasKeys);    where.push(`l.has_keys = $${params.length}`) }
+
+  if (cursor) {
+    // (ts,id) keyset condition depends on direction
+    if (dir === 'desc') {
+      params.push(cursor.ts, cursor.id)
+      where.push(`(l.auction_datetime_utc < $${params.length-1} OR (l.auction_datetime_utc = $${params.length-1} AND l.lot_id < $${params.length}))`)
+    } else {
+      params.push(cursor.ts, cursor.id)
+      where.push(`(l.auction_datetime_utc > $${params.length-1} OR (l.auction_datetime_utc = $${params.length-1} AND l.lot_id > $${params.length}))`)
+    }
+  }
+
+  const order = dir === 'asc'
+    ? `ORDER BY l.auction_datetime_utc ASC NULLS FIRST, l.lot_id ASC`
+    : `ORDER BY l.auction_datetime_utc DESC NULLS LAST,  l.lot_id DESC`
+
+  const sql = `
+    SELECT
+      l.lot_id, l.vin, l.year, l.make, l.model, l.trim, l.status,
+      l.auction_datetime_utc, l.est_retail_value_usd, l.runs_drives, l.has_keys,
+      l.primary_image_url, l.image_count, l.primary_damage, l.title_brand
+    FROM lots l
+    WHERE ${where.join(' AND ')}
+    ${order}
+    LIMIT ${limit + 1};
+  `
+
+  try {
+    const { rows } = await pool.query<LotRow>(sql, params)
+    const slice = rows.slice(0, limit)
+
+    const items = slice.map(row => ({
+      lotId: row.lot_id,
+      vin: row.vin,
+      year: row.year,
+      make: row.make,
+      model: row.model,
+      trim: row.trim,
+      status: row.status,
+      auctionDateTimeUtc: row.auction_datetime_utc,
+      estRetailValueUsd: row.est_retail_value_usd,
+      runsDrives: row.runs_drives,
+      hasKeys: row.has_keys,
+      primaryImageUrl: row.primary_image_url,
+      imageCount: row.image_count,
+      primaryDamage: row.primary_damage,
+      titleBrand: row.title_brand,
+      // i18n human labels (from dictionaries)
+      labelStatus: labelStatus(row.status, lang),
+      labelDamage: labelDamage(row.primary_damage, lang),
+      labelTitle:  labelTitle (row.title_brand, lang),
+    }))
+
+    let nextCursor: string|null = null
+    if (rows.length > limit) {
+      const last = slice[slice.length - 1]
+      nextCursor = encodeCursor({ dir, ts: normTs(last.auctionDateTimeUtc), id: last.lotId })
+    }
+
+    return okJson(req, { items, nextCursor }, { ...baseHeaders, ...OK_CACHE, 'Vary': 'Origin, Accept-Language' , ...rlHeaders })
+  } catch (e: any) {
+    return errJson(req, 500, 'server_error', 'internal error', { ...baseHeaders, ...ERR_CACHE, ...rlHeaders })
+  }
+}

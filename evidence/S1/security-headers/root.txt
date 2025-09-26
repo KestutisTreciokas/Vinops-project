@@ -1,0 +1,17 @@
+HTTP/2 404 
+alt-svc: h3=":443"; ma=2592000
+cache-control: no-cache, no-store, max-age=0, must-revalidate
+content-type: text/html; charset=utf-8
+date: Fri, 26 Sep 2025 19:25:01 GMT
+link: </_next/static/media/1510e0c1ce13e1fa-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/1e9c5f05159fb382-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/28b6baa497ac9c87-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/50e46f954eedc33c-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/75d08c222fbf1da5-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2"
+referrer-policy: strict-origin-when-cross-origin
+referrer-policy: strict-origin-when-cross-origin
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+
+-----
+UTC: 2025-09-26 19:25:01

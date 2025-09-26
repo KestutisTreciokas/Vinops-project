@@ -1,0 +1,10 @@
+## CMD: bash -lc df -h || true
+## TIME(Europe/Warsaw): 2025-09-26 18:08:37 CEST
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           794M  1.3M  793M   1% /run
+/dev/sda1        79G   41G   39G  52% /
+tmpfs           3.9G     0  3.9G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+overlay          79G   41G   39G  52% /var/lib/docker/overlay2/470ebf164a69c37671d786b98ce086d472995650bd7e13c49d7ab4e0e0944721/merged
+tmpfs           794M  4.0K  794M   1% /run/user/0
+overlay          79G   41G   39G  52% /var/lib/docker/overlay2/4f13c749af8be9a456d6adc45fd17d6703f68441f9fa3e6a65821ab26efade59/merged

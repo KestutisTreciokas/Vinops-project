@@ -1,0 +1,57 @@
+import type { Metadata } from 'next';
+import { searchLotsSSR } from '@/app/_lib/api';
+
+type Params = { lang: 'en'|'ru' };
+type Search = {
+  make?: string; model?: string;
+  year_from?: string; year_to?: string;
+  status?: string; damage?: string; title_brand?: string;
+  runs_drives?: string; has_keys?: string;
+  sort?: string; cursor?: string;
+};
+
+function isComplex(sp: URLSearchParams): boolean {
+  const keys = ['make','model','year_from','year_to','status','damage','title_brand','runs_drives','has_keys','sort','cursor'];
+  const active = keys.filter(k => sp.has(k) && (sp.get(k) ?? '') !== '');
+  const onlySimple = active.every(k => ['make','model','year_from','year_to'].includes(k));
+  return sp.has('cursor') || (active.length > 2 && !(onlySimple && active.length <= 2));
+}
+
+export async function generateMetadata({ searchParams }: { searchParams: Record<string,string|undefined> }): Promise<Metadata> {
+  // Duplicate robots policy in <head> (middleware adds X-Robots-Tag)
+  const sp = new URLSearchParams();
+  for (const [k,v] of Object.entries(searchParams || {})) if (v) sp.set(k, v);
+  const complex = isComplex(sp);
+  return {
+    robots: {
+      index: complex ? false : true,
+      follow: true,
+    }
+  };
+}
+
+export default async function Page({ params, searchParams }: { params: Params, searchParams: Search }) {
+  const lang = (params.lang === 'ru' ? 'ru' : 'en') as 'en'|'ru';
+  // Server-side fetch first page (no bailout)
+  const data = await searchLotsSSR({ ...searchParams, lang });
+  const items = Array.isArray(data?.items) ? data.items : [];
+
+  return (
+    <main className="container mx-auto px-4 py-6">
+      <h1 className="h1">{lang === 'ru' ? 'Каталог' : 'Cars'}</h1>
+      <section className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {items.length === 0 ? (
+          <div className="text-sm text-muted-foreground">{lang === 'ru' ? 'Нет данных' : 'No data yet'}</div>
+        ) : (
+          items.slice(0, 12).map((it: any) => (
+            <article key={`${it.lotId || it.lot_id || Math.random()}`} className="rounded-xl border p-3">
+              <div className="text-sm font-medium">{it?.year} {it?.make} {it?.model}</div>
+              <div className="text-xs text-muted-foreground">VIN: {it?.vin}</div>
+              {it?.status && <div className="text-xs mt-1">Status: {it.status}</div>}
+            </article>
+          ))
+        )}
+      </section>
+    </main>
+  );
+}

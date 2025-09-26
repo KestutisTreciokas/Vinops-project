@@ -1,37 +1,73 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient, QueryResult } from 'pg';
+
+type Ctx = { traceId?: string; requestId?: string };
 
 let _pool: Pool | null = null;
 
 export function getPool(): Pool {
   if (_pool) return _pool;
-
-  // Только совместимые с типами поля PoolConfig:
+  const cs = process.env.DATABASE_URL;
+  if (!cs) throw new Error('DATABASE_URL is not set');
   _pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    max: Number(process.env.PGPOOL_MAX || 10),
-    idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_MS || 10_000),
-    ssl: process.env.PGSSL_DISABLE === '1' ? undefined : { rejectUnauthorized: true },
+    connectionString: cs,
+    ssl: { rejectUnauthorized: true },
   });
-
-  // На каждом подключении выставляем параметры сессии.
-  _pool.on('connect', (client) => {
-    const appName = "vinops.api.v1";
-    const stmtMs  = Number(process.env.PG_STMT_MS  || 0);   // server-side statement_timeout (ms)
-    const idleTx  = Number(process.env.PG_IDLE_TX_MS || 3000); // idle_in_transaction_session_timeout (ms)
-
-    const q: string[] = [
-      `SET application_name = '${appName}'`,
-      `SET idle_in_transaction_session_timeout = ${idleTx}`,
-    ];
-    if (stmtMs > 0) q.push(`SET statement_timeout = ${stmtMs}`);
-
-    // Последовательно, игнорируя возможные ошибки SET.
-    q.reduce((p, sql) => p.then(() => client.query(sql).catch(()=>{})), Promise.resolve());
+  _pool.on('connect', async (client: PoolClient) => {
+    // Session GUC (read-only + sane timeouts + UTC + app name)
+    await client.query(`SET TIME ZONE 'UTC'`);
+    await client.query(`SET application_name TO 'vinops.frontend'`);
+    await client.query(`SET default_transaction_read_only = on`);
+    await client.query(`SET statement_timeout = '2000ms'`);
+    await client.query(`SET lock_timeout = '1000ms'`);
+    await client.query(`SET idle_in_transaction_session_timeout = '5000ms'`);
   });
-
-  _pool.on('error', (err) => {
-    console.error('[pg pool error]', (err && (err as any).message) || err);
-  });
-
   return _pool;
+}
+
+const READONLY_RE = /^\s*(select|with)\b/i;
+
+export async function query<T = any>(
+  sql: string,
+  params: any[] = [],
+  ctx: Ctx = {}
+): Promise<QueryResult<T>> {
+  if (!READONLY_RE.test(sql)) {
+    console.log(JSON.stringify({
+      lvl: 'warn', msg: 'db.query.block', code: 'READONLY_GUARD',
+      sql: sql.slice(0, 120), traceId: ctx.traceId || null, requestId: ctx.requestId || null
+    }));
+    throw new Error('READONLY_GUARD: only SELECT/WITH allowed');
+  }
+  const pool = getPool();
+  const t0 = Date.now();
+  try {
+    const res = await pool.query<T>(sql, params);
+    console.log(JSON.stringify({
+      lvl: 'info', msg: 'db.query.ok', durMs: Date.now() - t0,
+      rowCount: res.rowCount, traceId: ctx.traceId || null, requestId: ctx.requestId || null
+    }));
+    return res;
+  } catch (e: any) {
+    const durMs = Date.now() - t0;
+    console.log(JSON.stringify({
+      lvl: 'error', msg: 'db.query.fail', durMs, error: e.code || e.message,
+      traceId: ctx.traceId || null, requestId: ctx.requestId || null
+    }));
+    // one light retry on transient db errors
+    const code = e.code || '';
+    if (/(40001|55P03|53300|53400|57P01|57P03)/.test(code)) {
+      await new Promise(r => setTimeout(r, 100));
+      const res = await pool.query<T>(sql, params);
+      console.log(JSON.stringify({
+        lvl: 'info', msg: 'db.query.retry_ok', durMs: Date.now() - t0,
+        rowCount: res.rowCount, traceId: ctx.traceId || null, requestId: ctx.requestId || null
+      }));
+      return res;
+    }
+    throw e;
+  }
+}
+
+export function hasDb(): boolean {
+  return !!process.env.DATABASE_URL;
 }

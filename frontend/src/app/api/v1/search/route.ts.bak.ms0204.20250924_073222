@@ -1,0 +1,295 @@
+import { NextRequest } from 'next/server';
+import { pool } from '../../_lib/db';
+
+export const dynamic = 'force-dynamic'; // поисковый API не кэшируем на build
+export const runtime = 'nodejs';
+
+type Lang = 'en' | 'ru';
+type StatusCode = number;
+
+const LIMIT_MAX = 50;
+const RL_WINDOW_MS = 60_000;
+const RL_LIMIT = 60; // 60 rpm
+const allowedOrigins = new Set(['https://vinops.online','https://www.vinops.online']);
+
+const rateBucket = new Map<string, {count:number; resetAt:number}>();
+
+function now() { return Date.now(); }
+
+function ipFrom(req: NextRequest): string {
+  const fwd = req.headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
+  const real = (req.headers.get('x-real-ip') || '').trim();
+  if (real) return real;
+  try { return (req as any).ip ?? 'unknown'; } catch { return 'unknown'; }
+}
+
+function rlConsume(key: string) {
+  const t = now();
+  const slot = rateBucket.get(key);
+  if (!slot || t >= slot.resetAt) {
+    const next = {count: 1, resetAt: t + RL_WINDOW_MS};
+    rateBucket.set(key, next);
+    return {ok:true, limit:RL_LIMIT, remaining:RL_LIMIT-1, resetAt:next.resetAt};
+  }
+  if (slot.count >= RL_LIMIT) {
+    return {ok:false, limit:RL_LIMIT, remaining:0, resetAt:slot.resetAt};
+  }
+  slot.count++;
+  return {ok:true, limit:RL_LIMIT, remaining:RL_LIMIT-slot.count, resetAt:slot.resetAt};
+}
+
+function b64e(obj: any) { return Buffer.from(JSON.stringify(obj)).toString('base64url'); }
+function b64d(s: string) { return JSON.parse(Buffer.from(s, 'base64url').toString('utf8')); }
+
+function toBool(v: string | null): boolean | undefined {
+  if (v == null) return undefined;
+  const s = v.toLowerCase();
+  if (['1','true','yes','y'].includes(s)) return true;
+  if (['0','false','no','n'].includes(s)) return false;
+  return undefined;
+}
+
+function jsonError(code: StatusCode, errCode: string, message: string, traceId: string) {
+  return new Response(JSON.stringify({ error: { code: errCode, message }}, null, 2), {
+    status: code,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Request-Id': traceId,
+    }
+  });
+}
+
+function label(lang: Lang, code: string): string {
+  // Базовый словарь; неизвестные — как есть.
+  const map: Record<string, {en:string; ru:string}> = {
+    ACTIVE: {en:'Active', ru:'Активен'},
+    FUTURE: {en:'Upcoming', ru:'Скоро торги'},
+    SOLD:   {en:'Sold', ru:'Продано'},
+    NO_SALE:{en:'No sale', ru:'Не продано'},
+    APPROVAL:{en:'On approval', ru:'На подтверждении'},
+    // Дополняется по мере нормализации таксономий (см. SSOT)
+  };
+  const key = (code||'').toUpperCase();
+  const v = map[key];
+  if (!v) return code;
+  return lang === 'ru' ? v.ru : v.en;
+}
+
+function toImageUrl(storageKey: string | null): string | null {
+  if (!storageKey) return null;
+  const origin = process.env.PUBLIC_IMG_DOMAIN || 'img.vinops.online';
+  const proto = origin.startsWith('http') ? '' : 'https://';
+  return `${proto}${origin}/${storageKey}`.replace(/([^:])\/{2,}/g,'$1/'); // на всякий
+}
+
+export async function GET(req: NextRequest) {
+  const traceId = crypto.randomUUID();
+  const url = new URL(req.url);
+  const origin = req.headers.get('origin') || '';
+  const headers: Record<string,string> = {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Vary': 'Origin, Accept-Language',
+    'X-Api-Version': '1',
+    'X-Request-Id': traceId,
+  };
+  if (allowedOrigins.has(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Methods'] = 'GET';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept-Language';
+  }
+
+  // Rate limit (per IP)
+  const ip = ipFrom(req);
+  const rl = rlConsume(`search:${ip}`);
+  headers['X-RateLimit-Limit'] = String(rl.limit);
+  headers['X-RateLimit-Remaining'] = String(rl.remaining);
+  headers['X-RateLimit-Reset'] = String(Math.ceil(rl.resetAt/1000));
+  if (!rl.ok) {
+    return new Response(JSON.stringify({ error: { code: 'rate_limited', message: 'Too many requests' }}, null, 2), {
+      status: 429,
+      headers
+    });
+  }
+
+  const searchParams = url.searchParams;
+  const lang = (searchParams.get('lang') as Lang) === 'ru' ? 'ru' : 'en';
+
+  // filters
+  const make = searchParams.get('make')?.trim() || null;
+  const model = searchParams.get('model')?.trim() || null;
+  const status = searchParams.get('status')?.trim() || null;
+  const yearFromStr = searchParams.get('year_from');
+  const yearToStr   = searchParams.get('year_to');
+  const runsDrives  = toBool(searchParams.get('runs_drives'));
+  const hasKeys     = toBool(searchParams.get('has_keys'));
+  const cursorStr   = searchParams.get('cursor');
+  const limitStr    = searchParams.get('limit');
+
+  const limitRaw = limitStr ? Number(limitStr) : 20;
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(1, Math.trunc(limitRaw)), LIMIT_MAX) : 20;
+
+  const year_from = yearFromStr ? Number(yearFromStr) : undefined;
+  const year_to   = yearToStr   ? Number(yearToStr)   : undefined;
+
+  if ((year_from && !Number.isInteger(year_from)) || (year_to && !Number.isInteger(year_to))) {
+    return jsonError(422, 'invalid_year', 'year_from/year_to must be integers', traceId);
+  }
+  if (year_from && year_to && year_from > year_to) {
+    return jsonError(422, 'invalid_year_range', 'year_from must be <= year_to', traceId);
+  }
+
+  // Decode cursor (keyset by auction_datetime_utc DESC, id ASC)
+  let cursor: { lastAuction: string; lastId: number } | null = null;
+  if (cursorStr) {
+    try {
+      const c = b64d(cursorStr);
+      if (typeof c?.lastAuction === 'string' && typeof c?.lastId === 'number') {
+        cursor = { lastAuction: c.lastAuction, lastId: c.lastId };
+      } else {
+        return jsonError(400, 'bad_cursor', 'cursor is malformed', traceId);
+      }
+    } catch {
+      return jsonError(400, 'bad_cursor', 'cursor base64 is invalid', traceId);
+    }
+  }
+
+  // Optional dynamic columns (damage/title) — включаем фильтры только если колонки существуют
+  let hasDamage = false, hasTitleBrand = false, hasIsRemoved = false;
+  try {
+    const colRes = await pool.query(`
+      SELECT column_name FROM information_schema.columns WHERE table_name='lots' AND column_name = ANY($1::text[])
+    `, [[ 'damage_primary', 'title_brand', 'is_removed' ]]);
+    const set = new Set(colRes.rows.map(r => r.column_name));
+    hasDamage = set.has('damage_primary');
+    hasTitleBrand = set.has('title_brand');
+    hasIsRemoved = set.has('is_removed');
+  } catch { /* fallback ниже */ }
+
+  const damage = hasDamage ? (searchParams.get('damage')?.trim() || null) : null;
+  const titleBrand = hasTitleBrand ? (searchParams.get('title_brand')?.trim() || null) : null;
+
+  // SQL builder
+  const where: string[] = [];
+  const values: any[] = [];
+
+  // Политика скрытия/удаления
+  if (hasIsRemoved) where.push(`COALESCE(l.is_removed,false)=false`);
+
+  if (make)        { values.push(make);        where.push(`l.make = $${values.length}`); }
+  if (model)       { values.push(model);       where.push(`l.model = $${values.length}`); }
+  if (status)      { values.push(status);      where.push(`l.status = $${values.length}`); }
+  if (typeof runsDrives === 'boolean') { values.push(runsDrives); where.push(`l.runs_drives = $${values.length}`); }
+  if (typeof hasKeys === 'boolean')    { values.push(hasKeys);    where.push(`l.has_keys = $${values.length}`); }
+  if (year_from)   { values.push(year_from);   where.push(`l.year >= $${values.length}`); }
+  if (year_to)     { values.push(year_to);     where.push(`l.year <= $${values.length}`); }
+  if (damage && hasDamage)     { values.push(damage);     where.push(`l.damage_primary = $${values.length}`); }
+  if (titleBrand && hasTitleBrand) { values.push(titleBrand); where.push(`l.title_brand = $${values.length}`); }
+
+  // keyset cursor: auction_datetime_utc DESC, id ASC
+  if (cursor) {
+    values.push(cursor.lastAuction);
+    values.push(cursor.lastId);
+    where.push(`(l.auction_datetime_utc < $${values.length-1} OR (l.auction_datetime_utc = $${values.length-1} AND l.id > $${values.length}))`);
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  // limit+1 для nextCursor
+  values.push(limit + 1);
+  const limitParam = `$${values.length}`;
+
+  const sql = `
+    SELECT
+      l.id               AS lot_id,
+      l.vin              AS vin,
+      l.year             AS year,
+      l.make             AS make,
+      l.model            AS model,
+      l.trim             AS trim,
+      l.status           AS status,
+      l.site_code        AS site_code,
+      l.city             AS city,
+      l.region           AS region,
+      l.country          AS country,
+      l.auction_datetime_utc AS auction_datetime_utc,
+      l.est_retail_value_usd AS est_retail_value_usd,
+      l.runs_drives      AS runs_drives,
+      l.has_keys         AS has_keys,
+      (
+        SELECT storage_key
+        FROM images i
+        WHERE i.lot_id = l.id AND i.variant = 'xl'
+        ORDER BY i.seq ASC
+        LIMIT 1
+      ) AS primary_image_storage_key,
+      (
+        SELECT COUNT(*)::int
+        FROM images i2
+        WHERE i2.lot_id = l.id AND i2.variant IN ('thumb','md','xl')
+      ) AS image_count
+    FROM lots l
+    ${whereSql}
+    ORDER BY l.auction_datetime_utc DESC NULLS LAST, l.id ASC
+    LIMIT ${limitParam}
+  `;
+
+  let rows: any[] = [];
+  try {
+    const t0 = performance.now();
+    const res = await pool.query(sql, values);
+    const t1 = performance.now();
+
+    rows = res.rows as any[];
+
+    // Трассировка минимальная
+    headers['Server-Timing'] = `db;dur=${(t1-t0).toFixed(1)}`;
+  } catch (e:any) {
+    console.error('[search] query failed', e?.message);
+    return jsonError(500, 'db_error', 'Database query failed', traceId);
+  }
+
+  // Формируем выдачу и nextCursor
+  const more = rows.length > limit;
+  if (more) rows = rows.slice(0, limit);
+
+  const items = rows.map(r => {
+    const statusCode = (r.status ?? '') as string;
+    return {
+      lotId: r.lot_id as number,
+      vin: r.vin as string,
+      year: r.year as number | null,
+      make: r.make as string | null,
+      model: r.model as string | null,
+      trim: r.trim as string | null,
+      status: {
+        code: statusCode || null,
+        label: statusCode ? label(lang, statusCode) : null,
+      },
+      siteCode: r.site_code as string | null,
+      city: r.city as string | null,
+      region: r.region as string | null,
+      country: r.country as string | null,
+      auctionDateTimeUtc: r.auction_datetime_utc ? new Date(r.auction_datetime_utc).toISOString() : null,
+      estRetailValueUsd: r.est_retail_value_usd != null ? Number(r.est_retail_value_usd) : null,
+      runsDrives: typeof r.runs_drives === 'boolean' ? r.runs_drives : null,
+      hasKeys: typeof r.has_keys === 'boolean' ? r.has_keys : null,
+      primaryImageUrl: toImageUrl(r.primary_image_storage_key ?? null),
+      imageCount: r.image_count ?? 0,
+    };
+  });
+
+  let nextCursor: string | null = null;
+  if (more && rows.length) {
+    const last = rows[rows.length-1];
+    nextCursor = b64e({ lastAuction: last.auction_datetime_utc, lastId: last.lot_id });
+  }
+
+  headers['Cache-Control'] = 'public, max-age=30, stale-while-revalidate=120';
+
+  return new Response(JSON.stringify({ items, nextCursor }, null, 2), {
+    status: 200,
+    headers
+  });
+}
