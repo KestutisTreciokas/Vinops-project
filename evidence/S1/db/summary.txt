@@ -1,0 +1,4 @@
+DB_URL(masked): 18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+Parsed: FQDN=db PORT=5432 sslmode=UNKNOWN 
+psql: FOUND
+Artifacts at: /tmp/db-passport

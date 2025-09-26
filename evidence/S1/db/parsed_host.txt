@@ -1,0 +1,3 @@
+FQDN=db
+PORT=5432
+sslmode=UNKNOWN

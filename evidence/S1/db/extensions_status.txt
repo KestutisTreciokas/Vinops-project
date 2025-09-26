@@ -1,0 +1,4 @@
+pg_stat_statements=OK
+pg_trgm=OK
+pgcrypto=OK
+citext=OK

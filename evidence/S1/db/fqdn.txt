@@ -1,0 +1,3 @@
+FQDN: 418a052549dc7dac1163fd68.twc1.net
+PORT: 5432
+TLS client: sslmode=verify-full (обязательно)

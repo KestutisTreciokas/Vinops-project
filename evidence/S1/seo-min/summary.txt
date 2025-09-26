@@ -1,0 +1,5 @@
+robots_has_sitemap_line=YES
+robots_ct=content-type: text/plain
+sitemap_ct=content-type: application/xml
+robots_status=HTTP/2 200 
+sitemap_status=HTTP/2 200 

@@ -1,0 +1,136 @@
+/root/work/vinops.restore/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/security/tls-postgres.md:6:- Использовать TLS: `sslmode=verify-full`
+/root/work/vinops.restore/security/tls-postgres.md:12:  psql "hostaddr=192.168.0.5 host=418a052549dc7dac1163fd68.twc1.net port=5432 dbname=vinops user=app_ro sslmode=verify-full sslrootcert=/etc/vinops/pg/ca.crt"
+/root/work/vinops.restore/ARCHITECTURE.md:5:- Connection: `DATABASE_URL` (role `app_ro`). TLS defaults to **verify-full**; `PGSSLMODE=disable/allow/prefer` is rejected in production.
+/root/work/vinops.restore/ARCHITECTURE.md:21:- `DATABASE_URL`: libpq-style DSN.
+/root/work/vinops.restore/ARCHITECTURE.md:22:- `PGSSLMODE`: `verify-full` (default) | `verify-ca` | `require|prefer|allow|disable` (non-prod only).
+/root/work/vinops.restore/docker-compose.prod.yml:11:      # DATABASE_URL задаётся через env/секреты окружения (не в репо)
+/root/work/vinops.restore/_logs/0555.log:93:     7	const DATABASE_URL = process.env.DATABASE_URL || '';
+/root/work/vinops.restore/_logs/0555.log:95:     9	const pool: Pool = (globalThis as any).__vinops_pool || new Pool({ connectionString: DATABASE_URL || undefined, ssl });
+/root/work/vinops.restore/_logs/0351.log:158:DATABASE_URL: MISSING
+/root/work/vinops.restore/_logs/0351.log:163:[psql found] — trying safe read-only checks via $DATABASE_URL
+/root/work/vinops.restore/_logs/0351.log:164:[SKIP] DATABASE_URL not set in host shell
+/root/work/vinops.restore/_logs/ms02.log:40:[SKIP] DATABASE_URL/psql нет — пропуск runtime cross-check
+/root/work/vinops.restore/_logs/<NAME>.20250926T021613Z.log:463:    16	const connString = process.env.DATABASE_URL || '';
+/root/work/vinops.restore/_logs/<NAME>.20250926T021613Z.log:465:    18	  console.error('[db] DATABASE_URL is not set');
+/root/work/vinops.restore/_logs/0539.log:463:    16	const connString = process.env.DATABASE_URL || '';
+/root/work/vinops.restore/_logs/0539.log:465:    18	  console.error('[db] DATABASE_URL is not set');
+/root/work/vinops.restore/_logs/0358.log:58:     7	const cn = process.env.DATABASE_URL;
+/root/work/vinops.restore/_logs/<NAME>.20250925T125403Z.log:712:>>> presence of NEXT_PUBLIC_BASE_URL / DATABASE_URL (masked)
+/root/work/vinops.restore/infra/network/access.md:10:- Prod-подключения всегда с TLS: `sslmode=verify-full` (см. security/tls-postgres.md).
+/root/work/vinops.restore/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/docs/RUNBOOKS.md:8:PSQL_CONN='psql "hostaddr=192.168.0.5 host=418a052549dc7dac1163fd68.twc1.net port=5432 dbname=vinops user=db_admin sslmode=verify-full sslrootcert=/etc/vinops/pg/ca.crt"'
+/root/work/vinops.restore/meta/SECRETS.md:4:- DB_PASSWORD, DATABASE_URL (с паролем)
+/root/work/vinops.restore/context/ms-S1-01_20250919T194511Z/02_compose_config.full.yaml:62:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/mini-sprint-1_20250919T194728Z/compose.config.yaml:62:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_121331-Europe_Warsaw/06_docker/compose.config.yml:19:time="2025-09-20T13:13:31+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-20_121331-Europe_Warsaw/06_docker/compose.config.yml:36:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-20_121331-Europe_Warsaw/06_docker/compose.config.yml:123:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_121331-Europe_Warsaw/06_docker/inspect-vinopsrestore-web-1.json:201:        "DATABASE_URL=***REDACTED***",
+/root/work/vinops.restore/context/context-2025-09-20_121331-Europe_Warsaw/06_docker/compose.txt:13:time="2025-09-20T13:13:32+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-20_121505-Europe_Warsaw/06_docker/compose.config.yml:8:time="2025-09-20T13:15:05+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-20_121505-Europe_Warsaw/06_docker/compose.config.yml:36:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-20_121505-Europe_Warsaw/06_docker/compose.config.yml:123:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_121505-Europe_Warsaw/06_docker/inspect-vinopsrestore-web-1.json:201:        "DATABASE_URL=***REDACTED***",
+/root/work/vinops.restore/context/context-2025-09-20_121505-Europe_Warsaw/06_docker/compose.txt:17:time="2025-09-20T13:15:05+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-20_011445-Europe/Warsaw/docker/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_011445-Europe/Warsaw/docker/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/docker/compose_config.yaml:11:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/docker/compose_config.yaml:98:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/repo/build_context_notes.txt:13:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/repo/build_context_notes.txt:100:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/config/compose/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/config/compose/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-20_011624-Europe/Warsaw/docker/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_011624-Europe/Warsaw/docker/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/db_cron.txt:13:time="2025-09-19T21:35:32+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/caddy_cron.txt:22:time="2025-09-19T21:35:32+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/docker/compose_config.yaml:11:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/docker/compose_config.yaml:98:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/docker/db_env.txt:10:time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/docker/caddy_env.txt:16:time="2025-09-19T21:35:29+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/docker/db_ports_inside.txt:12:time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/docker/caddy_ports_inside.txt:10:time="2025-09-19T21:35:29+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/repo/build_context_notes.txt:13:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/repo/build_context_notes.txt:100:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/config/compose/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/config/compose/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/db/table_sizes.txt:12:time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/db/tables.txt:16:time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/db/conninfo.txt:10:time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-20_121333-Europe_Warsaw/06_docker/compose.config.yml:7:time="2025-09-20T13:13:33+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-20_121333-Europe_Warsaw/06_docker/compose.config.yml:36:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-20_121333-Europe_Warsaw/06_docker/compose.config.yml:123:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_121333-Europe_Warsaw/06_docker/inspect-vinopsrestore-web-1.json:201:        "DATABASE_URL=***REDACTED***",
+/root/work/vinops.restore/context/context-2025-09-20_121333-Europe_Warsaw/06_docker/compose.txt:15:time="2025-09-20T13:13:34+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/docker/compose_config.yaml:11:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/docker/compose_config.yaml:98:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/repo/build_context_notes.txt:13:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/repo/build_context_notes.txt:100:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/config/compose/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/config/compose/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/docker/compose_config.yaml:11:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/docker/compose_config.yaml:98:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/docker/web_env.txt:4:DATABASE_URL=postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/docker/inspect_web.json:199:                "DATABASE_URL=postgres://***:***@db:5432/vinops",
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/repo/build_context_notes.txt:13:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/repo/build_context_notes.txt:100:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/config/compose/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/config/compose/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-20_011650-Europe/Warsaw/docker/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_011650-Europe/Warsaw/docker/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/06_docker/compose_config.yaml:6:time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/06_docker/compose_config.yaml:35:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/06_docker/compose_ps.txt:3:time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/15_configs/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/15_configs/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/14_logs/db.txt:4:time="2025-09-23T19:37:21+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/14_logs/proxy.txt:6:time="2025-09-23T19:37:21+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/14_logs/web.txt:9:time="2025-09-23T19:37:21+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+/root/work/vinops.restore/context/context-2025-09-23_183720-Europe_Warsaw/11_db/README-UNKNOWN.txt:1:UNKNOWN (no PG* env for psql). HowTo: export PGHOST/PGUSER/PGDATABASE/PGSSLMODE=verify-full PGSSLROOTCERT=/etc/vinops/pg/ca.crt
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/docker/compose_config.yaml:11:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/docker/compose_config.yaml:98:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/repo/build_context_notes.txt:13:      DATABASE_URL: ""
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/repo/build_context_notes.txt:100:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/config/compose/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/config/compose/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/context/context-2025-09-20_011636-Europe/Warsaw/docker/docker-compose.db.yml:18:      DATABASE_URL: postgres://***:***@db:5432/vinops
+/root/work/vinops.restore/context/context-2025-09-20_011636-Europe/Warsaw/docker/docker-compose.yml:27:      DATABASE_URL: ${DATABASE_URL}
+/root/work/vinops.restore/frontend/.bak/db.ts.20250926_140136:8:  const url = process.env.DATABASE_URL;
+/root/work/vinops.restore/frontend/.bak/db.ts.20250926_140136:9:  if (!url) throw new Error('DATABASE_URL is not set');
+/root/work/vinops.restore/frontend/.backup.ms0202_03/db.ts.20250926_162000:9:  const u = process.env.DATABASE_URL || '';
+/root/work/vinops.restore/frontend/.backup.ms0202_03/db.ts.20250926_162000:15:  if (!hasDb()) throw new Error('DATABASE_URL is not set or unsupported');
+/root/work/vinops.restore/frontend/.backup.ms0202_03/db.ts.20250926_162000:17:    connectionString: process.env.DATABASE_URL,
+/root/work/vinops.restore/frontend/src/app/api/v1/vehicles/[vin]/route.ts.bak.eslint.1758681353:161:      connectionString: process.env.DATABASE_URL,
+/root/work/vinops.restore/frontend/src/app/api/v1/vehicles/[vin]/route.ts.bak.eslint.1758681288:161:      connectionString: process.env.DATABASE_URL,
+/root/work/vinops.restore/frontend/src/app/api/v1/vehicles/[vin]/route.ts.bak.ms0203.fix1.1758676598:82:      connectionString: process.env.DATABASE_URL,
+/root/work/vinops.restore/frontend/src/app/api/v1/vehicles/[vin]/route.ts.bak.ms0203.1758679397:125:      connectionString: process.env.DATABASE_URL,
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.eslint.1758681353:21:  const mode = (process.env.PGSSLMODE || 'verify-full').toLowerCase();
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.eslint.1758681353:22:  // Map libpq-ish sslmodes to node-postgres options
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.eslint.1758681353:27:      throw new Error('PGSSLMODE must be verify-full/verify-ca in production');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.eslint.1758681353:38:  const connectionString = process.env.DATABASE_URL;
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.eslint.1758681353:40:    throw new Error('DATABASE_URL is not set');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts:9:  const cs = process.env.DATABASE_URL;
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts:10:  if (!cs) throw new Error('DATABASE_URL is not set');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts:72:  return !!process.env.DATABASE_URL;
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.ms0204.20250924_073506:10:    connectionString: process.env.DATABASE_URL,
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.pgtypes.1758682599:21:  const mode = (process.env.PGSSLMODE || 'verify-full').toLowerCase();
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.pgtypes.1758682599:22:  // Map libpq-ish sslmodes to node-postgres options
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.pgtypes.1758682599:27:      throw new Error('PGSSLMODE must be verify-full/verify-ca in production');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.pgtypes.1758682599:38:  const connectionString = process.env.DATABASE_URL;
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.pgtypes.1758682599:40:    throw new Error('DATABASE_URL is not set');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926T150644Z:14:  const cs = process.env.DATABASE_URL
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926T150644Z:15:  if (!cs) throw new Error('DATABASE_URL is not set')
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926T150644Z:100:export function hasDb(): boolean { return !!process.env.DATABASE_URL }
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.ms0204.20250924_073757:14:    connectionString: process.env.DATABASE_URL,        // read-only role app_ro
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926_152213:33:  const cs = process.env.DATABASE_URL;
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926_152213:34:  if (!cs) throw new Error('DATABASE_URL is not set');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.ms0203.1758679898:22:  const mode = (process.env.PGSSLMODE || 'verify-full').toLowerCase();
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.ms0203.1758679898:23:  // Map libpq-ish sslmodes to node-postgres options
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.ms0203.1758679898:28:      throw new Error('PGSSLMODE must be verify-full/verify-ca in production');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.ms0203.1758679898:39:  const connectionString = process.env.DATABASE_URL;
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.ms0203.1758679898:41:    throw new Error('DATABASE_URL is not set');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926_143040:11:const CONN = process.env.DATABASE_URL || '';
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926_143040:12:if (!CONN) throw new Error('DATABASE_URL is required');
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926T151222Z:33:  const cs = process.env.DATABASE_URL;
+/root/work/vinops.restore/frontend/src/app/api/_lib/db.ts.bak.20250926T151222Z:34:  if (!cs) throw new Error('DATABASE_URL is not set');
