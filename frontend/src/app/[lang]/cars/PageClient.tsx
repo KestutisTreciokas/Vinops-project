@@ -136,6 +136,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
     setIsLoadingMore(true)
     try {
       const params = new URLSearchParams()
+      params.set('vehicle_type', type)
       if (make) params.set('make', make)
       if (model) params.set('model', model)
       if (yFrom) params.set('year_min', yFrom)
@@ -163,6 +164,8 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
           statusLabel: item.statusLabel,
           estMin: item.estRetailValueUsd,
           estMax: item.estRetailValueUsd,
+          buyNow: item.buyItNowUsd,
+          currentBid: item.currentBidUsd,
         }))
 
         setDisplayedVehicles(prev => [...prev, ...newVehicles])

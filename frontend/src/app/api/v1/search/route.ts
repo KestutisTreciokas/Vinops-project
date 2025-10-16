@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '../../_lib/db'
+import { getVehicleTypeFilter, type VehicleType } from '@/lib/vehicleTypes'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -86,6 +87,7 @@ function parseSearchParams(searchParams: URLSearchParams) {
   const status = searchParams.get('status')?.toLowerCase() || undefined
   const siteCode = searchParams.get('site_code')?.toUpperCase() || undefined
   const country = searchParams.get('country')?.toUpperCase() || undefined
+  const vehicleType = searchParams.get('vehicle_type') || searchParams.get('type') || undefined
   const limitStr = searchParams.get('limit')
   const limit = limitStr ? Math.min(Math.max(parseInt(limitStr, 10), 1), 100) : 20
   const cursor = searchParams.get('cursor') || undefined
@@ -116,6 +118,7 @@ function parseSearchParams(searchParams: URLSearchParams) {
     status,
     siteCode,
     country,
+    vehicleType,
     limit,
     cursor,
     sort: finalSort,
@@ -153,7 +156,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const { make, model, yearMin, yearMax, status, siteCode, country, limit, cursor, sort, lang } = params
+  const { make, model, yearMin, yearMax, status, siteCode, country, vehicleType, limit, cursor, sort, lang } = params
 
   // Decode cursor for pagination
   let cursorData: Cursor | null = null
@@ -176,6 +179,14 @@ export async function GET(req: NextRequest) {
       const conditions: string[] = []
       const values: any[] = []
       let paramIndex = 1
+
+      // Add vehicle type filter
+      if (vehicleType) {
+        const bodyTypesIn = getVehicleTypeFilter(vehicleType as VehicleType)
+        if (bodyTypesIn) {
+          conditions.push(`v.body IN (${bodyTypesIn})`)
+        }
+      }
 
       if (make) {
         conditions.push(`v.make = $${paramIndex++}`)
@@ -259,6 +270,7 @@ export async function GET(req: NextRequest) {
           v.vin, v.make, v.model, v.year, v.body, v.updated_at,
           l.id as lot_id, l.status, l.site_code, l.city, l.region, l.country,
           l.auction_datetime_utc, l.retail_value_usd, l.damage_description, l.title_type, l.odometer,
+          l.buy_it_now_usd, l.current_bid_usd,
           get_taxonomy_label('body_styles', v.body, $${langParamIndex}) as body_label,
           get_taxonomy_label('statuses', l.status, $${langParamIndex}) as status_label,
           get_taxonomy_label('damage_types', l.damage_description, $${langParamIndex}) as damage_label,
@@ -307,6 +319,8 @@ export async function GET(req: NextRequest) {
           country: row.country,
           auctionDateTimeUtc: row.auction_datetime_utc,
           estRetailValueUsd: row.retail_value_usd,
+          buyItNowUsd: row.buy_it_now_usd,
+          currentBidUsd: row.current_bid_usd,
           damageDescription: row.damage_description,
           damageLabel: row.damage_label,
           titleType: row.title_type,

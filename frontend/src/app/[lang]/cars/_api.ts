@@ -84,6 +84,7 @@ export async function fetchVehicles(
           v.vin, v.make, v.model, v.year, v.body, v.updated_at,
           l.id as lot_id, l.status, l.site_code, l.city, l.region, l.country,
           l.auction_datetime_utc, l.retail_value_usd, l.damage_description, l.title_type, l.odometer,
+          l.buy_it_now_usd, l.current_bid_usd,
           get_taxonomy_label('body_styles', v.body, $${langParamIndex}) as body_label,
           get_taxonomy_label('statuses', l.status, $${langParamIndex}) as status_label,
           get_taxonomy_label('damage_types', l.damage_description, $${langParamIndex}) as damage_label,
@@ -119,6 +120,8 @@ export async function fetchVehicles(
           country: row.country,
           auctionDateTimeUtc: row.auction_datetime_utc,
           estRetailValueUsd: row.retail_value_usd,
+          buyItNowUsd: row.buy_it_now_usd,
+          currentBidUsd: row.current_bid_usd,
           damageDescription: row.damage_description,
           damageLabel: row.damage_label,
           titleType: row.title_type,
@@ -171,5 +174,7 @@ export function transformVehicles(response: SearchResponse) {
     statusLabel: item.statusLabel || undefined,
     estMin: item.estRetailValueUsd || undefined,
     estMax: item.estRetailValueUsd || undefined,
+    buyNow: (item as any).buyItNowUsd || undefined,
+    currentBid: (item as any).currentBidUsd || undefined,
   }))
 }

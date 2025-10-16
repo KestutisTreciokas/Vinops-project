@@ -188,7 +188,7 @@ export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
       // images
       const imgs = await client.query('select lot_id, vin, seq, variant, source_url as url from images where vin=$1 order by seq asc limit 16', [raw])
       // saleEvents
-      const se = await client.query('select event_type, price_usd, occurred_at_utc from sale_events where vin=$1 order by occurred_at_utc desc limit 10', [raw])
+      const se = await client.query('select status, final_bid_usd as price_usd, sale_date as occurred_at_utc from sale_events where vin=$1 order by sale_date desc limit 10', [raw])
 
       const dto: any = {
         vin: row.vin, year: row.year, make: row.make, model: row.model, trim: null,
