@@ -78,13 +78,10 @@ export function transformVehicleData(data: VehicleDetailsResponse) {
           siteCode: currentLot.siteCode,
           auctionDate: currentLot.auctionDateTimeUtc,
           estimatedValue: currentLot.estRetailValueUsd,
-          runsDrives: currentLot.runsDrives,
-          hasKeys: currentLot.hasKeys,
           damage: currentLot.damageLabel || currentLot.damageDescription,
           title: currentLot.titleLabel || currentLot.titleType,
           odometer: currentLot.odometer,
           odometerBrand: currentLot.odometerBrandLabel || currentLot.odometerBrand,
-          color: currentLot.colorLabel || currentLot.color,
         }
       : null,
     photos:
