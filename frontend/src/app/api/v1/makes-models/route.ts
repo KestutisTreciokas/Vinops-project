@@ -14,13 +14,14 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams
     const make = searchParams.get('make')?.toUpperCase()
+    const vehicleType = searchParams.get('type') || 'auto'
 
     const pool = await getPool()
     const client = await pool.connect()
 
     try {
       if (make) {
-        // Return models for specific make
+        // Return models for specific make and vehicle type
         const query = `
           SELECT model, COUNT(*) as count
           FROM vehicles

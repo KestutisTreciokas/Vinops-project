@@ -30,7 +30,7 @@ export default async function Page({
     year_min: yearMin,
     year_max: yearMax,
     status: 'active', // Only show active listings
-    limit: 20,
+    limit: 50,
     lang,
     sort: 'auction_date_asc'
   })

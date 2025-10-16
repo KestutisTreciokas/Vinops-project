@@ -19,22 +19,15 @@ export default function LangSwitcher({ lang }: LangSwitcherProps) {
     return queryString ? `${newPath}?${queryString}` : newPath
   }
 
+  const targetLang = lang === 'en' ? 'ru' : 'en'
+  const targetUrl = getPathForLang(targetLang)
+
   return (
-    <div className="flex items-center gap-2">
-      <Link
-        href={getPathForLang('en') as Route}
-        className={`btn btn-secondary h-8 px-3 text-xs ${lang === 'en' ? 'opacity-50 cursor-default' : ''}`}
-        onClick={(e) => lang === 'en' && e.preventDefault()}
-      >
-        EN
-      </Link>
-      <Link
-        href={getPathForLang('ru') as Route}
-        className={`btn btn-secondary h-8 px-3 text-xs ${lang === 'ru' ? 'opacity-50 cursor-default' : ''}`}
-        onClick={(e) => lang === 'ru' && e.preventDefault()}
-      >
-        RU
-      </Link>
-    </div>
+    <Link
+      href={targetUrl as Route}
+      className="btn btn-secondary h-8 px-3 text-xs"
+    >
+      {lang === 'en' ? 'RU' : 'EN'}
+    </Link>
   )
 }

@@ -56,7 +56,7 @@ export default function LangLayout({
         <div className="container-prose py-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-6">
             <div>
-              <h3 className="font-semibold mb-3">{t('Navigation', 'Навигация')}</h3>
+              <h3 className="text-sm font-semibold mb-2">{t('Navigation', 'Навигация')}</h3>
               <nav className="flex flex-col gap-2 text-sm">
                 <Link href={href('/[lang]') as Route} className="text-fg-muted hover:text-fg-default">
                   {t('Home', 'Главная')}
@@ -73,7 +73,7 @@ export default function LangLayout({
               </nav>
             </div>
             <div>
-              <h3 className="font-semibold mb-3">{t('Contacts', 'Контакты')}</h3>
+              <h3 className="text-sm font-semibold mb-2">{t('Contacts', 'Контакты')}</h3>
               <div className="flex flex-col gap-2 text-sm">
                 <a href="mailto:request@vinops.online" className="text-fg-muted hover:text-fg-default">
                   request@vinops.online
@@ -84,7 +84,7 @@ export default function LangLayout({
               </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-3">{t('About', 'О сервисе')}</h3>
+              <h3 className="text-sm font-semibold mb-2">{t('About', 'О сервисе')}</h3>
               <p className="text-sm text-fg-muted">
                 {t(
                   'VIN lookup service for auction vehicles with real-time data from major US auction sites.',

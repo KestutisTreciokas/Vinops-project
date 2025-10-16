@@ -58,7 +58,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
     }
 
     setLoadingModels(true)
-    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}`)
+    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}&type=${encodeURIComponent(type)}`)
       .then(res => res.json())
       .then(data => {
         setAvailableModels(data.models || [])
@@ -143,7 +143,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
       params.set('status', 'active')
       params.set('lang', lang)
       params.set('sort', 'auction_date_asc')
-      params.set('limit', '20')
+      params.set('limit', '50')
       params.set('cursor', nextCursor)
 
       const response = await fetch(`/api/v1/search?${params}`)
