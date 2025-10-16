@@ -2,13 +2,15 @@ import React from 'react'
 
 type Lang = 'en' | 'ru'
 type Specs = {
-  year?: number | string
-  make?: string
-  model?: string
-  body?: string
-  engine?: string
-  transmission?: string
-  drive?: string
+  year?: number | string | null
+  make?: string | null
+  model?: string | null
+  trim?: string | null
+  body?: string | null
+  engine?: string | null
+  transmission?: string | null
+  drive?: string | null
+  fuel?: string | null
 }
 
 export default function VinSpecs({ specs = {}, lang }: { specs?: Specs; lang: Lang }) {
@@ -17,13 +19,13 @@ export default function VinSpecs({ specs = {}, lang }: { specs?: Specs; lang: La
   const rows: Array<{
     key: keyof Specs
     label: string
-    value?: string | number
+    value?: string | number | null
     icon: React.ReactNode
   }> = [
     {
       key: 'year',
       label: t('Year', 'Год'),
-      value: specs.year,
+      value: specs.year ?? undefined,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <rect x="3" y="4" width="18" height="18" rx="2"></rect>
