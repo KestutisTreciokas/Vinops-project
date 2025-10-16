@@ -44,12 +44,32 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [yFrom, setYFrom] = useState(sp.get('yfrom') ?? '')
   const [yTo, setYTo] = useState(sp.get('yto') ?? '')
   const [page, setPage] = useState(Number(sp.get('page') ?? '1') || 1)
+  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const [loadingModels, setLoadingModels] = useState(false)
 
-  // если make сменился — сбрасываем model, если её нет среди опций
+  // Fetch models when make changes
   useEffect(()=>{
-    if (!make) { setModel(''); return }
-    const list = MODELS[make] || []
-    if (model && !list.includes(model)) setModel('')
+    if (!make) {
+      setAvailableModels([])
+      setModel('')
+      return
+    }
+
+    setLoadingModels(true)
+    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}`)
+      .then(res => res.json())
+      .then(data => {
+        setAvailableModels(data.models || [])
+        // Reset model if it's not in the new list
+        if (model && data.models && !data.models.includes(model)) {
+          setModel('')
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch models:', err)
+        setAvailableModels([])
+      })
+      .finally(() => setLoadingModels(false))
   },[make])
 
   // табы
@@ -135,9 +155,18 @@ router.replace(`${pathname}${q}` as Route)
               <span className="chev"><ChevronDown/></span>
             </div>
             <div className="select-wrap">
-              <select className="select" value={model} onChange={e=>setModel(e.target.value)}>
-                <option value="">{t(lang,'All models','Все модели')}</option>
-                {(MODELS[make]||[]).map(m=><option key={m} value={m}>{m}</option>)}
+              <select
+                className="select"
+                value={model}
+                onChange={e=>setModel(e.target.value)}
+                disabled={!make || loadingModels}
+              >
+                <option value="">
+                  {loadingModels
+                    ? t(lang,'Loading...','Загрузка...')
+                    : t(lang,'All models','Все модели')}
+                </option>
+                {availableModels.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
               <span className="chev"><ChevronDown/></span>
             </div>
@@ -172,7 +201,7 @@ router.replace(`${pathname}${q}` as Route)
 
       <section className="container mt-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {vehicles.map((v,idx)=>(<VehicleCard key={v.vin || idx} v={v}/>))}
+          {vehicles.map((v,idx)=>(<VehicleCard key={v.vin || idx} v={v} lang={lang}/>))}
         </div>
 
         {vehicles.length === 0 && (
