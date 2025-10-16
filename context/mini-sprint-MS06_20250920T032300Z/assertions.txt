@@ -1,0 +1,4 @@
+[OK] VIN present inside chip for https://vinops.online/en/vin/1HGCM82633A004352
+[OK] VIN present inside chip for https://vinops.online/ru/vin/1HGCM82633A004352
+[OK] VIN present inside chip for https://vinops.online/en/vin/JN8AZ08W35W000001
+[OK] VIN present inside chip for https://vinops.online/ru/vin/JN8AZ08W35W000001

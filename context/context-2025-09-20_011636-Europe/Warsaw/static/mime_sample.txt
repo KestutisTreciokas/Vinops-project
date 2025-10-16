@@ -1,0 +1,3 @@
+### 2025-09-20T02:16:37+03:00  CMD: sh -lc file -b '/root/work/vinops.restore/frontend/public/icon.svg' 2>/dev/null || true
+
+cannot open `/root/work/vinops.restore/frontend/public/icon.svg' (No such file or directory)

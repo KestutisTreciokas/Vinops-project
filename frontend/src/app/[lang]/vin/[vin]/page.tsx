@@ -1,97 +1,92 @@
-import RemovalRequest from '../../../../components/RemovalRequest'
-import Timeline from './_Timeline'
-import Specs from './_Specs'
-import Script from 'next/script'
+import type { Metadata } from 'next'
+import LotInfo from '@/components/vin2/LotInfo'
+import VinSpecs from '@/components/vin2/VinSpecs'
+import History from '@/components/vin2/History'
+import VinGallery from '@/components/vin2/Gallery'
+import sample from '@/mock/vin-sample'
+import SeoVinJsonLd from './_SeoVinJsonLd'
+import VinChipCopy from '@/components/VinChipCopy'
 
-export default function VinPage({
-  params,
-}: {
-  params: { lang: 'en' | 'ru'; vin: string }
-}) {
+export async function generateMetadata(
+  { params }: { params: { lang: 'ru' | 'en', vin: string } }
+): Promise<Metadata> {
   const { lang, vin } = params
   const t = (en: string, ru: string) => (lang === 'ru' ? ru : en)
 
-  // Заглушка данных до подключения API (M3)
-  const vehicle = {
-    vin,
-    year: null as number | null,
-    make: null as string | null,
-    model: null as string | null,
-    mileage: null as number | null,
-    fuel: null as string | null,
-    transmission: null as string | null,
-  }
+  const path = `/${lang}/vin/${vin}`
+  const title = t(`VIN ${vin}`, `VIN ${vin}`)
+  const description = t(
+    `Vehicle details, photos and sale history for VIN ${vin}.`,
+    `Детали автомобиля, фото и история продаж для VIN ${vin}.`
+  )
 
-  // JSON-LD Vehicle для SEO
-  const ldVehicle = {
-    '@context': 'https://schema.org',
-    '@type': 'Vehicle',
-    vehicleIdentificationNumber: vin,
-    ...(vehicle.make ? { brand: vehicle.make } : {}),
-    ...(vehicle.model ? { model: vehicle.model } : {}),
-    ...(vehicle.year ? { modelDate: String(vehicle.year) } : {}),
+  return {
+    metadataBase: new URL('https://vinops.online'),
+    title,
+    description,
+    alternates: {
+      canonical: path,
+      languages: {
+        en: `/en/vin/${vin}`,
+        ru: `/ru/vin/${vin}`,
+        'x-default': `/en/vin/${vin}`,
+      },
+    },
+    openGraph: {
+      url: path,
+      title: `${title} — vinops`,
+      description,
+      type: 'website',
+    },
+    robots: { index: true, follow: true },
   }
+}
+
+export default function VinPage({ params }: { params: { lang: 'ru'|'en', vin: string } }) {
+  const { lang, vin } = params
+  const data = sample
+  const t = (en: string, ru: string) => (lang === 'ru' ? ru : en)
+
+  // --- H1: Year Make Model, Trim | fallback "VIN {vin}"
+  const specs: any = (data as any)?.specs || {}
+  const titleBase = [specs.year, specs.make, specs.model].filter(Boolean).join(' ')
+  const h1Title = titleBase ? `${titleBase}${specs.trim ? `, ${specs.trim}` : ''}` : `VIN ${vin}`
 
   return (
-    <>
-      <Script
-        id="ld-vehicle"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(ldVehicle) }}
-      />
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold">
-          {t('Vehicle', 'Автомобиль')} — VIN {vin}
-        </h1>
-      </header>
+    <div className="container mx-auto px-4">
+      {/* JSON-LD */}
+      <SeoVinJsonLd lang={lang} vin={vin} />
 
-      <section className="grid gap-6">
-        {/* Характеристики */}\n<Specs t={t} items={[{label:t("Year","Год"),value:vehicle.year?String(vehicle.year):"—"},{label:t("Make","Марка"),value:vehicle.make||"—"},{label:t("Model","Модель"),value:vehicle.model||"—"},{label:t("Fuel","Топливо"),value:vehicle.fuel||"—"},{label:t("Transmission","КПП"),value:vehicle.transmission||"—"}]} />
-        <div className="card">
-          <h2 className="font-semibold mb-3">{t('Specifications', 'Характеристики')}</h2>
-          <div className="text-sm text-fg-muted">
-            {t(
-              'Data will appear after the first import.',
-              'Данные появятся после первого импорта.'
-            )}
-          </div>
+      {/* H1 + VIN-chip */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h1 className="h1">{h1Title}</h1>
+        <VinChipCopy vin={vin.toUpperCase()} lang={lang} />
+      </div>
+
+      {/* Описание под заголовком */}
+      <p className="lead mb-6">
+        {lang === 'ru'
+          ? 'Актуальная информация по лоту, фото, характеристики и история.'
+          : 'Up-to-date lot info: photos, specs, and sales history.'}
+      </p>
+
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Левая колонка: галерея */}
+        <div className="lg:col-span-7">
+          <VinGallery photos={data.photos ?? []} />
         </div>
 
-        {/* Галерея */}
-        <div className="card">
-          <h2 className="font-semibold mb-3">{t('Gallery', 'Галерея')}</h2>
-          <div className="text-sm text-fg-muted">
-            ⏳ {t('Photos will appear here.', 'Здесь появятся фото.')}
-          </div>
+        {/* Правая колонка: характеристики и инфо по лоту */}
+        <div className="lg:col-span-5 space-y-6">
+          <VinSpecs specs={data.specs} lang={lang} />
+          <LotInfo lot={data.lot} history={data.history} lang={lang} />
         </div>
 
-        {/* История продаж / таймлайн */}\n<Timeline t={t} />
-        <div className="card">
-          <h2 className="font-semibold mb-3">{t('Sale timeline', 'История продаж')}</h2>
-          <div className="text-sm text-fg-muted">
-            ⏳ {t(
-              'Timeline will be generated when we detect sales.',
-              'Таймлайн появится после определения исхода продажи.'
-            )}
-          </div>
+        {/* Ниже — история продаж на всю ширину */}
+        <div className="lg:col-span-12">
+          <History lang={lang} rows={data.history || []} />
         </div>
-
-        {/* ОБЯЗАТЕЛЬНЫЙ блок Removal request */}
-        <div className="card">
-          <h2 className="font-semibold mb-3">{t('Removal request', 'Запрос на удаление')}</h2>
-          <p className="text-sm mb-3">
-            {t(
-              'To request removal of this VIN page, contact us:',
-              'Чтобы запросить удаление данной страницы VIN, свяжитесь с нами:'
-            )}
-          </p>
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <a className="btn btn-secondary" href="mailto:request@vinops.online">request@vinops.online</a>
-            <a className="btn btn-secondary" href="https://t.me/keustis" target="_blank" rel="noreferrer">@keustis</a>
-          </div>
-        </div>
-            <RemovalRequest t={t} />
-    </section>
-    </>
+      </div>
+    </div>
   )
 }

@@ -1,0 +1,10 @@
+f844a01 (HEAD -> feat/s1-efh-fixes) feat(S1-E,S1-F,S1-H): fix local fonts paths; softer default light palette (SSR-safe); VIN EN localization for “Specifications”
+dbf64a5 (S1-A-fixes) style(S1-E,S1-F): site-wide contrast + font smoothing; unify fonts on catalog & VIN; remove hero glow
+eeaec9d feat(vin): add VIN chip + accent panel styles (S1-B step 1); leave title SEO-safe
+2784759 fix(ui): remove hero radial gradient and glow for search section
+a209af8 S1-A: kill hero container shadow
+3b4755c S1-A: hero search — remove focus-visible outline/glow
+ba988bf S1-A: remove stray '+' in header; hero class; disable hero search glow
+1ebc403 S1-A: clean stray '+' in header; hero class; remove hero search glow
+4320910 S1-A: remove search hero glow; clean '+' around vinops wordmark; add logo-text spacing
+5819325 (S1-header-wordmark) ui(header): add 'vinops' wordmark next to logo images

@@ -1,0 +1,169 @@
+
+import crypto from 'crypto';
+
+// dynamic import keeps TS happy with local stub and avoids ESM issues in Next Node runtime
+// eslint-disable-next-line
+const { Pool } = require('pg');
+
+type Ctx = { traceId?: string; requestId?: string; lang?: string };
+
+const DEFAULTS = {
+  poolMax: 10,
+  idleMs: 5000,
+  statementTimeoutMs: 2000,
+  lockTimeoutMs: 1000,
+  idleInTrxTimeoutMs: 5000,
+} as const;
+
+let _pool: InstanceType<typeof Pool> | null = null;
+
+function buildSsl() {
+  const mode = (process.env.PGSSLMODE || 'verify-full').toLowerCase();
+  // Map libpq-ish sslmodes to node-postgres options
+  if (mode === 'disable') return false;
+  if (mode === 'require' || mode === 'prefer' || mode === 'allow') {
+    // Not acceptable for prod; allowed only explicitly and only in non-prod
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('PGSSLMODE must be verify-full/verify-ca in production');
+    }
+    return { rejectUnauthorized: false };
+  }
+  // verify-ca / verify-full => full verification
+  return { rejectUnauthorized: true };
+}
+
+function getPool(): InstanceType<typeof Pool> {
+  if (_pool) return _pool;
+
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is not set');
+  }
+
+  _pool = new Pool({
+    connectionString,
+    ssl: buildSsl(),
+    max: Number(process.env.PGPOOL_MAX || DEFAULTS.poolMax),
+    idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS || DEFAULTS.idleMs),
+  });
+
+  _pool.on('connect', async (client: any) => {
+    // Session sane defaults
+    try {
+      await client.query(`SET TIME ZONE 'UTC'`);
+      await client.query(`SET application_name = 'vinops.frontend'`);
+      await client.query(`SET default_transaction_read_only = on`);
+      await client.query(`SET statement_timeout = ${DEFAULTS.statementTimeoutMs}`);
+      await client.query(`SET lock_timeout = ${DEFAULTS.lockTimeoutMs}`);
+      await client.query(`SET idle_in_transaction_session_timeout = ${DEFAULTS.idleInTrxTimeoutMs}`);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('[dal.connect.setup_failed]', { message: (e as Error).message });
+    }
+  });
+
+  _pool.on('error', (err: any) => {
+    // eslint-disable-next-line no-console
+    console.error('[dal.pool.error]', { code: err?.code, message: err?.message });
+  });
+
+  return _pool;
+}
+
+function isReadonlySQL(sql: string): boolean {
+  const s = sql.trim().toLowerCase();
+  // allow only SELECT / WITH (CTE); anything else is forbidden
+  return s.startsWith('select') || s.startsWith('with');
+}
+
+function preparedName(sql: string): string {
+  const h = crypto.createHash('sha1').update(sql).digest('hex').slice(0, 12);
+  return `v1_${h}`;
+}
+
+function nowMs() { return Number(process.hrtime.bigint() / BigInt(1_000_000)); }
+
+function logQuery(event: string, data: Record<string, unknown>) {
+  // minimal JSON log with correlation context
+  // eslint-disable-next-line no-console
+  console.log(JSON.stringify({ ts: new Date().toISOString(), event, ...data }));
+}
+
+type QueryOpts = {
+  name?: string;
+  timeoutMs?: number;       // per-query statement_timeout override (uses SET LOCAL)
+  ctx?: Ctx;
+  retries?: number;         // transient retry count (default 1)
+};
+
+const TRANSIENT_PG_CODES = new Set(['40001', '55P03', '57014', '57P01', '53300', '53400']); // deadlock, cancel, admin shutdown, out of memory etc.
+
+export async function query<T = any>(sql: string, values: any[] = [], opts: QueryOpts = {}): Promise<{ rows: T[]; rowCount: number }> {
+  if (!isReadonlySQL(sql)) {
+    throw new Error('DAL is read-only: only SELECT/WITH statements are allowed');
+  }
+
+  const pool = getPool();
+  const start = nowMs();
+  const name = opts.name ?? preparedName(sql);
+  const retries = Math.max(0, opts.retries ?? 1);
+
+  let attempt = 0;
+  // acquire client to support SET LOCAL timeout when requested
+  const client = await pool.connect();
+  try {
+    if (opts.timeoutMs && opts.timeoutMs !== DEFAULTS.statementTimeoutMs) {
+      const t = Math.max(10, Math.min(60000, Math.floor(opts.timeoutMs)));
+      await client.query('BEGIN');
+      await client.query(`SET LOCAL statement_timeout = ${t}`);
+    }
+
+    while (true) {
+      try {
+        const res = await client.query<T>({ text: sql, values, name });
+        logQuery('db.query.ok', {
+          traceId: opts.ctx?.traceId, requestId: opts.ctx?.requestId,
+          name, durMs: nowMs() - start, rows: res.rowCount, sample: sql.slice(0, 120)
+        });
+        if (opts.timeoutMs && opts.timeoutMs !== DEFAULTS.statementTimeoutMs) {
+          await client.query('COMMIT');
+        }
+        return { rows: res.rows, rowCount: res.rowCount };
+      } catch (err: any) {
+        const code = err?.code || err?.errno || err?.name;
+        const transient = TRANSIENT_PG_CODES.has(code) || /ECONNRESET|ETIMEDOUT|EPIPE/i.test(String(code));
+        if (attempt < retries && transient) {
+          attempt++;
+          logQuery('db.query.retry', { attempt, code, name });
+          continue;
+        }
+        if (opts.timeoutMs && opts.timeoutMs !== DEFAULTS.statementTimeoutMs) {
+          try { await client.query('ROLLBACK'); } catch {}
+        }
+        logQuery('db.query.fail', {
+          traceId: opts.ctx?.traceId, requestId: opts.ctx?.requestId,
+          name, durMs: nowMs() - start, code, message: err?.message
+        });
+        throw err;
+      }
+    }
+  } finally {
+    client.release();
+  }
+}
+
+export async function one<T = any>(sql: string, values: any[] = [], opts: QueryOpts = {}): Promise<T | null> {
+  const { rows } = await query<T>(sql, values, opts);
+  return rows[0] ?? null;
+}
+
+export async function many<T = any>(sql: string, values: any[] = [], opts: QueryOpts = {}): Promise<T[]> {
+  const { rows } = await query<T>(sql, values, opts);
+  return rows;
+}
+
+// Helpers to mitigate N+1: build ANY($1) array bindings safely
+export function anyArray<T = string | number>(arr: T[]): { sql: string; params: any[] } {
+  // usage: const a = anyArray(ids); await many(`SELECT * FROM t WHERE id = ANY($1)`, a.params);
+  return { sql: '$1', params: [arr] };
+}

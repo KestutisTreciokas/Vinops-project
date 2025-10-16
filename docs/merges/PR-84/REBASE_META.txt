@@ -1,0 +1,4 @@
+Base:   4f945e7efdc0
+Head:   07a3452478bf
+Policy: CONFLICT_POLICY vMS-S0-02
+Mode:   squash-linear-from-main

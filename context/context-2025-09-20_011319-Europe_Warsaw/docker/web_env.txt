@@ -1,0 +1,20 @@
+### Environment inside web container (masked)
+### Started: 2025-09-20T02:13:21+03:00
+
+DATABASE_URL=postgres://vinops:vinops@db:5432/vinops
+NODE_VERSION=20.19.5
+HOSTNAME=c991e4c31ff6
+YARN_VERSION=1.22.22
+SHLVL=1
+PORT=3000
+HOME=/home/nextjs
+PAGER=less
+LC_COLLATE=C
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+LANG=C.UTF-8
+HOST=0.0.0.0
+PWD=****
+CHARSET=UTF-8
+NODE_ENV=production
+
+### Finished: 2025-09-20T02:13:21+03:00

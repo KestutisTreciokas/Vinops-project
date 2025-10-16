@@ -1,0 +1,15 @@
+### curl -I https://vinops.online/ru
+### Started: 2025-09-20T02:13:23+03:00
+
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+content-type: text/html; charset=utf-8
+date: Fri, 19 Sep 2025 23:13:23 GMT
+link: </_next/static/media/19cfc7226ec3afaa-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/21350d82a1f187e9-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/558ca1a6aa3cb55e-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/64d784ea54a4acde-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2"
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-powered-by: Next.js
+
+
+### Finished: 2025-09-20T02:13:23+03:00

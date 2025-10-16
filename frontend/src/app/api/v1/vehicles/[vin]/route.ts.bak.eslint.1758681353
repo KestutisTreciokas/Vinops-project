@@ -1,0 +1,338 @@
+/* runtime: Node.js (need 'pg' only when DAL_MOCK!=1) */
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
+
+/** ---------- Config ---------- */
+const API_VERSION = '1';
+const RL_LIMIT_PER_MIN = 60;           // 60 rpm per IP
+const RL_WINDOW_MS = 60_000;
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{11,17}$/;
+const ALLOWED_ORIGINS = new Set([
+  'https://vinops.online',
+  'https://www.vinops.online',
+]);
+
+/** ---------- RL state (per-process) ---------- */
+type RLInfo = { limit:number; remaining:number; resetAt:number; ok:boolean };
+type RLEntry = { count:number; resetAt:number };
+const RL = new Map<string, RLEntry>();
+
+function traceId(): string { return crypto.randomBytes(8).toString('hex'); }
+
+function clientIp(req: NextRequest): string {
+  const xf = req.headers.get('x-forwarded-for');
+  if (xf) return xf.split(',')[0].trim();
+  return crypto.createHash('sha1')
+    .update((req.headers.get('cf-connecting-ip')||'') + (req.headers.get('user-agent')||''))
+    .digest('hex').slice(0,16);
+}
+
+/** ---------- Headers helpers ---------- */
+function corsHeaders(origin: string | null): Record<string,string> {
+  const h: Record<string,string> = {
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Accept, Accept-Language, Content-Type, If-None-Match',
+    'Vary': 'Origin, Accept-Language',
+  };
+  if (origin && ALLOWED_ORIGINS.has(origin)) h['Access-Control-Allow-Origin'] = origin;
+  return h;
+}
+
+function stdHeaders(origin: string | null, rl?: RLInfo): Record<string,string> {
+  const h = corsHeaders(origin);
+  h['X-Api-Version'] = API_VERSION;
+  if (rl) {
+    h['X-RateLimit-Limit']     = String(rl.limit);
+    h['X-RateLimit-Remaining'] = String(Math.max(0, rl.remaining));
+    h['X-RateLimit-Reset']     = String(Math.floor((rl.resetAt || Date.now())/1000));
+  }
+  h['Content-Type'] = 'application/json; charset=utf-8';
+  return h;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  return new NextResponse(null, { status: 204, headers: corsHeaders(origin) });
+}
+
+/** ---------- DAL (with DAL_MOCK) ---------- */
+type QueryFn = (sql: string, params?: any[]) => Promise<{ rows:any[]; rowCount:number }>;
+
+async function getDbQueryFn(): Promise<QueryFn> {
+  if (process.env.DAL_MOCK === '1') {
+    // Minimal mock dataset for VIN sample
+    const VIN_SAMPLE = process.env.VIN_SAMPLE || 'ABCDEFGHJKLMNPR12';
+    const nowIso = new Date().toISOString();
+    return async (sql: string, params: any[] = []) => {
+      const vin = (params?.[0] || '').toString();
+      const eq = (a:string,b:string) => a && b && a.toUpperCase() === b.toUpperCase();
+
+      // vehicles
+      if (/FROM\s+vehicles/i.test(sql)) {
+        if (eq(vin, VIN_SAMPLE)) {
+          return {
+            rowCount: 1,
+            rows: [{
+              vin: VIN_SAMPLE, make: 'Toyota', model: 'Camry', year: 2018,
+              body: 'Sedan', fuel: 'Gasoline', transmission: 'Automatic',
+              drive: 'FWD', engine: '2.5L', updated_at: nowIso,
+              // is_hidden проверяется отдельным запросом — ниже вернём "не скрыт"
+            }],
+          };
+        }
+        // запрос suppress-флага
+        if (/SELECT\s+is_hidden\s+FROM\s+vehicles/i.test(sql)) {
+          if (eq(vin, VIN_SAMPLE)) return { rowCount: 1, rows: [{ is_hidden: false }] };
+          return { rowCount: 0, rows: [] };
+        }
+        return { rowCount: 0, rows: [] };
+      }
+
+      // lots
+      if (/FROM\s+lots/i.test(sql)) {
+        if (eq(vin, VIN_SAMPLE)) {
+          return {
+            rowCount: 1,
+            rows: [{
+              lot_id: 123456,
+              status: 'AVAILABLE',
+              site_code: 'CA-SF',
+              city: 'San Francisco',
+              region: 'CA',
+              country: 'US',
+              auction_datetime_utc: nowIso,
+              retail_value_usd: 14500.00,
+            }],
+          };
+        }
+        return { rowCount: 0, rows: [] };
+      }
+
+      // images
+      if (/FROM\s+images/i.test(sql)) {
+        if (eq(vin, VIN_SAMPLE)) {
+          return { rowCount: 1, rows: [{ image_count: 12, primary_image_url: 'https://img.vinops.online/sample.jpg' }] };
+        }
+        return { rowCount: 1, rows: [{ image_count: 0, primary_image_url: null }] };
+      }
+
+      // sale_events
+      if (/FROM\s+sale_events/i.test(sql)) {
+        if (eq(vin, VIN_SAMPLE)) {
+          return {
+            rowCount: 2,
+            rows: [
+              { id: 2, lot_id: 123456, status: 'SOLD', sale_date: nowIso, final_bid_usd: 10250.00, currency: 'USD' },
+              { id: 1, lot_id: 122233, status: 'NO_SALE', sale_date: null,    final_bid_usd: null,    currency: null  },
+            ],
+          };
+        }
+        return { rowCount: 0, rows: [] };
+      }
+
+      // default
+      return { rowCount: 0, rows: [] };
+    };
+  }
+
+  // Try central DAL
+  try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const mod = await import('../../../_lib/db');
+    const anyMod: any = mod;
+    if (anyMod?.query && typeof anyMod.query === 'function') return anyMod.query.bind(anyMod);
+    if (anyMod?.default?.query && typeof anyMod.default.query === 'function') return anyMod.default.query.bind(anyMod.default);
+    if (anyMod?.getPool && typeof anyMod.getPool === 'function') {
+      const pool = anyMod.getPool();
+      if (pool?.query) return pool.query.bind(pool);
+    }
+  } catch { /* fall through */ }
+
+  // Fallback to local Pool (read-only usage)
+  const { Pool } = await import('pg');
+  // @ts-expect-error augment global
+  const g: any = globalThis as any;
+  if (!g.__vinops_pool) {
+    g.__vinops_pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: true },
+      max: 5,
+      idleTimeoutMillis: 10_000,
+    });
+  }
+  const pool = g.__vinops_pool;
+  return pool.query.bind(pool);
+}
+
+/** ---------- Rate limit ---------- */
+function rateLimit(req: NextRequest): RLInfo {
+  const now = Date.now();
+  const ip  = clientIp(req);
+  const ent = RL.get(ip);
+  if (!ent || now >= ent.resetAt) {
+    const resetAt = now + RL_WINDOW_MS;
+    RL.set(ip, { count: 1, resetAt });
+    return { ok: true, limit: RL_LIMIT_PER_MIN, remaining: RL_LIMIT_PER_MIN - 1, resetAt };
+  }
+  if (ent.count >= RL_LIMIT_PER_MIN) {
+    return { ok: false, limit: RL_LIMIT_PER_MIN, remaining: 0, resetAt: ent.resetAt };
+  }
+  ent.count++;
+  return { ok: true, limit: RL_LIMIT_PER_MIN, remaining: RL_LIMIT_PER_MIN - ent.count, resetAt: ent.resetAt };
+}
+
+/** ---------- JSON helpers ---------- */
+function json(data: any, init: number | ResponseInit = 200) {
+  const headers = new Headers(typeof init === 'number' ? undefined : (init.headers as any));
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json; charset=utf-8');
+  return new NextResponse(JSON.stringify(data), typeof init === 'number' ? { status: init, headers } : { ...init, headers });
+}
+function invalid(trace: string, origin: string | null, rl: RLInfo) {
+  return json({ error: { code: 'INVALID_VIN', message: 'VIN must be 11–17 chars, uppercase, excluding I/O/Q' }, traceId: trace },
+    { status: 422, headers: stdHeaders(origin, rl) });
+}
+function notFound(trace: string, origin: string | null, rl: RLInfo) {
+  return json({ error: { code: 'NOT_FOUND', message: 'VIN not found' }, traceId: trace },
+    { status: 404, headers: stdHeaders(origin, rl) });
+}
+function gone(trace: string, origin: string | null, rl: RLInfo) {
+  return json({ error: { code: 'SUPPRESSED', message: 'VIN removed/suppressed' }, traceId: trace },
+    { status: 410, headers: stdHeaders(origin, rl) });
+}
+function tooMany(origin: string | null, rl: RLInfo) {
+  const h = stdHeaders(origin, rl);
+  h['Retry-After'] = String(Math.max(0, Math.ceil((rl.resetAt - Date.now())/1000)));
+  return json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } }, { status: 429, headers: h });
+}
+
+/** ---------- GET handler ---------- */
+export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
+  const started = Date.now();
+  const origin = req.headers.get('origin');
+  const trace  = traceId();
+
+  const rl = rateLimit(req);
+  if (!rl.ok) return tooMany(origin, rl);
+
+  const vinRaw = ctx?.params?.vin ?? '';
+  const vin = (vinRaw || '').toUpperCase().trim();
+
+  if (!VIN_RE.test(vin)) {
+    return invalid(trace, origin, rl);
+  }
+
+  try {
+    const query = await getDbQueryFn();
+
+    // vehicle
+    const vRes = await query(
+      `SELECT vin, make, model, year, body, fuel, transmission, drive, engine, updated_at FROM vehicles WHERE vin = $1`,
+      [vin]
+    );
+    if (vRes.rowCount === 0) {
+      return notFound(trace, origin, rl);
+    }
+    const v = vRes.rows[0];
+
+    // suppress flag (optional)
+    let suppressed = false;
+    try {
+      const sRes = await query(`SELECT is_hidden FROM vehicles WHERE vin = $1`, [vin]);
+      if (sRes.rowCount > 0 && sRes.rows[0]?.is_hidden === true) suppressed = true;
+    } catch { suppressed = false; }
+    if (suppressed) return gone(trace, origin, rl);
+
+    // current lot
+    const lRes = await query(
+      `SELECT id AS lot_id, status, site_code, city, region, country, auction_datetime_utc, retail_value_usd
+         FROM lots WHERE vin = $1
+         ORDER BY auction_datetime_utc DESC NULLS LAST, id DESC
+         LIMIT 1`,
+      [vin]
+    );
+    const lot = lRes.rowCount ? lRes.rows[0] : null;
+
+    // images
+    const iRes = await query(
+      `SELECT COUNT(*)::int AS image_count,
+              MIN(source_url) FILTER (WHERE source_url IS NOT NULL) AS primary_image_url
+         FROM images WHERE vin = $1`,
+      [vin]
+    );
+    const img = iRes.rowCount ? iRes.rows[0] : { image_count: 0, primary_image_url: null };
+
+    // sale events (last 10)
+    const seRes = await query(
+      `SELECT id, lot_id, status, sale_date, final_bid_usd, currency
+         FROM sale_events
+        WHERE vin = $1
+        ORDER BY sale_date DESC NULLS LAST, id DESC
+        LIMIT 10`,
+      [vin]
+    );
+    const saleEvents = seRes.rows ?? [];
+
+    // DTO
+    const dto: any = {
+      vin: v.vin,
+      year: v.year ?? null,
+      make: v.make ?? null,
+      model: v.model ?? null,
+      trim: null,
+      body: v.body ?? null,
+      fuel: v.fuel ?? null,
+      transmission: v.transmission ?? null,
+      drive: v.drive ?? null,
+      engine: v.engine ?? null,
+
+      lotId: lot?.lot_id ?? null,
+      status: lot?.status ?? null,
+      siteCode: lot?.site_code ?? null,
+      city: lot?.city ?? null,
+      region: lot?.region ?? null,
+      country: lot?.country ?? null,
+      auctionDateTimeUtc: lot?.auction_datetime_utc ? new Date(lot.auction_datetime_utc).toISOString() : null,
+      estRetailValueUsd: lot?.retail_value_usd ?? null,
+      runsDrives: null,
+      hasKeys: null,
+
+      primaryImageUrl: img?.primary_image_url ?? null,
+      imageCount: img?.image_count ?? 0,
+
+      saleEvents: saleEvents.map((s: any) => ({
+        id: s.id,
+        lotId: s.lot_id,
+        status: s.status,
+        saleDate: s.sale_date ? new Date(s.sale_date).toISOString() : null,
+        finalBidUsd: s.final_bid_usd ?? null,
+        currency: s.currency ?? null,
+      })),
+    };
+
+    const body = JSON.stringify(dto);
+    const etag = 'W/"' + crypto.createHash('sha1').update(body).digest('hex') + '"';
+
+    if (req.headers.get('if-none-match') === etag) {
+      const h = stdHeaders(origin, rl);
+      h['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300';
+      h['ETag'] = etag;
+      h['Vary'] = 'Origin, Accept-Language';
+      return new NextResponse(null, { status: 304, headers: h });
+    }
+
+    const headers = stdHeaders(origin, rl);
+    headers['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300';
+    headers['ETag'] = etag;
+    headers['Vary'] = 'Origin, Accept-Language';
+    headers['Server-Timing'] = `db;desc="aggregate";dur=${Date.now() - started}`;
+
+    return new NextResponse(body, { status: 200, headers });
+  } catch (err: any) {
+    const h = stdHeaders(req.headers.get('origin'), rl);
+    return json({ error: { code: 'INTERNAL', message: 'Internal error' }, traceId: trace }, { status: 500, headers: h });
+  }
+}

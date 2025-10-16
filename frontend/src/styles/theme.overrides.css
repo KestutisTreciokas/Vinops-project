@@ -1,0 +1,59 @@
+/* Global polish: smoothing + consistent kerning/ligatures */
+html, body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-variant-ligatures: contextual common-ligatures;
+}
+
+/* DEFAULT (SSR first paint) — treat as "light" to avoid flash */
+:root {
+  --bg-canvas:#f6f7fb;
+  --bg-surface:#ffffff;
+  --bg-muted:#eef1f6;
+  --fg-default:#0f1115;
+  --fg-muted:#5f6673;
+  --border-muted:#e5e9f0;
+}
+
+/* Explicit light theme (kept equal to defaults) */
+html[data-theme="light"], :root[data-theme="light"] {
+  --bg-canvas:#f6f7fb;
+  --bg-surface:#ffffff;
+  --bg-muted:#eef1f6;
+  --fg-default:#0f1115;
+  --fg-muted:#5f6673;
+  --border-muted:#e5e9f0;
+}
+
+/* Dark is unchanged, но слегка прибрали “дымку” в muted */
+:root[data-theme="dark"], html[data-theme="dark"] {
+  --bg-canvas:#0e1116;
+  --bg-surface:#12161c;
+  --bg-muted:#171c24;
+  --fg-default:#e6e8eb;
+  --fg-muted:#a8b0bd;
+  --border-muted:#232a34;
+}
+
+/* Kill any residual hero glow/gradient */
+.hero { background: var(--bg-canvas) !important; box-shadow:none !important; }
+.hero * { box-shadow:none !important; }
+
+/* Panels/cards hover accents */
+.card, .panel { background:var(--bg-surface); border:1px solid var(--border-muted); }
+.card:hover, .panel:hover { border-color: color-mix(in hsl, var(--brand) 35%, var(--border-muted)); }
+
+/* Catalog + VIN headings unify */
+[data-page="catalog"] .card .title,
+[data-page="vin"] .card-title, [data-page="vin"] .panel h3 {
+  font-family: var(--font-sans, ui-sans-serif);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* VIN chips/mono */
+.code, code, kbd, pre, .vin, [data-vin], .font-mono {
+  font-family: var(--font-mono, ui-monospace);
+}

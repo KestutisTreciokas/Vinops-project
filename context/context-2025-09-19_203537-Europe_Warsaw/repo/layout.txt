@@ -1,0 +1,69 @@
+Repo root: /root/work/vinops.restore
+
+[FOUND] /root/work/vinops.restore/frontend
+    d /root/work/vinops.restore/frontend/bin
+    d /root/work/vinops.restore/frontend/public
+    d /root/work/vinops.restore/frontend/public/placeholders
+    d /root/work/vinops.restore/frontend/public/svg
+    d /root/work/vinops.restore/frontend/public/vin-sample
+    d /root/work/vinops.restore/frontend/src
+    d /root/work/vinops.restore/frontend/src/app
+    d /root/work/vinops.restore/frontend/src/components
+    d /root/work/vinops.restore/frontend/src/icons
+    d /root/work/vinops.restore/frontend/src/lib
+    d /root/work/vinops.restore/frontend/src/mock
+    d /root/work/vinops.restore/frontend/src/styles
+    f /root/work/vinops.restore/frontend/Dockerfile
+    f /root/work/vinops.restore/frontend/.dockerignore
+    f /root/work/vinops.restore/frontend/.gitkeep
+    f /root/work/vinops.restore/frontend/next.config.mjs
+    f /root/work/vinops.restore/frontend/next.config.ts
+    f /root/work/vinops.restore/frontend/next-env.d.ts
+    f /root/work/vinops.restore/frontend/package.json
+    f /root/work/vinops.restore/frontend/package-lock.json
+    f /root/work/vinops.restore/frontend/postcss.config.js
+    f /root/work/vinops.restore/frontend/src/middleware.ts
+    f /root/work/vinops.restore/frontend/tailwind.config.ts
+    f /root/work/vinops.restore/frontend/tsconfig.json
+
+[FOUND] /root/work/vinops.restore/frontend/src/app
+    d /root/work/vinops.restore/frontend/src/app/demo
+    d /root/work/vinops.restore/frontend/src/app/health
+    d /root/work/vinops.restore/frontend/src/app/healthz
+    d /root/work/vinops.restore/frontend/src/app/[lang]
+    d /root/work/vinops.restore/frontend/src/app/[lang]/cars
+    d /root/work/vinops.restore/frontend/src/app/[lang]/contacts
+    d /root/work/vinops.restore/frontend/src/app/[lang]/demo
+    d /root/work/vinops.restore/frontend/src/app/[lang]/health
+    d /root/work/vinops.restore/frontend/src/app/[lang]/healthz
+    d /root/work/vinops.restore/frontend/src/app/[lang]/_home
+    d /root/work/vinops.restore/frontend/src/app/[lang]/terms
+    d /root/work/vinops.restore/frontend/src/app/[lang]/vin
+    f /root/work/vinops.restore/frontend/src/app/demo/page.tsx
+    f /root/work/vinops.restore/frontend/src/app/fonts.ts
+    f /root/work/vinops.restore/frontend/src/app/health/route.ts
+    f /root/work/vinops.restore/frontend/src/app/healthz/route.ts
+    f /root/work/vinops.restore/frontend/src/app/icon.svg
+    f /root/work/vinops.restore/frontend/src/app/[lang]/layout.tsx
+    f /root/work/vinops.restore/frontend/src/app/[lang]/layout.tsx.bak
+    f /root/work/vinops.restore/frontend/src/app/[lang]/page.tsx
+    f /root/work/vinops.restore/frontend/src/app/layout.tsx
+    f /root/work/vinops.restore/frontend/src/app/robots.ts
+    f /root/work/vinops.restore/frontend/src/app/sitemap.ts
+
+[MISS ] /root/work/vinops.restore/frontend/app
+
+[MISS ] /root/work/vinops.restore/src/app
+
+[MISS ] /root/work/vinops.restore/app
+
+[FOUND] /root/work/vinops.restore/backend
+    f /root/work/vinops.restore/backend/Dockerfile
+    f /root/work/vinops.restore/backend/.gitkeep
+
+[MISS ] /root/work/vinops.restore/infra
+
+[MISS ] /root/work/vinops.restore/docker
+
+[MISS ] /root/work/vinops.restore/public
+

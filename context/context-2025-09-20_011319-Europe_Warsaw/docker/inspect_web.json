@@ -1,0 +1,294 @@
+[
+    {
+        "Id": "***HEX*** ",
+        "Created": "2025-09-19T23:03:00.449394472Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "node",
+            "node_modules/next/dist/bin/next",
+            "start",
+            "-H",
+            "0.0.0.0",
+            "-p",
+            "3000"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 3500327,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2025-09-19T23:03:01.253649279Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2025-09-20T02:12:39.318893142+03:00",
+                        "End": "2025-09-20T02:12:39.369133814+03:00",
+                        "ExitCode": 0,
+                        "Output": "/en/health"
+                    },
+                    {
+                        "Start": "2025-09-20T02:12:49.370095923+03:00",
+                        "End": "2025-09-20T02:12:49.425172087+03:00",
+                        "ExitCode": 0,
+                        "Output": "/en/health"
+                    },
+                    {
+                        "Start": "2025-09-20T02:12:59.425964401+03:00",
+                        "End": "2025-09-20T02:12:59.480684486+03:00",
+                        "ExitCode": 0,
+                        "Output": "/en/health"
+                    },
+                    {
+                        "Start": "2025-09-20T02:13:09.481694102+03:00",
+                        "End": "2025-09-20T02:13:09.532773288+03:00",
+                        "ExitCode": 0,
+                        "Output": "/en/health"
+                    },
+                    {
+                        "Start": "2025-09-20T02:13:19.534109341+03:00",
+                        "End": "2025-09-20T02:13:19.580900342+03:00",
+                        "ExitCode": 0,
+                        "Output": "/en/health"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:***HEX*** ",
+        "ResolvConfPath": "/var/lib/docker/containers/***HEX*** /resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/***HEX*** /hostname",
+        "HostsPath": "/var/lib/docker/containers/***HEX*** /hosts",
+        "LogPath": "/var/lib/docker/containers/***HEX*** /***HEX*** -json.log",
+        "Name": "/vinopsrestore-web-1",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "docker-default",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {
+                    "max-file": "3",
+                    "max-size": "10m"
+                }
+            },
+            "NetworkMode": "vinopsrestore_webnet",
+            "PortBindings": {},
+            "RestartPolicy": {
+                "Name": "unless-stopped",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware",
+                "/sys/devices/virtual/powercap"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": {
+                "ID": "***HEX*** ",
+                "LowerDir": "/var/lib/docker/overlay2/***HEX*** -init/diff:/var/lib/docker/overlay2/mgg0eduonp6y8u0loc6dbbudo/diff:/var/lib/docker/overlay2/z4uta7x0f216momvf6n1wj1ne/diff:/var/lib/docker/overlay2/9mhx0vdcn04jic5abs6m2ac1j/diff:/var/lib/docker/overlay2/qms5exbq9qtmnqn007wy6y7h7/diff:/var/lib/docker/overlay2/ryphyzye48ra5x57te2i6wd2k/diff:/var/lib/docker/overlay2/qbmyed7i7tmqb7sug82mg1a9r/diff:/var/lib/docker/overlay2/rojrw9gyzizihv9je79qmf08s/diff:/var/lib/docker/overlay2/s3t6mq8brijhh5d50wccdxiox/diff:/var/lib/docker/overlay2/***HEX*** /diff:/var/lib/docker/overlay2/***HEX*** /diff:/var/lib/docker/overlay2/***HEX*** /diff:/var/lib/docker/overlay2/***HEX*** /diff",
+                "MergedDir": "/var/lib/docker/overlay2/***HEX*** /merged",
+                "UpperDir": "/var/lib/docker/overlay2/***HEX*** /diff",
+                "WorkDir": "/var/lib/docker/overlay2/***HEX*** /work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [],
+        "Config": {
+            "Hostname": "c991e4c31ff6",
+            "Domainname": "",
+            "User": "nextjs",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "3000/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PORT=3000",
+                "DATABASE_URL=postgres://vinops:vinops@db:5432/vinops",
+                "HOST=0.0.0.0",
+                "NODE_ENV=production",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NODE_VERSION=20.19.5",
+                "YARN_VERSION=1.22.22"
+            ],
+            "Cmd": [
+                "node",
+                "node_modules/next/dist/bin/next",
+                "start",
+                "-H",
+                "0.0.0.0",
+                "-p",
+                "3000"
+            ],
+            "Healthcheck": {
+                "Test": [
+                    "CMD-SHELL",
+                    "curl -fsS http://127.0.0.1:3000/health || curl -fsS http://127.0.0.1:3000/en/health || exit 1"
+                ],
+                "Interval": 10000000000,
+                "Timeout": 3000000000,
+                "StartPeriod": 20000000000,
+                "Retries": 3
+            },
+            "Image": "vinops-web:latest",
+            "Volumes": null,
+            "WorkingDir": "/app",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.docker.compose.config-hash": "***HEX*** ",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "db:service_healthy:false",
+                "com.docker.compose.image": "sha256:***HEX*** ",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "vinopsrestore",
+                "com.docker.compose.project.config_files": "/root/work/vinops.restore/docker-compose.prod.yml,/root/work/vinops.restore/docker-compose.db.yml,/root/work/vinops.restore/docker-compose.hostfix.yml,/root/work/vinops.restore/docker-compose.health.yml",
+                "com.docker.compose.project.working_dir": "/root/work/vinops.restore",
+                "com.docker.compose.replace": "web-1",
+                "com.docker.compose.service": "web",
+                "com.docker.compose.version": "2.39.2"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "***HEX*** ",
+            "SandboxKey": "****",
+            "Ports": {
+                "3000/tcp": null
+            },
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "vinopsrestore_webnet": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "vinopsrestore-web-1",
+                        "web"
+                    ],
+                    "MacAddress": "1e:11:6c:1d:48:9b",
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "***HEX*** ",
+                    "EndpointID": "***HEX*** ",
+                    "Gateway": "172.19.0.1",
+                    "IPAddress": "172.19.0.3",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "vinopsrestore-web-1",
+                        "web",
+                        "c991e4c31ff6"
+                    ]
+                }
+            }
+        }
+    }
+]

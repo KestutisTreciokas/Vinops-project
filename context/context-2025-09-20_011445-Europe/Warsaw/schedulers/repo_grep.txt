@@ -1,0 +1,92 @@
+### 2025-09-20T02:14:46+03:00  CMD: sh -lc grep -RniE 'cron|schedule|node-cron|celery|airflow|github.*schedule' '/root/work/vinops.restore' 2>/dev/null | sed -n '1,400p'
+
+/root/work/vinops.restore/bin/diag.sh:259:# ---------- 9) ETL / Cron / Schedulers (best effort) ----------
+/root/work/vinops.restore/bin/diag.sh:260:mkdir -p "${OUT_DIR}/schedulers"
+/root/work/vinops.restore/bin/diag.sh:261:save_cmd "${OUT_DIR}/schedulers/host_cron.txt"      sh -lc "crontab -l 2>&1 || true; echo; systemctl list-timers --all 2>/dev/null || true"
+/root/work/vinops.restore/bin/diag.sh:262:# scan repo for cron/schedule hints
+/root/work/vinops.restore/bin/diag.sh:263:save_cmd "${OUT_DIR}/schedulers/repo_grep.txt"      sh -lc "grep -RniE 'cron|schedule|node-cron|celery|airflow|github.*schedule' '${REPO_ROOT}' 2>/dev/null | sed -n '1,400p'"
+/root/work/vinops.restore/context/context-2025-09-20_011445-Europe/Warsaw/schedulers/host_cron.txt:1:### 2025-09-20T02:14:46+03:00  CMD: sh -lc crontab -l 2>&1 || true; echo; systemctl list-timers --all 2>/dev/null || true
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/db_cron.txt:1:### cron and periodic dirs inside db
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt:1:# Host crontab (root)
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt:5:# /etc/cron*
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt:6:-rw-r--r-- 1 root root 1136 Mar 23  2022 /etc/crontab
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt:8:/etc/cron.d:
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt:16:/etc/cron.daily:
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt:27:/etc/cron.hourly:
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt:33:/etc/cron.monthly:
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt:39:/etc/cron.weekly:
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/sched/caddy_cron.txt:1:### cron and periodic dirs inside caddy
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:47:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:48:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:49:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:108:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:109:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:110:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:169:?? context/context-2025-09-19_203537-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:170:?? context/context-2025-09-19_203537-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203542-Europe_Warsaw/git/status_porcelain.txt:171:?? context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/db_cron.txt:1:### cron and periodic dirs inside db
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt:1:# Host crontab (root)
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt:5:# /etc/cron*
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt:6:-rw-r--r-- 1 root root 1136 Mar 23  2022 /etc/crontab
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt:8:/etc/cron.d:
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt:16:/etc/cron.daily:
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt:27:/etc/cron.hourly:
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt:33:/etc/cron.monthly:
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt:39:/etc/cron.weekly:
+/root/work/vinops.restore/context/context-2025-09-19_203527-Europe_Warsaw/sched/caddy_cron.txt:1:### cron and periodic dirs inside caddy
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/db_cron.txt:1:### cron and periodic dirs inside db
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt:1:# Host crontab (root)
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt:5:# /etc/cron*
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt:6:-rw-r--r-- 1 root root 1136 Mar 23  2022 /etc/crontab
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt:8:/etc/cron.d:
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt:16:/etc/cron.daily:
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt:27:/etc/cron.hourly:
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt:33:/etc/cron.monthly:
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt:39:/etc/cron.weekly:
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/sched/caddy_cron.txt:1:### cron and periodic dirs inside caddy
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/git/status_porcelain.txt:47:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/git/status_porcelain.txt:48:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/git/status_porcelain.txt:49:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/git/status_porcelain.txt:108:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/git/status_porcelain.txt:109:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203537-Europe_Warsaw/git/status_porcelain.txt:110:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/db_cron.txt:1:### cron and periodic dirs inside db
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/web_cron.txt:1:### cron and periodic dirs inside web
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/host_cron.txt:1:# Host crontab (root)
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/host_cron.txt:5:# /etc/cron*
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/host_cron.txt:6:-rw-r--r-- 1 root root 1136 Mar 23  2022 /etc/crontab
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/host_cron.txt:8:/etc/cron.d:
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/host_cron.txt:16:/etc/cron.daily:
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/host_cron.txt:27:/etc/cron.hourly:
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/host_cron.txt:33:/etc/cron.monthly:
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/host_cron.txt:39:/etc/cron.weekly:
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/sched/caddy_cron.txt:1:### cron and periodic dirs inside caddy
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:59:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:60:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:61:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:120:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:121:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:122:?? context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:181:?? context/context-2025-09-19_203537-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:182:?? context/context-2025-09-19_203537-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:183:?? context/context-2025-09-19_203537-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:242:?? context/context-2025-09-19_203542-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:243:?? context/context-2025-09-19_203542-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-20_011319-Europe_Warsaw/git/status_porcelain.txt:244:?? context/context-2025-09-19_203542-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/db_cron.txt:1:### cron and periodic dirs inside db
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt:1:# Host crontab (root)
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt:5:# /etc/cron*
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt:6:-rw-r--r-- 1 root root 1136 Mar 23  2022 /etc/crontab
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt:8:/etc/cron.d:
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt:16:/etc/cron.daily:
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt:27:/etc/cron.hourly:
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt:33:/etc/cron.monthly:
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/host_cron.txt:39:/etc/cron.weekly:
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/sched/caddy_cron.txt:1:### cron and periodic dirs inside caddy
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/git/status_porcelain.txt:47:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/caddy_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/git/status_porcelain.txt:48:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/db_cron.txt
+/root/work/vinops.restore/context/context-2025-09-19_203532-Europe_Warsaw/git/status_porcelain.txt:49:?? context/context-2025-09-19_203527-Europe_Warsaw/sched/host_cron.txt
+/root/work/vinops.restore/frontend/package-lock.json:1579:        "scheduler": "^0.23.2"
+/root/work/vinops.restore/frontend/package-lock.json:1664:    "node_modules/scheduler": {
+/root/work/vinops.restore/frontend/package-lock.json:1666:      "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz",

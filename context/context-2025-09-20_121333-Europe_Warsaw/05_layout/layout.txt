@@ -1,0 +1,35 @@
+
+## REPO LAYOUT — дерево ключевых каталогов
+# Что участвует в сборке
+[tree: frontend/src/app (если есть)]
+.
+./demo
+./health
+./healthz
+./[lang]
+./[lang]/cars
+./[lang]/contacts
+./[lang]/demo
+./[lang]/health
+./[lang]/healthz
+./[lang]/_home
+./[lang]/terms
+./[lang]/vin
+./[lang]/vin/[vin]
+./[lang]/vin/[vin]/details
+./sitemaps
+./sitemaps/static.xml
+./sitemaps/vin
+./sitemaps/vin/en-0.xml
+./sitemaps/vin/ru-0.xml
+./sitemap.xml
+participates: YES (Next.js App Router expected)
+
+[tree: app (если есть)]
+not found: /root/work/vinops.restore/app
+
+[infra/docker/* if present]
+no docker/ dir
+
+[Dockerfile(s) at repo root]
+no Dockerfile* at root

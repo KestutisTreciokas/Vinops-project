@@ -1,0 +1,99 @@
+----- frontend/src/app/[lang]/layout.tsx -----
+     1	import Link from 'next/link'
+     2	import type { Metadata } from 'next'
+     3	import NavLink from '../../components/NavLink'
+     4	import ThemeToggle from '../../components/ThemeToggle'
+     5	
+     6	const NAV = [
+     7	  { href: '/[lang]/cars',     label: { en: 'Catalog',  ru: 'Каталог' } },
+     8	  { href: '/[lang]/contacts', label: { en: 'Contacts', ru: 'Контакты' } },
+     9	  { href: '/[lang]/terms',    label: { en: 'Terms',    ru: 'Условия' } },
+    10	]
+    11	
+    12	export const metadata: Metadata = {
+    13	  title: { default: 'vinops', template: '%s — vinops' },
+    14	}
+    15	
+    16	export default function LangLayout({
+    17	  params, children,
+    18	}: {
+    19	  params: { lang: 'en' | 'ru' }
+    20	  children: React.ReactNode
+    21	}) {
+    22	  const t = (en: string, ru: string) => (params.lang === 'ru' ? ru : en)
+    23	  const href = (p: string) => p.replace('[lang]', params.lang)
+    24	
+    25	  return (
+    26	    <div className="min-h-screen flex flex-col bg-bg-canvas text-fg-default">
+    27	      <header className="site-header">
+    28	        <div className="inner">
+    29	          <Link href={`/${params.lang}`} className="logo"><img className="logo-img-light" src="/svg/brand/property-1-brand-theme-light-size-56.svg" alt="vinops" width="56" height="56" />
+    30	              <img className="logo-img-dark" src="/svg/brand/property-1-brand-theme-dark-size-56.svg" alt="vinops" width="56" height="56" /></Link>
+    31	          <nav className="flex items-center gap-6">
+    32	            {NAV.map((n) => (
+    33	              <NavLink key={n.href} href={href(n.href)}>
+    34	                {t(n.label.en, n.label.ru)}
+    35	              </NavLink>
+    36	            ))}
+    37	            <ThemeToggle />
+    38	            <LangSwitcher lang={params.lang} />
+    39	          </nav>
+    40	        </div>
+    41	      </header>
+    42	
+    43	      <main className="container-prose py-8 flex-1">{children}</main>
+    44	
+    45	      <footer className="mt-12 border-t border-border-muted">
+    46	        <div className="container-prose py-8 text-sm text-fg-muted flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    47	          <div>© {new Date().getFullYear()} vinops</div>
+    48	          <div className="flex items-center gap-4">
+    49	            <a href="mailto:request@vinops.online">request@vinops.online</a>
+    50	            <a href="https://t.me/keustis" target="_blank" rel="noreferrer">@keustis</a>
+    51	          </div>
+    52	        </div>
+    53	      </footer>
+    54	    </div>
+    55	  )
+    56	}
+    57	
+    58	function LangSwitcher({ lang }: { lang: 'en' | 'ru' }) {
+    59	  const other = lang === 'en' ? 'ru' : 'en'
+    60	  return (
+    61	    <div className="flex items-center gap-2">
+    62	      <span className="text-fg-muted text-sm">Lang</span>
+    63	      <a className="btn btn-secondary h-8 px-3 text-xs" href={`/${other}`}>
+    64	        {other.toUpperCase()}
+    65	      </a>
+    66	    </div>
+    67	  )
+    68	}
+----- frontend/src/app/layout.tsx -----
+     1	import Script from 'next/script'
+     2	import { inter, mono } from './fonts'
+     3	import '../styles/globals.css'
+     4	import type { Metadata } from 'next'
+     5	
+     6	export const metadata: Metadata = {
+     7	  title: {
+     8	    default: 'vinops',
+     9	    template: '%s — vinops',
+    10	  },
+    11	  description: 'VIN lookup and auction history by vinops',
+    12	  applicationName: 'vinops',
+    13	  metadataBase: new URL('https://vinops.online'),
+    14	}
+    15	
+    16	export default function RootLayout({ children }: { children: React.ReactNode }) {
+    17	  return (
+    18	    <html suppressHydrationWarning>
+    19	      <body className={`${inter.variable} ${mono.variable} font-sans`}>{children}<Script id="theme-init" strategy="beforeInteractive">{`
+    20	(function(){try{
+    21	  var t = localStorage.getItem('theme');
+    22	  var sys = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light';
+    23	  document.documentElement.setAttribute('data-theme', t || sys);
+    24	}catch(e){}})();
+    25	`}</Script>
+    26	</body>
+    27	    </html>
+    28	  )
+    29	}

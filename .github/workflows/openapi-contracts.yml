@@ -1,0 +1,47 @@
+name: Contract tests (OpenAPI v1)
+
+on:
+  push:
+    branches: [ main, master, ci/openapi-v1 ]
+    paths:
+      - 'contracts/openapi.yaml'
+      - '.github/workflows/openapi-contracts.yml'
+  pull_request:
+    paths:
+      - 'contracts/openapi.yaml'
+      - '.github/workflows/openapi-contracts.yml'
+  workflow_dispatch:
+
+jobs:
+  oas-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Validate OpenAPI (swagger-parser)
+        run: npx -y @apidevtools/swagger-parser@10.1.0 validate contracts/openapi.yaml | tee oas-validate.txt
+
+      - name: Lint OpenAPI (Redocly)
+        run: npx -y @redocly/cli@1.16.0 lint contracts/openapi.yaml --format=stylish | tee oas-lint.txt
+
+      - name: Bundle OpenAPI (dereference)
+        run: npx -y @redocly/cli@1.16.0 bundle contracts/openapi.yaml --output contracts/openapi.bundled.yaml --ext yaml
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-contracts-artifacts
+          if-no-files-found: error
+          path: |
+            oas-validate.txt
+            oas-lint.txt
+            contracts/openapi.yaml
+            contracts/openapi.bundled.yaml

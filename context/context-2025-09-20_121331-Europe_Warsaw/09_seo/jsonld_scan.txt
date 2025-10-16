@@ -1,0 +1,32 @@
+
+## SEO — JSON-LD templates in repo
+# Ищем *.json ld и *.JsonLd.tsx
+bin/diag.sh
+context/mini-sprint-1_fix-featuresssr-import_20250919T203454Z/after_page.tsx
+context/mini-sprint-1_fix-featuresssr-import_20250919T203454Z/before_page.tsx
+context/mini-sprint-1_fix-import-replace_20250919T203920Z/after_page.tsx
+context/mini-sprint-1_fix-import-replace_20250919T203920Z/before_page.tsx
+context/mini-sprint-MS06_20250920T032300Z/ru_1HGCM82633A004352.html
+context/mini-sprint-MS06_20250920T032300Z/en_1HGCM82633A004352.html
+context/mini-sprint-MS06_20250920T032300Z/en_JN8AZ08W35W000001.html
+context/mini-sprint-MS06_20250920T032300Z/ru_JN8AZ08W35W000001.html
+context/mini-sprint-MS06_20250920T032300Z/chips.txt
+context/context-2025-09-20_121331-Europe_Warsaw/01_git/git.txt
+context/context-2025-09-20_121331-Europe_Warsaw/09_seo/jsonld_scan.txt
+context/mini-sprint-1_diag-featuresssr_20250919T203736Z/10_page_head.txt
+context/mini-sprint-1_fix-featuresssr_20250919T203115Z/after_page.tsx
+context/mini-sprint-1_fix-featuresssr_20250919T203115Z/backup/src/app/[lang]/page.tsx
+context/mini-sprint-1_fix-featuresssr_20250919T203115Z/before_page.tsx
+context/mini-sprint-MS06_20250920T032249Z/ru_1HGCM82633A004352.html
+context/mini-sprint-MS06_20250920T032249Z/en_1HGCM82633A004352.html
+context/mini-sprint-MS06_20250920T032249Z/en_JN8AZ08W35W000001.html
+context/mini-sprint-MS06_20250920T032249Z/ru_JN8AZ08W35W000001.html
+context/mini-sprint-MS06_20250920T032249Z/chips.txt
+frontend/src/app/[lang]/PageClient.tsx
+frontend/src/app/[lang]/vin/[vin]/page.tsx.bak.ms06.1758338344
+frontend/src/app/[lang]/vin/[vin]/page.tsx
+frontend/src/app/[lang]/vin/[vin]/_SeoVinJsonLd.tsx.bak.ms04.1758342070
+frontend/src/app/[lang]/vin/[vin]/_SeoVinJsonLd.tsx
+frontend/src/app/[lang]/page.tsx.bak.1758334274
+frontend/src/app/[lang]/page.tsx.bak.ms06.1758342652
+frontend/src/app/[lang]/page.tsx.bak.ms06split.1758342805

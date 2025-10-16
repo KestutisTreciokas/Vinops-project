@@ -1,0 +1,89 @@
+time="2025-09-19T22:45:27+03:00" level=warning msg="/root/work/vinops.restore/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+name: vinopsrestore
+services:
+  caddy:
+    image: caddy:2-alpine
+    networks:
+      webnet: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "80"
+        protocol: tcp
+      - mode: ingress
+        target: 443
+        published: "443"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /root/work/vinops.restore/caddy/Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: volume
+        source: caddy_data
+        target: /data
+        volume: {}
+      - type: volume
+        source: caddy_config
+        target: /config
+        volume: {}
+  db:
+    environment:
+      POSTGRES_DB: vinops
+      POSTGRES_PASSWORD: vinops
+      POSTGRES_USER: vinops
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U vinops -d vinops -q
+      timeout: 3s
+      interval: 5s
+      retries: 30
+    image: postgres:16-alpine
+    networks:
+      default: null
+    volumes:
+      - type: volume
+        source: pgdata
+        target: /var/lib/postgresql/data
+        volume: {}
+  web:
+    build:
+      context: /root/work/vinops.restore/frontend
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+        required: true
+    environment:
+      DATABASE_URL: postgres://vinops:vinops@db:5432/vinops
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      PORT: "3000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1:3000/health || curl -fsS http://127.0.0.1:3000/en/health || exit 1
+      timeout: 3s
+      interval: 10s
+      retries: 3
+      start_period: 20s
+    image: vinops-web:latest
+    networks:
+      webnet: null
+    restart: unless-stopped
+networks:
+  default:
+    name: vinopsrestore_default
+  webnet:
+    name: vinopsrestore_webnet
+volumes:
+  caddy_config:
+    name: vinopsrestore_caddy_config
+  caddy_data:
+    name: vinopsrestore_caddy_data
+  pgdata:
+    name: vinopsrestore_pgdata

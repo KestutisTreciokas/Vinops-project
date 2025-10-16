@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vinops
+      POSTGRES_USER: vinops
+      POSTGRES_PASSWORD: vinops
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vinops -d vinops -q"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    environment:
+      DATABASE_URL: postgres://vinops:vinops@db:5432/vinops
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata: {}

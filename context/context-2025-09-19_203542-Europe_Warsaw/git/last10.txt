@@ -1,0 +1,10 @@
+e3c9f74 (HEAD -> rollback/root-deployable) fix(home): forward props in FeaturesSSR and use it in page.tsx
+f34910f feat(home): server-side wrapper <FeaturesSSR> with id="home-features"
+1f43d52 feat(home): add id="home-features" to Features root
+9ef7fbd infra: install curl in runner stage for healthcheck
+71dc5a2 feat(health): also expose /[lang]/health and /[lang]/healthz
+540f8fa feat(health): add /health and /healthz endpoints for container healthcheck
+1a963f2 fix(cars): typedRoutes — cast href to Route in router.replace
+cabadd2 fix(cars): typedRoutes — use UrlObject in router.replace
+8cf2d87 revert(temp): go back to '@/icons/*' imports from d482a95
+799537b restore(lib,mock): bring from d482a95

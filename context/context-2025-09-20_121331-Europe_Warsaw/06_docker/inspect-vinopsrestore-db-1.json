@@ -1,0 +1,300 @@
+[
+  {
+    "Id": "20976aaee3170c656f5092b04ba95c55b502db60536f1e10f1c1ad0f3bc8ce99",
+    "Created": "2025-09-19T15:16:18.197178552Z",
+    "Path": "docker-entrypoint.sh",
+    "Args": [
+      "postgres"
+    ],
+    "State": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 3298552,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2025-09-19T15:16:18.292451918Z",
+      "FinishedAt": "0001-01-01T00:00:00Z",
+      "Health": {
+        "Status": "healthy",
+        "FailingStreak": 0,
+        "Log": [
+          {
+            "Start": "2025-09-20T13:13:09.125993799+03:00",
+            "End": "2025-09-20T13:13:09.168696315+03:00",
+            "ExitCode": 0,
+            "Output": ""
+          },
+          {
+            "Start": "2025-09-20T13:13:14.170093412+03:00",
+            "End": "2025-09-20T13:13:14.215582293+03:00",
+            "ExitCode": 0,
+            "Output": ""
+          },
+          {
+            "Start": "2025-09-20T13:13:19.216660367+03:00",
+            "End": "2025-09-20T13:13:19.260959121+03:00",
+            "ExitCode": 0,
+            "Output": ""
+          },
+          {
+            "Start": "2025-09-20T13:13:24.26242386+03:00",
+            "End": "2025-09-20T13:13:24.304833183+03:00",
+            "ExitCode": 0,
+            "Output": ""
+          },
+          {
+            "Start": "2025-09-20T13:13:29.305263635+03:00",
+            "End": "2025-09-20T13:13:29.346548149+03:00",
+            "ExitCode": 0,
+            "Output": ""
+          }
+        ]
+      }
+    },
+    "Image": "sha256:31d86079818e8a38ee35e06c0f4485a428b659943737f00496b255af751e69d0",
+    "ResolvConfPath": "/var/lib/docker/containers/20976aaee3170c656f5092b04ba95c55b502db60536f1e10f1c1ad0f3bc8ce99/resolv.conf",
+    "HostnamePath": "/var/lib/docker/containers/20976aaee3170c656f5092b04ba95c55b502db60536f1e10f1c1ad0f3bc8ce99/hostname",
+    "HostsPath": "/var/lib/docker/containers/20976aaee3170c656f5092b04ba95c55b502db60536f1e10f1c1ad0f3bc8ce99/hosts",
+    "LogPath": "/var/lib/docker/containers/20976aaee3170c656f5092b04ba95c55b502db60536f1e10f1c1ad0f3bc8ce99/20976aaee3170c656f5092b04ba95c55b502db60536f1e10f1c1ad0f3bc8ce99-json.log",
+    "Name": "/vinopsrestore-db-1",
+    "RestartCount": 0,
+    "Driver": "overlay2",
+    "Platform": "linux",
+    "MountLabel": "",
+    "ProcessLabel": "",
+    "AppArmorProfile": "docker-default",
+    "ExecIDs": null,
+    "HostConfig": {
+      "Binds": [
+        "vinopsrestore_pgdata:/var/lib/postgresql/data:rw"
+      ],
+      "ContainerIDFile": "",
+      "LogConfig": {
+        "Type": "json-file",
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        }
+      },
+      "NetworkMode": "vinopsrestore_default",
+      "PortBindings": {},
+      "RestartPolicy": {
+        "Name": "no",
+        "MaximumRetryCount": 0
+      },
+      "AutoRemove": false,
+      "VolumeDriver": "",
+      "VolumesFrom": null,
+      "ConsoleSize": [
+        0,
+        0
+      ],
+      "CapAdd": null,
+      "CapDrop": null,
+      "CgroupnsMode": "private",
+      "Dns": null,
+      "DnsOptions": null,
+      "DnsSearch": null,
+      "ExtraHosts": [],
+      "GroupAdd": null,
+      "IpcMode": "private",
+      "Cgroup": "",
+      "Links": null,
+      "OomScoreAdj": 0,
+      "PidMode": "",
+      "Privileged": false,
+      "PublishAllPorts": false,
+      "ReadonlyRootfs": false,
+      "SecurityOpt": null,
+      "UTSMode": "",
+      "UsernsMode": "",
+      "ShmSize": 67108864,
+      "Runtime": "runc",
+      "Isolation": "",
+      "CpuShares": 0,
+      "Memory": 0,
+      "NanoCpus": 0,
+      "CgroupParent": "",
+      "BlkioWeight": 0,
+      "BlkioWeightDevice": null,
+      "BlkioDeviceReadBps": null,
+      "BlkioDeviceWriteBps": null,
+      "BlkioDeviceReadIOps": null,
+      "BlkioDeviceWriteIOps": null,
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpuRealtimePeriod": 0,
+      "CpuRealtimeRuntime": 0,
+      "CpusetCpus": "",
+      "CpusetMems": "",
+      "Devices": null,
+      "DeviceCgroupRules": null,
+      "DeviceRequests": null,
+      "MemoryReservation": 0,
+      "MemorySwap": 0,
+      "MemorySwappiness": null,
+      "OomKillDisable": null,
+      "PidsLimit": null,
+      "Ulimits": null,
+      "CpuCount": 0,
+      "CpuPercent": 0,
+      "IOMaximumIOps": 0,
+      "IOMaximumBandwidth": 0,
+      "MaskedPaths": [
+        "/proc/asound",
+        "/proc/acpi",
+        "/proc/interrupts",
+        "/proc/kcore",
+        "/proc/keys",
+        "/proc/latency_stats",
+        "/proc/timer_list",
+        "/proc/timer_stats",
+        "/proc/sched_debug",
+        "/proc/scsi",
+        "/sys/firmware",
+        "/sys/devices/virtual/powercap"
+      ],
+      "ReadonlyPaths": [
+        "/proc/bus",
+        "/proc/fs",
+        "/proc/irq",
+        "/proc/sys",
+        "/proc/sysrq-trigger"
+      ]
+    },
+    "GraphDriver": {
+      "Data": {
+        "ID": "20976aaee3170c656f5092b04ba95c55b502db60536f1e10f1c1ad0f3bc8ce99",
+        "LowerDir": "/var/lib/docker/overlay2/b13bf33731f49ad7989880a855261894285444d25dfd93af673b6e60d81443bc-init/diff:/var/lib/docker/overlay2/fa7236daad35c385e55b03717431ff96f509a41413532ac8d325498546d26bc9/diff:/var/lib/docker/overlay2/ce4d19f5797172551faa41c72d9487442bab398d98b4e7f41766443c976fa5cb/diff:/var/lib/docker/overlay2/37ed28811307e2e1da6fb13f19eba7c4e20bcbce447fde83267df4d180b38247/diff:/var/lib/docker/overlay2/065dd6caa046550e65ae7450dca0fcdbc1d5e45e9c2fedf6467f6a6388433ec6/diff:/var/lib/docker/overlay2/20925fbdbe0ea4d7287299bf189f1cf4a9b0766338d9e5bd20ebafef234236bf/diff:/var/lib/docker/overlay2/7de5b95ce4e647a247fdb1d5b85dc781ffa658a7d7d39cef69d2bbdf5a1cbf6c/diff:/var/lib/docker/overlay2/c116c0d5cdf1284f734bbf2b137dcf013c8512d57cb63633cd987c9fa98329d5/diff:/var/lib/docker/overlay2/9a73f65df0779ee84a7ce8b165b7034c39cd0ab794f57306aed7a7676335c7c7/diff:/var/lib/docker/overlay2/1ea68ca7ad2e4a58ad052e13dd30cfb0927103eeacd3b2fee16d117cd60daba5/diff:/var/lib/docker/overlay2/6e9a67f7c8550506c9a9b323e6975e1d1db545f0891d4563cb684ea58d4b43f6/diff:/var/lib/docker/overlay2/2b4c52812ce5784bd955772c00520eebc18bff56ebfae68a0b72166b1318c74f/diff",
+        "MergedDir": "/var/lib/docker/overlay2/b13bf33731f49ad7989880a855261894285444d25dfd93af673b6e60d81443bc/merged",
+        "UpperDir": "/var/lib/docker/overlay2/b13bf33731f49ad7989880a855261894285444d25dfd93af673b6e60d81443bc/diff",
+        "WorkDir": "/var/lib/docker/overlay2/b13bf33731f49ad7989880a855261894285444d25dfd93af673b6e60d81443bc/work"
+      },
+      "Name": "overlay2"
+    },
+    "Mounts": [
+      {
+        "Type": "volume",
+        "Name": "vinopsrestore_pgdata",
+        "Source": "/var/lib/docker/volumes/vinopsrestore_pgdata/_data",
+        "Destination": "/var/lib/postgresql/data",
+        "Driver": "local",
+        "Mode": "rw",
+        "RW": true,
+        "Propagation": ""
+      }
+    ],
+    "Config": {
+      "Hostname": "20976aaee317",
+      "Domainname": "",
+      "User": "",
+      "AttachStdin": false,
+      "AttachStdout": true,
+      "AttachStderr": true,
+      "ExposedPorts": {
+        "5432/tcp": {}
+      },
+      "Tty": false,
+      "OpenStdin": false,
+      "StdinOnce": false,
+      "Env": [
+        "POSTGRES_DB=***REDACTED***",
+        "POSTGRES_USER=***REDACTED***",
+        "POSTGRES_PASSWORD=***REDACTED***",
+        "PATH=***REDACTED***",
+        "GOSU_VERSION=***REDACTED***",
+        "LANG=***REDACTED***",
+        "PG_MAJOR=***REDACTED***",
+        "PG_VERSION=***REDACTED***",
+        "PG_SHA256=***REDACTED***",
+        "DOCKER_PG_LLVM_DEPS=***REDACTED***",
+        "PGDATA=***REDACTED***"
+      ],
+      "Cmd": [
+        "postgres"
+      ],
+      "Healthcheck": {
+        "Test": [
+          "CMD-SHELL",
+          "pg_isready -U vinops -d vinops -q"
+        ],
+        "Interval": 5000000000,
+        "Timeout": 3000000000,
+        "Retries": 30
+      },
+      "Image": "postgres:16-alpine",
+      "Volumes": {
+        "/var/lib/postgresql/data": {}
+      },
+      "WorkingDir": "/",
+      "Entrypoint": [
+        "docker-entrypoint.sh"
+      ],
+      "OnBuild": null,
+      "Labels": {
+        "com.docker.compose.config-hash": "bb6bfb45e0c2fade6ccbf21c710950d2e071f2466c0f1be3da6ebe91aecca7cb",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:31d86079818e8a38ee35e06c0f4485a428b659943737f00496b255af751e69d0",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "vinopsrestore",
+        "com.docker.compose.project.config_files": "/root/work/vinops.restore/docker-compose.prod.yml,/root/work/vinops.restore/docker-compose.db.yml,/root/work/vinops.restore/docker-compose.health.yml,/root/work/vinops.restore/docker-compose.hostfix.yml",
+        "com.docker.compose.project.working_dir": "/root/work/vinops.restore",
+        "com.docker.compose.service": "db",
+        "com.docker.compose.version": "2.39.2"
+      },
+      "StopSignal": "SIGINT"
+    },
+    "NetworkSettings": {
+      "Bridge": "",
+      "SandboxID": "8cbb614b60b5c9369d36f223e1e4ce0a9d6bacfa2d474b75c4459252a269bfc3",
+      "SandboxKey": "/var/run/docker/netns/8cbb614b60b5",
+      "Ports": {
+        "5432/tcp": null
+      },
+      "HairpinMode": false,
+      "LinkLocalIPv6Address": "",
+      "LinkLocalIPv6PrefixLen": 0,
+      "SecondaryIPAddresses": null,
+      "SecondaryIPv6Addresses": null,
+      "EndpointID": "",
+      "Gateway": "",
+      "GlobalIPv6Address": "",
+      "GlobalIPv6PrefixLen": 0,
+      "IPAddress": "",
+      "IPPrefixLen": 0,
+      "IPv6Gateway": "",
+      "MacAddress": "",
+      "Networks": {
+        "vinopsrestore_default": {
+          "IPAMConfig": null,
+          "Links": null,
+          "Aliases": [
+            "vinopsrestore-db-1",
+            "db"
+          ],
+          "MacAddress": "b6:9b:76:73:d7:e2",
+          "DriverOpts": null,
+          "GwPriority": 0,
+          "NetworkID": "a2529e533aad265fb1ce55c9bef1220a5e5c15852876fd768d57b4b7f1f3fb1f",
+          "EndpointID": "f6ed54d5c0ebdd5e07df557f0024a312b2b45c30031c751da8c4c5c7e4b31744",
+          "Gateway": "172.20.0.1",
+          "IPAddress": "172.20.0.2",
+          "IPPrefixLen": 16,
+          "IPv6Gateway": "",
+          "GlobalIPv6Address": "",
+          "GlobalIPv6PrefixLen": 0,
+          "DNSNames": [
+            "vinopsrestore-db-1",
+            "db",
+            "20976aaee317"
+          ]
+        }
+      }
+    }
+  }
+]

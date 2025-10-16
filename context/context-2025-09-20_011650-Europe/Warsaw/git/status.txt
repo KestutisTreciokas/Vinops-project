@@ -1,0 +1,41 @@
+### 2025-09-20T02:16:50+03:00  CMD: git status -b --porcelain=v1
+
+## feat/s1-efh-fixes
+ M docker-compose.health.yml
+ M frontend/src/app/[lang]/_home/Features.tsx
+?? bin/diag.sh
+?? context/LAST_MS_S1-01_DIR.txt
+?? context/S1-A_fix_header_hero_20250919T215459Z/
+?? context/S1-prep_header_20250919T214510Z/
+?? context/context-2025-09-19_203527-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203527-Europe_Warsaw/
+?? context/context-2025-09-19_203532-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203532-Europe_Warsaw/
+?? context/context-2025-09-19_203537-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203537-Europe_Warsaw/
+?? context/context-2025-09-19_203542-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203542-Europe_Warsaw/
+?? context/context-2025-09-20_011319-Europe_Warsaw.tar.gz
+?? context/context-2025-09-20_011319-Europe_Warsaw/
+?? context/context-2025-09-20_011445-Europe/
+?? context/context-2025-09-20_011624-Europe/
+?? context/context-2025-09-20_011636-Europe/
+?? context/context-2025-09-20_011650-Europe/
+?? context/mini-sprint-1_20250919T194728Z/
+?? context/mini-sprint-1_diag-featuresssr_20250919T203736Z/
+?? context/mini-sprint-1_fix-featuresssr-import_20250919T203454Z/
+?? context/mini-sprint-1_fix-featuresssr_20250919T203115Z/
+?? context/mini-sprint-1_fix-import-replace_20250919T203920Z/
+?? context/ms-S1-01_20250919T194511Z/
+?? context/ms-S1-02_fonts_diag_20250919T204243Z/
+?? context/ms-S1-02b_fonts_local_20250919T204620Z/
+?? context/ms-S1-02b_fonts_local_fix_20250919T205015Z/
+?? context/ms-S1-EFH_20250919T230251Z/
+?? context/ms-S1-EF_20250919T224301Z/
+?? context/s1-BF_20250919T223536Z/
+?? context/s1-BF_20250919T223712Z/
+?? context/s1-a_kill-hero-gradient_20250919T221738Z/
+?? context/s1-b_ui_scaffold_20250919T222517Z/
+?? frontend/public/fonts/inter/.keep
+?? frontend/public/fonts/jetbrains/.keep
+?? frontend/src/app/[lang]/vin/[vin]/layout.tsx

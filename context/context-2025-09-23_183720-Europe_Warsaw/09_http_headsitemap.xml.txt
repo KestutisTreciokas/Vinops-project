@@ -1,0 +1,6 @@
+HTTP/2 200 
+cache-control: public, max-age=0, must-revalidate
+content-type: application/xml
+referrer-policy: strict-origin-when-cross-origin
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN

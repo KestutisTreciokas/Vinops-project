@@ -1,0 +1,24 @@
+### 2025-09-20T02:16:37+03:00  CMD: sh -lc crontab -l 2>&1 || true; echo; systemctl list-timers --all 2>/dev/null || true
+
+0 2 * * * cd /root/work/vinops && ./bin/backup-db.sh >> context/backup.log 2>&1 && find backups -type f -name "*.dump" -mtime +7 -delete
+*/5 * * * * /root/work/vinops.restore/ops/smoke.sh >> /var/log/vinops-smoke.log 2>&1
+
+NEXT                        LEFT           LAST                        PASSED       UNIT                           ACTIVATES
+Sat 2025-09-20 06:48:18 MSK 4h 31min left  Fri 2025-09-19 22:30:40 MSK 3h 45min ago certbot.timer                  certbot.service
+Sat 2025-09-20 08:47:29 MSK 6h left        Fri 2025-09-19 05:21:25 MSK 20h ago      man-db.timer                   man-db.service
+Sat 2025-09-20 16:14:14 MSK 13h left       Sat 2025-09-20 00:47:30 MSK 1h 29min ago motd-news.timer                motd-news.service
+Sat 2025-09-20 16:20:38 MSK 14h left       Fri 2025-09-19 21:28:16 MSK 4h 48min ago fwupd-refresh.timer            fwupd-refresh.service
+Sat 2025-09-20 23:36:12 MSK 21h left       Fri 2025-09-19 23:36:12 MSK 2h 40min ago update-notifier-download.timer update-notifier-download.service
+Sat 2025-09-20 23:46:00 MSK 21h left       Fri 2025-09-19 23:46:00 MSK 2h 30min ago systemd-tmpfiles-clean.timer   systemd-tmpfiles-clean.service
+Sun 2025-09-21 00:00:00 MSK 21h left       Sat 2025-09-20 00:00:01 MSK 2h 16min ago dpkg-db-backup.timer           dpkg-db-backup.service
+Sun 2025-09-21 00:00:00 MSK 21h left       Sat 2025-09-20 00:00:01 MSK 2h 16min ago logrotate.timer                logrotate.service
+Sun 2025-09-21 03:10:30 MSK 24h left       Sun 2025-09-14 03:10:44 MSK 5 days ago   e2scrub_all.timer              e2scrub_all.service
+Sun 2025-09-21 15:11:38 MSK 1 day 12h left Tue 2025-09-16 16:03:21 MSK 3 days ago   update-notifier-motd.timer     update-notifier-motd.service
+Mon 2025-09-22 01:31:04 MSK 1 day 23h left Mon 2025-09-15 01:26:24 MSK 5 days ago   fstrim.timer                   fstrim.service
+n/a                         n/a            n/a                         n/a          apport-autoreport.timer        apport-autoreport.service
+n/a                         n/a            Tue 2025-09-16 06:26:30 MSK 3 days ago   apt-daily-upgrade.timer        apt-daily-upgrade.service
+n/a                         n/a            Tue 2025-09-16 08:47:22 MSK 3 days ago   apt-daily.timer                apt-daily.service
+n/a                         n/a            n/a                         n/a          snapd.snap-repair.timer        snapd.snap-repair.service
+n/a                         n/a            n/a                         n/a          ua-timer.timer                 ua-timer.service
+
+16 timers listed.

@@ -1,0 +1,5 @@
+HTTP/2 502 
+alt-svc: h3=":443"; ma=2592000
+server: Caddy
+date: Fri, 19 Sep 2025 19:45:50 GMT
+

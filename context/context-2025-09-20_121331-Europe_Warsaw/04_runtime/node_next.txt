@@ -1,0 +1,15 @@
+
+## RUNTIME — Node/Package managers/Next
+# Версии инструментов
+[node]
+node: not found
+[pnpm]
+pnpm: not found
+[npm ]
+npm : not found
+[yarn]
+yarn: not found
+[npx ]
+npx : not found
+[next]
+next: not found

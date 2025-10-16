@@ -1,0 +1,45 @@
+'use client'
+import React from 'react'
+
+export default function SeoVinJsonLd({ lang, vin }: { lang: 'en'|'ru', vin: string }) {
+  const base = 'https://vinops.online'
+  const url  = `${base}/${lang}/vin/${vin}`
+
+  const t = (en: string, ru: string) => (lang === 'ru' ? ru : en)
+
+  const vehicle = {
+    '@context': 'https://schema.org',
+    '@type': 'Vehicle',
+    name: t(`Vehicle by VIN ${vin}`, `Авто по VIN ${vin}`),
+    vehicleIdentificationNumber: vin,
+    url,
+  }
+
+  const breadcrumbs = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: t('Home', 'Главная'),
+        item: `${base}/${lang}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: t('VIN page', 'Страница VIN'),
+        item: url,
+      },
+    ],
+  }
+
+  const payload = [vehicle, breadcrumbs]
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }}
+    />
+  )
+}

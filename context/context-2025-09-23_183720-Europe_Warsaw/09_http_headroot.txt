@@ -1,0 +1,4 @@
+HTTP/2 307 
+referrer-policy: strict-origin-when-cross-origin
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN

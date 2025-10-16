@@ -1,0 +1,11 @@
+[info] Workdir: /root/work/vinops.restore
+Linux 5620425-gw67512 5.15.0-153-generic #163-Ubuntu SMP Thu Aug 7 16:37:18 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Docker version 28.4.0, build d8eb465
+Docker Compose version v2.39.2
+
+[info] Compose files in repo root:
+docker-compose.db.yml
+docker-compose.health.yml
+docker-compose.hostfix.yml
+docker-compose.prod.yml
+docker-compose.yml

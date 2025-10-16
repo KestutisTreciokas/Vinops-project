@@ -1,0 +1,14 @@
+Static dir: /root/work/vinops.restore/frontend/public
+placeholders/car-1.svg
+placeholders/car-2.svg
+placeholders/car-3.svg
+placeholders/car-4.svg
+placeholders/car-5.svg
+vin-sample/1.svg
+vin-sample/2.svg
+vin-sample/3.svg
+vin-sample/4.svg
+vin-sample/5.svg
+vin-sample/6.svg
+vin-sample/7.svg
+vin-sample/8.svg

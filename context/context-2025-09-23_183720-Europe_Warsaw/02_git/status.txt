@@ -1,0 +1,17 @@
+ M bin/diag.sh
+ M db/migrations/_registry.json
+?? context/context-2025-09-23_183720-Europe_Warsaw/
+?? data/
+?? db/config.md
+?? db/migrations/0004_policy_flags.sql
+?? db/migrations/0005_vin_normalized_fix.sql
+?? db/migrations/0006_vin_normalized_ck_uidx.sql
+?? db/migrations/0007_canon_domains_columns.sql
+?? db/migrations/_registry.json.bak.20250923072320
+?? db/roles.md
+?? db/sql/
+?? docs/README.md
+?? docs/RUNBOOKS.md
+?? infra/
+?? scripts/db-apply.sh
+?? security/

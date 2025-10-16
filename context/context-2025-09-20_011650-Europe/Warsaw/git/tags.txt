@@ -1,0 +1,18 @@
+### 2025-09-20T02:16:50+03:00  CMD: git tag -l --sort=-creatordate
+
+baseline/S1-02_fonts-locked
+safekeep/fe-before-restore-20250919-1919
+safekeep/root-20250919-1738
+safekeep/fe-20250919-1737
+safekeep/root-20250919-1733
+safekeep/root-20250919-1731
+safekeep/root-20250919-1725
+prod-20250917-152908
+v0.1.6
+v0.1.5
+v0.1.4
+v0.1.3
+v0.1.2
+v0.1.1
+v0.1.0-restored
+v0.1.0

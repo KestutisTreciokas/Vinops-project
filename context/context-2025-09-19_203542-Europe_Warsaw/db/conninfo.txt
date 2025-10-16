@@ -1,0 +1,6 @@
+### psql \conninfo inside db container
+### Started: 2025-09-19T21:35:46+03:00
+
+You are connected to database "vinops" as user "vinops" via socket in "/var/run/postgresql" at port "5432".
+
+### Finished: 2025-09-19T21:35:46+03:00

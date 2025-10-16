@@ -1,0 +1,10 @@
+### curl -I https://vinops.online/en
+### Started: 2025-09-19T21:35:40+03:00
+
+HTTP/2 502 
+alt-svc: h3=":443"; ma=2592000
+server: Caddy
+date: Fri, 19 Sep 2025 18:35:40 GMT
+
+
+### Finished: 2025-09-19T21:35:40+03:00

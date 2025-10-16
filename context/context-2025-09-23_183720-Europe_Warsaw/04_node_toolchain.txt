@@ -1,0 +1,7 @@
+node: UNKNOWN
+npm: UNKNOWN
+pnpm: UNKNOWN
+yarn: UNKNOWN
+npx: UNKNOWN
+tsc: UNKNOWN
+next: UNKNOWN

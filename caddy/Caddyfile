@@ -1,0 +1,16 @@
+{
+	email admin@vinops.online
+}
+vinops.online, www.vinops.online {
+	encode zstd gzip
+	@health {
+		path /healthz
+	}
+	respond @health "ok" 200
+	reverse_proxy web:3000
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Content-Type-Options "nosniff"
+	}
+}

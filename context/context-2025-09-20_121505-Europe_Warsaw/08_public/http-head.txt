@@ -1,0 +1,171 @@
+
+## PUBLIC — HEAD / GET (snippet)
+# Фиксируем коды и ключевые заголовки
+Host: https://vinops.online
+[HEAD] https://vinops.online/
+HTTP/2 307 
+alt-svc: h3=":443"; ma=2592000
+date: Sat, 20 Sep 2025 10:15:06 GMT
+location: /en
+referrer-policy: strict-origin-when-cross-origin
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+
+
+[HEAD] https://vinops.online/en
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: s-maxage=31536000, stale-while-revalidate
+content-type: text/html; charset=utf-8
+date: Sat, 20 Sep 2025 10:15:06 GMT
+etag: "p54qbgdrd6dsl"
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+content-length: 17942
+
+
+[HEAD] https://vinops.online/ru
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: s-maxage=31536000, stale-while-revalidate
+content-type: text/html; charset=utf-8
+date: Sat, 20 Sep 2025 10:15:06 GMT
+etag: "3tgrt5rqoedur"
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+content-length: 18808
+
+
+[HEAD] https://vinops.online/en/cars
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: s-maxage=31536000, stale-while-revalidate
+content-type: text/html; charset=utf-8
+date: Sat, 20 Sep 2025 10:15:06 GMT
+etag: "gkh6iznw27ba0"
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+content-length: 14698
+
+
+[HEAD] https://vinops.online/ru/cars
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: s-maxage=31536000, stale-while-revalidate
+content-type: text/html; charset=utf-8
+date: Sat, 20 Sep 2025 10:15:06 GMT
+etag: "ypr6t3c95lbe4"
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+content-length: 15280
+
+
+[HEAD] https://vinops.online/en/contacts
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: s-maxage=31536000, stale-while-revalidate
+content-type: text/html; charset=utf-8
+date: Sat, 20 Sep 2025 10:15:06 GMT
+etag: "boehplm9txcen"
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+content-length: 16143
+
+
+[HEAD] https://vinops.online/ru/contacts
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: s-maxage=31536000, stale-while-revalidate
+content-type: text/html; charset=utf-8
+date: Sat, 20 Sep 2025 10:15:06 GMT
+etag: "aulydvqrk0cdv"
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+content-length: 16503
+
+
+[HEAD] https://vinops.online/en/terms
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: s-maxage=31536000, stale-while-revalidate
+content-type: text/html; charset=utf-8
+date: Sat, 20 Sep 2025 10:15:06 GMT
+etag: "15itieedlcebhx"
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+content-length: 14965
+
+
+[HEAD] https://vinops.online/ru/terms
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: s-maxage=31536000, stale-while-revalidate
+content-type: text/html; charset=utf-8
+date: Sat, 20 Sep 2025 10:15:06 GMT
+etag: "c8dxb01bnqbgi"
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+content-length: 15368
+
+
+[HEAD] https://vinops.online/robots.txt
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain
+date: Sat, 20 Sep 2025 10:15:06 GMT
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+
+
+[HEAD] https://vinops.online/sitemap.xml
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: public, max-age=0, must-revalidate
+content-type: application/xml
+date: Sat, 20 Sep 2025 10:15:06 GMT
+referrer-policy: strict-origin-when-cross-origin
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-nextjs-cache: HIT
+
+

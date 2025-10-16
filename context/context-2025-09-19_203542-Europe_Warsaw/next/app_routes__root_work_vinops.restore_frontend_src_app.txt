@@ -1,0 +1,19 @@
+# File-based routes under: /root/work/vinops.restore/frontend/src/app
+demo/page.tsx
+health/route.ts
+healthz/route.ts
+[lang]/cars/page.tsx
+[lang]/contacts/page.tsx
+[lang]/demo/page.tsx
+[lang]/health/route.ts
+[lang]/healthz/route.ts
+[lang]/layout.tsx
+[lang]/page.tsx
+[lang]/terms/page.tsx
+[lang]/vin/[vin]/details/page.tsx
+[lang]/vin/[vin]/error.tsx
+[lang]/vin/[vin]/loading.tsx
+[lang]/vin/[vin]/page.tsx
+layout.tsx
+
+# Dynamic segments found:

@@ -1,0 +1,247 @@
+import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { getPool } from '../../../_lib/db';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const API_VERSION = '1';
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{11,17}$/;
+
+const ALLOWED_ORIGINS = new Set([
+  'https://vinops.online',
+  'https://www.vinops.online',
+  'http://localhost:3000',
+]);
+
+type VehiclesRow = {
+  vin: string;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  trim: string | null;
+  body: string | null;
+  fuel: string | null;
+  transmission: string | null;
+  drive: string | null;
+  engine: string | null;
+  created_at: string;
+  updated_at: string;
+  is_hidden?: boolean | null;
+};
+
+type LotRow = {
+  lotId: number;
+  vin: string;
+  source: string | null;
+  siteCode: string | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  auctionDateTimeUtc: string | null;
+  estRetailValueUsd: number | null;
+  status: string | null;
+  runsDrives: boolean | null;
+  hasKeys: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+type ImageAgg = {
+  imageCount: number;
+  primaryImageUrl: string | null;
+  imagesUpdatedAt: string | null;
+};
+
+type SaleEvent = {
+  id: number;
+  lotId: number | null;
+  saleDate: string | null;
+  status: string | null;
+  finalBidUsd: number | null;
+  currency: string | null;
+  collectedVia: string | null;
+};
+
+function json(body: unknown, init: ResponseInit & { headers?: Record<string,string> } = {}) {
+  const h = new Headers(init.headers || {});
+  h.set('Content-Type', 'application/json; charset=utf-8');
+  return new NextResponse(JSON.stringify(body), { ...init, headers: h });
+}
+
+function corsHeaders(origin: string | null): Record<string,string> {
+  const h: Record<string,string> = {
+    'Vary': 'Origin, Accept-Language',
+    'X-Api-Version': API_VERSION,
+  };
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    h['Access-Control-Allow-Origin'] = origin;
+    h['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+    h['Access-Control-Allow-Headers'] = 'Content-Type, Accept-Language';
+  }
+  return h;
+}
+
+// ----- very simple in-memory rate-limit (per-process; robust RL на периметре) -----
+const BUCKET = new Map<string, { n: number; resetAt: number }>();
+function rateLimit(key: string) {
+  const now = Date.now();
+  const winMs = 60_000;
+  const limit = Number(process.env.API_VEHICLES_RPM || 60);
+  const b = BUCKET.get(key);
+  if (!b || b.resetAt <= now) {
+    const resetAt = now + winMs;
+    BUCKET.set(key, { n: 1, resetAt });
+    return { ok: true, remaining: limit - 1, resetAt };
+  }
+  if (b.n >= limit) return { ok: false, remaining: 0, resetAt: b.resetAt };
+  b.n += 1;
+  return { ok: true, remaining: limit - b.n, resetAt: b.resetAt };
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  return new NextResponse(null, { status: 204, headers: corsHeaders(origin) });
+}
+
+export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
+  const origin = req.headers.get('origin');
+  const lang = (req.headers.get('accept-language') || 'en').split(',')[0]?.toLowerCase().startsWith('ru') ? 'ru' : 'en';
+  const ip = (req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || req.ip || '0.0.0.0').split(',')[0].trim();
+  const trace = crypto.randomBytes(8).toString('hex');
+
+  // 1) RL
+  const rl = rateLimit(`vehicles:${ip}`);
+  const rlHdrs = {
+    'X-RateLimit-Limit': String(process.env.API_VEHICLES_RPM || 60),
+    'X-RateLimit-Remaining': String(Math.max(0, rl.remaining)),
+    'X-RateLimit-Reset': String(Math.floor(rl.resetAt / 1000)),
+  };
+  if (!rl.ok) {
+    return json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' }, traceId: trace },
+      { status: 429, headers: { ...corsHeaders(origin), ...rlHdrs } });
+  }
+
+  // 2) VIN validation
+  const vin = (ctx?.params?.vin || '').toUpperCase();
+  if (!VIN_RE.test(vin)) {
+    return json({ error: { code: 'INVALID_VIN', message: 'VIN must be 11–17 uppercase, excluding I/O/Q' }, traceId: trace },
+      { status: 422, headers: { ...corsHeaders(origin), ...rlHdrs } });
+  }
+
+  // 3) Data load
+  const pool = getPool();
+  try {
+    const vc = await pool.query<VehiclesRow>(`
+      SELECT v.vin, v.year, v.make, v.model, v.trim, v.body, v.fuel, v.transmission, v.drive, v.engine,
+             v.created_at, v.updated_at,
+             COALESCE(v.is_hidden, FALSE) AS is_hidden
+        FROM vehicles v
+       WHERE v.vin = $1
+       LIMIT 1
+    `, [vin]);
+
+    if (vc.rowCount === 0) {
+      return json({ error: { code: 'NOT_FOUND', message: 'VIN not found' }, traceId: trace },
+        { status: 404, headers: { ...corsHeaders(origin), ...rlHdrs } });
+    }
+
+    const vehicle = vc.rows[0];
+    if (vehicle?.is_hidden) {
+      return json({ error: { code: 'SUPPRESSED', message: 'VIN removed/suppressed' }, traceId: trace },
+        { status: 410, headers: { ...corsHeaders(origin), ...rlHdrs } });
+    }
+
+    const lotq = await pool.query<LotRow>(`
+      SELECT l.id AS "lotId", l.vin, l.source, l.site_code AS "siteCode", l.city, l.region, l.country,
+             to_char(l.auction_datetime_utc AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "auctionDateTimeUtc",
+             CAST(l.retail_value_usd AS DOUBLE PRECISION) AS "estRetailValueUsd",
+             l.status AS "status",
+             l.runs_drives AS "runsDrives",
+             l.has_keys AS "hasKeys",
+             l.created_at, l.updated_at
+        FROM lots l
+       WHERE l.vin = $1
+       ORDER BY l.auction_datetime_utc DESC NULLS LAST, l.id DESC
+       LIMIT 1
+    `, [vin]);
+    const lot = lotq.rows[0] || null;
+
+    const img = await pool.query<ImageAgg>(`
+      SELECT COUNT(*)::int AS "imageCount",
+             MIN(CASE WHEN variant IN ('xl','md','thumb') THEN url END) AS "primaryImageUrl",
+             to_char(MAX(updated_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "imagesUpdatedAt"
+        FROM images
+       WHERE vin = $1
+    `, [vin]);
+    const imagesAgg = img.rows[0] || { imageCount: 0, primaryImageUrl: null, imagesUpdatedAt: null };
+
+    const sales = await pool.query<SaleEvent>(`
+      SELECT id, lot_id AS "lotId",
+             to_char(sale_date AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "saleDate",
+             status, CAST(final_bid_usd AS DOUBLE PRECISION) AS "finalBidUsd",
+             currency, collected_via AS "collectedVia"
+        FROM sale_events
+       WHERE vin = $1
+       ORDER BY sale_date DESC NULLS LAST, id DESC
+       LIMIT 10
+    `, [vin]);
+
+    // 4) DTO
+    const dto = {
+      vin: vehicle.vin,
+      year: vehicle.year,
+      make: vehicle.make,
+      model: vehicle.model,
+      trim: vehicle.trim,
+      specs: {
+        body: vehicle.body, fuel: vehicle.fuel, transmission: vehicle.transmission,
+        drive: vehicle.drive, engine: vehicle.engine,
+      },
+      lot: lot ? {
+        lotId: lot.lotId, vin: lot.vin, source: lot.source, siteCode: lot.siteCode,
+        city: lot.city, region: lot.region, country: lot.country,
+        auctionDateTimeUtc: lot.auctionDateTimeUtc,
+        estRetailValueUsd: lot.estRetailValueUsd,
+        status: lot.status, runsDrives: lot.runsDrives, hasKeys: lot.hasKeys,
+      } : null,
+      images: {
+        imageCount: imagesAgg.imageCount,
+        primaryImageUrl: imagesAgg.primaryImageUrl,
+      },
+      saleEvents: sales.rows,
+      i18n: { lang }, // зарезервировано для лейблов
+    };
+
+    // 5) Кэш мета
+    const lastCandidates = [
+      vehicle.updated_at,
+      lot?.updated_at || null,
+      imagesAgg.imagesUpdatedAt || null,
+    ].filter(Boolean) as string[];
+    const lastISO = lastCandidates.sort().slice(-1)[0] || new Date().toISOString();
+
+    const etag = 'W/"' + crypto
+      .createHash('sha1')
+      .update(JSON.stringify({ v: dto, last: lastISO }))
+      .digest('hex')
+      + '"';
+
+    const reqETag = req.headers.get('if-none-match');
+    const baseHeaders = { ...corsHeaders(origin), ...rlHdrs,
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      'ETag': etag,
+      'Last-Modified': lastISO,
+    };
+
+    if (reqETag && reqETag === etag) {
+      return new NextResponse(null, { status: 304, headers: baseHeaders });
+    }
+
+    return json(dto, { status: 200, headers: baseHeaders });
+  } catch (e: any) {
+    const msg = e?.message || 'Internal error';
+    const h = { ...corsHeaders(origin), 'X-Trace-Id': trace, ...rlHdrs };
+    return json({ error: { code: 'INTERNAL', message: msg }, traceId: trace }, { status: 500, headers: h });
+  }
+}

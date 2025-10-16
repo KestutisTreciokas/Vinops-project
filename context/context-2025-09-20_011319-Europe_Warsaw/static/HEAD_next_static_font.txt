@@ -1,0 +1,16 @@
+### Sample HEAD of _next/static font (may 404 if path changed)
+### Started: 2025-09-20T02:13:25+03:00
+
+HTTP/2 200 
+accept-ranges: bytes
+alt-svc: h3=":443"; ma=2592000
+cache-control: public, max-age=31536000, immutable
+content-type: font/woff2
+date: Fri, 19 Sep 2025 23:13:25 GMT
+etag: W/"4938-19964157f73"
+last-modified: Fri, 19 Sep 2025 22:25:54 GMT
+via: 1.1 Caddy
+content-length: 18744
+
+
+### Finished: 2025-09-20T02:13:25+03:00

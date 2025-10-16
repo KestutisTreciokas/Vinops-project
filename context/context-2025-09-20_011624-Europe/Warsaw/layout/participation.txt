@@ -1,0 +1,1 @@
+frontend: Next.js detected (participates in build).

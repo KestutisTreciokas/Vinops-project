@@ -1,0 +1,17 @@
+# deps
+node_modules/
+*.log
+
+# env
+.env
+.env.*
+
+# builds
+.next/
+dist/
+build/
+
+# misc
+.DS_Store
+coverage/
+context/context-*.txt

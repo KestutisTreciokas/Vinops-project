@@ -1,0 +1,300 @@
+// Read-only API v1 — vehicles/{vin}
+// Invariants: VIN 11–17 UPPER (no I/O/Q), 200/404/410/422, cache & ETag/Vary, RL, CORS, X-Api-Version: 1
+import crypto from 'node:crypto'
+import { NextRequest, NextResponse } from 'next/server'
+import { getPool } from '../../_lib/db'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic' // no framework cache
+
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{11,17}$/
+const API_VERSION = '1'
+
+// --- CORS (only our origins) ---
+const ALLOWED_ORIGINS = new Set([
+  'https://vinops.online',
+  'https://www.vinops.online',
+  'http://localhost:3000',
+])
+function corsHeaders(origin: string | null): Record<string, string> {
+  const h: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, If-None-Match, If-Modified-Since, Accept-Language',
+    'Vary': 'Origin, Accept-Language',
+  }
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    h['Access-Control-Allow-Origin'] = origin
+  }
+  return h
+}
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin')
+  return new NextResponse(null, { status: 204, headers: corsHeaders(origin) })
+}
+
+// --- Basic in-memory rate limit (per minute, per key) ---
+type RLState = { count: number; resetAt: number }
+const g = global as unknown as { __veh_rl?: Map<string, RLState> }
+if (!g.__veh_rl) g.__veh_rl = new Map()
+function rateLimit(key: string, limit = 60) {
+  const now = Date.now()
+  const slot = Math.floor(now / 60000) // per minute window
+  const map = g.__veh_rl!
+  const k = `${key}:${slot}`
+  const st = map.get(k) ?? { count: 0, resetAt: (slot + 1) * 60000 }
+  st.count += 1
+  map.set(k, st)
+  const remaining = Math.max(0, limit - st.count)
+  const headers = {
+    'X-RateLimit-Limit': String(limit),
+    'X-RateLimit-Remaining': String(remaining),
+    'X-RateLimit-Reset': String(Math.floor(st.resetAt / 1000)),
+  }
+  return { limited: st.count > limit, headers }
+}
+
+// --- Helpers ---
+function json(body: any, init: { status: number; headers?: Record<string, string> }) {
+  const h = init.headers ?? {}
+  h['Content-Type'] = 'application/json; charset=utf-8'
+  h['X-Api-Version'] = API_VERSION
+  return new NextResponse(JSON.stringify(body), { status: init.status, headers: h })
+}
+function weakETagFor(obj: any) {
+  const s = JSON.stringify(obj)
+  const sha1 = crypto.createHash('sha1').update(s).digest('hex')
+  return `W/"${sha1}"`
+}
+
+// --- Smoke flags (temporary for S2) ---
+const SMOKE_ENABLED = (process.env.API_SMOKE_STUB_ENABLE ?? '1') === '1'
+const SMOKE_WHITELIST = (process.env.API_SMOKE_WHITELIST_VIN ?? '1HGCM82633A004352')
+  .split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
+const SMOKE_SUPPRESS = (process.env.API_SMOKE_SUPPRESS_VIN ?? 'WAUZZZAAAAAAAAAAA')
+  .split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
+
+function stubVehicleDto(vin: string, lang: string) {
+  // Minimal, but contract-compliant VehicleDto aggregate
+  const nowISO = new Date().toISOString()
+  return {
+    vin,
+    year: 2003,
+    make: 'Honda',
+    model: 'Accord',
+    trim: 'EX',
+    body: 'Sedan',
+    fuel: 'Gasoline',
+    transmission: 'Automatic',
+    drive: 'FWD',
+    engine: '2.4L',
+    currentLot: {
+      lotId: 12345678,
+      status: 'ON_AUCTION',
+      siteCode: 'CA-SACRAMENTO',
+      city: 'Sacramento',
+      region: 'CA',
+      country: 'US',
+      auctionDateTimeUtc: nowISO,
+      estRetailValueUsd: 3500.00,
+      runsDrives: true,
+      hasKeys: true,
+      primaryImageUrl: `https://img.vinops.online/copart/${vin}/12345678/xl/1.webp`,
+      imageCount: 10,
+    },
+    images: [
+      { lotId: 12345678, vin, seq: 1, variant: 'xl', url: `https://img.vinops.online/copart/${vin}/12345678/xl/1.webp` },
+    ],
+    saleEvents: [],
+    updatedAt: nowISO,
+    lang,
+  }
+}
+
+export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
+  const origin = req.headers.get('origin')
+  const lang = (req.headers.get('accept-language') ?? 'en').split(',')[0]?.startsWith('ru') ? 'ru' : 'en'
+  const trace = crypto.randomUUID()
+
+  // Rate limit (soft on errors)
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '0.0.0.0'
+  const { limited, headers: rlHeaders } = rateLimit(`veh:${ip}`)
+  if (limited) {
+    return json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' }, traceId: trace }, {
+      status: 429,
+      headers: { ...corsHeaders(origin), ...rlHeaders, 'Cache-Control': 'no-store, must-revalidate' },
+    })
+  }
+
+  // Validate VIN
+  const raw = (ctx.params?.vin ?? '').toUpperCase()
+  if (!VIN_RE.test(raw)) {
+    return json({ error: { code: 'INVALID_VIN', message: 'VIN must be 11–17 uppercase, excluding I/O/Q' }, traceId: trace }, {
+      status: 422,
+      headers: { ...corsHeaders(origin), ...rlHeaders, 'Cache-Control': 'no-store, must-revalidate' },
+    })
+  }
+
+  // Smoke suppress → 410 (no-store)
+  if (SMOKE_ENABLED && SMOKE_SUPPRESS.includes(raw)) {
+    return json({ error: { code: 'SUPPRESSED', message: 'VIN removed/suppressed' }, status: 'suppressed', traceId: trace }, {
+      status: 410,
+      headers: { ...corsHeaders(origin), ...rlHeaders, 'Cache-Control': 'no-store, must-revalidate' },
+    })
+  }
+
+  // Smoke whitelist → 200 stub (with ETag/LM)
+  if (SMOKE_ENABLED && SMOKE_WHITELIST.includes(raw)) {
+    const dto = stubVehicleDto(raw, lang)
+    const etag = weakETagFor(dto)
+    const inm = req.headers.get('if-none-match')
+    if (inm && inm === etag) {
+      return new NextResponse(null, {
+        status: 304,
+        headers: {
+          ...corsHeaders(origin),
+          ...rlHeaders,
+          'X-Api-Version': API_VERSION,
+          'ETag': etag,
+          'Vary': 'Origin, Accept-Language',
+        },
+      })
+    }
+    return json(dto, {
+      status: 200,
+      headers: {
+        ...corsHeaders(origin),
+        ...rlHeaders,
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        'ETag': etag,
+        'Last-Modified': new Date(dto.updatedAt).toUTCString(),
+        'Vary': 'Origin, Accept-Language',
+      },
+    })
+  }
+
+  // Real DB path
+  try {
+    const pool = await getPool()
+    // vehicles + current lot + images + last 10 sale events
+    const { rows: vehRows } = await pool.query(
+      `
+      SELECT v.vin, v.year, v.make, v.model, v.body, v.fuel, v.transmission, v.drive, v.engine,
+             v.updated_at AS v_updated_at,
+             COALESCE(v.is_hidden, false) AS v_is_hidden
+        FROM vehicles v
+       WHERE v.vin = $1
+      `,
+      [raw],
+    )
+    if (vehRows.length === 0) {
+      return json({ error: { code: 'NOT_FOUND', message: 'VIN not found' }, traceId: trace }, {
+        status: 404,
+        headers: { ...corsHeaders(origin), ...rlHeaders, 'Cache-Control': 'no-store, must-revalidate' },
+      })
+    }
+    const veh = vehRows[0]
+    if (veh.v_is_hidden) {
+      return json({ error: { code: 'SUPPRESSED', message: 'VIN removed/suppressed' }, status: 'suppressed', traceId: trace }, {
+        status: 410,
+        headers: { ...corsHeaders(origin), ...rlHeaders, 'Cache-Control': 'no-store, must-revalidate' },
+      })
+    }
+
+    const { rows: lotRows } = await pool.query(
+      `
+      SELECT l.id AS "lotId", l.status, l.site_code AS "siteCode",
+             l.city, l.region, l.country,
+             l.auction_datetime_utc AS "auctionDateTimeUtc",
+             l.retail_value_usd AS "estRetailValueUsd",
+             l.runs_drives AS "runsDrives", l.has_keys AS "hasKeys"
+        FROM lots l
+       WHERE l.vin = $1
+       ORDER BY l.auction_datetime_utc DESC NULLS LAST
+       LIMIT 1
+      `,
+      [raw],
+    )
+
+    const { rows: imgRows } = await pool.query(
+      `
+      SELECT i.lot_id AS "lotId", i.vin, i.seq, i.variant,
+             COALESCE(i.url, i.storage_key) AS url
+        FROM images i
+       WHERE i.vin = $1
+       ORDER BY i.lot_id DESC, i.seq ASC
+       LIMIT 60
+      `,
+      [raw],
+    )
+
+    const { rows: evRows } = await pool.query(
+      `
+      SELECT s.vin, s.lot_id AS "lotId", s.sale_date AS "saleDate",
+             s.status, s.final_bid_usd AS "finalBidUsd"
+        FROM sale_events s
+       WHERE s.vin = $1
+       ORDER BY s.sale_date DESC
+       LIMIT 10
+      `,
+      [raw],
+    )
+
+    const primaryImageUrl = imgRows.find(r => r.variant === 'xl')?.url ?? imgRows[0]?.url ?? null
+    const imageCount = imgRows.length || null
+    const updatedAt = new Date(veh.v_updated_at ?? Date.now()).toISOString()
+
+    const dto = {
+      vin: veh.vin,
+      year: veh.year ?? null,
+      make: veh.make ?? null,
+      model: veh.model ?? null,
+      trim: null as string | null,
+      body: veh.body ?? null,
+      fuel: veh.fuel ?? null,
+      transmission: veh.transmission ?? null,
+      drive: veh.drive ?? null,
+      engine: veh.engine ?? null,
+      currentLot: lotRows[0] ?? null,
+      images: imgRows,
+      saleEvents: evRows,
+      updatedAt,
+      lang,
+      // for convenience in cards
+      primaryImageUrl,
+      imageCount,
+    }
+
+    const etag = weakETagFor(dto)
+    const inm = req.headers.get('if-none-match')
+    if (inm && inm === etag) {
+      return new NextResponse(null, {
+        status: 304,
+        headers: {
+          ...corsHeaders(origin),
+          ...rlHeaders,
+          'X-Api-Version': API_VERSION,
+          'ETag': etag,
+          'Vary': 'Origin, Accept-Language',
+        },
+      })
+    }
+
+    return json(dto, {
+      status: 200,
+      headers: {
+        ...corsHeaders(origin),
+        ...rlHeaders,
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        'ETag': etag,
+        'Last-Modified': new Date(updatedAt).toUTCString(),
+        'Vary': 'Origin, Accept-Language',
+      },
+    })
+  } catch (err: any) {
+    const rl = rateLimit(`veh_err:${Date.now() >> 10}`, 120)
+    return json({ error: { code: 'INTERNAL', message: err?.message ?? 'Internal error' }, traceId: trace }, {
+      status: 500,
+      headers: { ...corsHeaders(origin), ...rl.headers, 'Cache-Control': 'no-store, must-revalidate' },
+    })
+  }
+}

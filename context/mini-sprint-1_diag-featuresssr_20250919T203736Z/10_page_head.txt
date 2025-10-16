@@ -1,0 +1,79 @@
+     1	'use client'
+     2	import Features from './_home/FeaturesSSR'
+     3	import { useState } from 'react'
+     4	import Script from 'next/script'
+     5	
+     6	export default function Home({ params }: { params: { lang: 'en' | 'ru' } }) {
+     7	  const { lang } = params as { lang: "en" | "ru" };
+     8	  const [vin, setVin] = useState('')
+     9	  const t = (en: string, ru: string) => (lang === 'ru' ? ru : en)
+    10	
+    11	  const onSubmit = (e: React.FormEvent) => {
+    12	    e.preventDefault()
+    13	    const normalized = vin.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+    14	    if (normalized.length !== 17) {
+    15	      alert(t('VIN must be 17 characters', 'VIN должен быть 17 символов'))
+    16	      return
+    17	    }
+    18	    window.location.href = `/${lang}/vin/${normalized}`
+    19	  }
+    20	
+    21	  // JSON-LD SearchAction для Sitelinks Search Box
+    22	  const ld = {
+    23	    '@context': 'https://schema.org',
+    24	    '@type': 'WebSite',
+    25	    url: 'https://vinops.online',
+    26	    potentialAction: {
+    27	      '@type': 'SearchAction',
+    28	      target: `https://vinops.online/${lang}/vin/{search_term_string}`,
+    29	      'query-input': 'required name=search_term_string',
+    30	    },
+    31	  }
+    32	
+    33	  return (
+    34	    <>
+    35	      <Script id="ld-search" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+    36	      <section className="py-16">
+    37	        <h1 className="h1 mb-4">
+    38	          {t('Search by VIN', 'Поиск по VIN')}
+    39	        </h1>
+    40	        <p className="lead mb-6">
+    41	          {t(
+    42	            'Enter a 17-character VIN to view photos and auction history.',
+    43	            'Введите 17-значный VIN, чтобы увидеть фото и историю продаж.'
+    44	          )}
+    45	        </p>
+    46	
+    47	        <form onSubmit={onSubmit} className="flex flex-col sm:flex-row gap-3 max-w-2xl">
+    48	          <label htmlFor="vin" className="sr-only">VIN</label>
+    49	          <input
+    50	            id="vin"
+    51	            value={vin}
+    52	            onChange={(e) => setVin(e.target.value)}
+    53	            placeholder={t('Enter VIN', 'Введите VIN')}
+    54	            className="input input-lg"
+    55	            inputMode="text"
+    56	            autoCapitalize="characters"
+    57	            autoComplete="off"
+    58	            spellCheck={false}
+    59	            aria-label={t('VIN', 'VIN')}
+    60	            maxLength={23} /* позволяем вставить с пробелами/дефисами, очищаем сами */
+    61	          />
+    62	          <button type="submit" className="btn btn-primary btn-lg">
+    63	            {t('Find', 'Найти')}
+    64	          </button>
+    65	        </form>
+    66	
+    67	        <p className="text-xs text-fg-subtle mt-2">
+    68	          {t('We accept only letters A–Z and digits 0–9. The input will be normalized automatically.',
+    69	             'Допустимы только буквы A–Z и цифры 0–9. Ввод будет автоматически нормализован.')}
+    70	        </p>
+    71	      </section>
+    72	      <FeaturesSSR lang={lang} />
+    73	    </>
+    74	  )
+    75	}
+----- grep for import FeaturesSSR in page.tsx -----
+----- grep for FeaturesSSR usage in page.tsx -----
+2:import Features from './_home/FeaturesSSR'
+72:      <FeaturesSSR lang={lang} />

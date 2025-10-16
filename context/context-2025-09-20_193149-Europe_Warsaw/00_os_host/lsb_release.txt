@@ -1,0 +1,6 @@
+### cmd: bash -lc lsb_release -a 2>/dev/null || cat /etc/os-release 2>/dev/null || uname -a
+### at:  2025-09-20 20:31  local | 2025-09-20 19:31  Europe/Warsaw
+Distributor ID:	Ubuntu
+Description:	Ubuntu 22.04.5 LTS
+Release:	22.04
+Codename:	jammy

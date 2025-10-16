@@ -1,0 +1,74 @@
+
+## DOCKER — ps / images / ports
+# Что запущено и на каких портах слушает
+[docker ps]
+NAMES                   IMAGE                STATUS                    PORTS
+vinopsrestore-web-1     vinops-web:latest    Up 10 minutes (healthy)   3000/tcp
+vinopsrestore-caddy-1   caddy:2-alpine       Up 19 hours               0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 443/udp, 2019/tcp
+vinopsrestore-db-1      postgres:16-alpine   Up 19 hours (healthy)     5432/tcp
+
+[docker images]
+REPOSITORY    TAG           IMAGE ID       SIZE      CREATED
+vinops-web    latest        cce7204bea4f   610MB     10 minutes ago
+<none>        <none>        d7ebfa954897   610MB     15 minutes ago
+<none>        <none>        497a2258a9bc   610MB     18 minutes ago
+<none>        <none>        6aabc6dfbcbc   610MB     20 minutes ago
+<none>        <none>        d3e699baad3e   610MB     23 minutes ago
+<none>        <none>        b740a13bf5a6   609MB     6 hours ago
+<none>        <none>        c396be8b3d1a   609MB     6 hours ago
+<none>        <none>        93e1f0c840ff   609MB     6 hours ago
+<none>        <none>        4a516618b149   609MB     6 hours ago
+<none>        <none>        205b18b9a641   609MB     6 hours ago
+<none>        <none>        9996e3f342eb   609MB     6 hours ago
+<none>        <none>        89b181c69b7b   609MB     6 hours ago
+<none>        <none>        db7e5e33d90c   609MB     7 hours ago
+<none>        <none>        c29f13b0bc85   609MB     7 hours ago
+<none>        <none>        3135e9dbae4f   609MB     7 hours ago
+<none>        <none>        10a6de9f05fc   609MB     7 hours ago
+<none>        <none>        1ee4dc14ef7a   609MB     7 hours ago
+<none>        <none>        8a8896d28fc3   609MB     7 hours ago
+<none>        <none>        b306f863f29b   609MB     7 hours ago
+<none>        <none>        2d3bd8a25d1a   609MB     7 hours ago
+<none>        <none>        5a46908139ab   609MB     7 hours ago
+<none>        <none>        b3de7fd66332   609MB     7 hours ago
+<none>        <none>        24854fe0b6c2   609MB     7 hours ago
+<none>        <none>        358cdeb89e6e   609MB     7 hours ago
+<none>        <none>        3860a96b4d3b   609MB     7 hours ago
+<none>        <none>        e5c84884b529   609MB     7 hours ago
+<none>        <none>        3e9ec810b591   609MB     7 hours ago
+<none>        <none>        e9af5f7ce45e   609MB     7 hours ago
+<none>        <none>        5aa1825330e2   609MB     8 hours ago
+<none>        <none>        797c06daebdb   609MB     8 hours ago
+<none>        <none>        ed9b41bf4039   609MB     8 hours ago
+<none>        <none>        c870545d670e   609MB     8 hours ago
+<none>        <none>        6d494bb035ac   609MB     9 hours ago
+<none>        <none>        80efcc3ffa22   609MB     9 hours ago
+vinops-web    ci-check      4aad7a41b58f   609MB     9 hours ago
+<none>        <none>        e5adae583cdd   609MB     10 hours ago
+<none>        <none>        8127a404390e   609MB     12 hours ago
+<none>        <none>        9b9bda74d5b6   609MB     12 hours ago
+<none>        <none>        4bc14e5b9262   609MB     12 hours ago
+<none>        <none>        e604c8c8b8c4   609MB     12 hours ago
+<none>        <none>        d3c2aa3643a3   609MB     12 hours ago
+<none>        <none>        d0690e4441a3   609MB     12 hours ago
+<none>        <none>        5f9b2fddde14   609MB     12 hours ago
+<none>        <none>        239a1e2dc56d   608MB     13 hours ago
+<none>        <none>        9650c1835239   608MB     14 hours ago
+<none>        <none>        4dd82937c738   598MB     18 hours ago
+postgres      16-alpine     31d86079818e   281MB     11 days ago
+postgres      16            8216e24fab1e   451MB     11 days ago
+node          20-bullseye   b90726631d87   1GB       2 weeks ago
+node          20-alpine     6c47bbfd232e   134MB     2 weeks ago
+caddy         2-alpine      572a72cdc384   53.4MB    4 weeks ago
+hello-world   latest        1b44b5a3e06a   10.1kB    6 weeks ago
+
+[ss -tulpn | grep LISTEN]
+tcp   LISTEN 0      4096                            0.0.0.0:80         0.0.0.0:*    users:(("docker-proxy",pid=3303515,fd=7))                                                                                                                         
+tcp   LISTEN 0      128                             0.0.0.0:22         0.0.0.0:*    users:(("sshd",pid=1181,fd=3))                                                                                                                                    
+tcp   LISTEN 0      4096                            0.0.0.0:443        0.0.0.0:*    users:(("docker-proxy",pid=3303529,fd=7))                                                                                                                         
+tcp   LISTEN 0      1024                          127.0.0.1:37183      0.0.0.0:*    users:(("code-0f0d87fa9e",pid=3776700,fd=9))                                                                                                                      
+tcp   LISTEN 0      4096                      127.0.0.53%lo:53         0.0.0.0:*    users:(("systemd-resolve",pid=614,fd=14))                                                                                                                         
+tcp   LISTEN 0      128                             0.0.0.0:10050      0.0.0.0:*    users:(("zabbix_agentd",pid=711,fd=4),("zabbix_agentd",pid=710,fd=4),("zabbix_agentd",pid=709,fd=4),("zabbix_agentd",pid=708,fd=4),("zabbix_agentd",pid=690,fd=4))
+tcp   LISTEN 0      4096                               [::]:80            [::]:*    users:(("docker-proxy",pid=3303522,fd=7))                                                                                                                         
+tcp   LISTEN 0      128                                [::]:22            [::]:*    users:(("sshd",pid=1181,fd=4))                                                                                                                                    
+tcp   LISTEN 0      4096                               [::]:443           [::]:*    users:(("docker-proxy",pid=3303536,fd=7))                                                                                                                         

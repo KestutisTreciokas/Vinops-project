@@ -1,0 +1,300 @@
+/* runtime: Node.js (need 'pg') */
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
+
+// --- Config ---
+const API_VERSION = '1';
+const RL_LIMIT_PER_MIN = 60;
+const RL_WINDOW_MS = 60_000;
+const ALLOWED_ORIGINS = new Set([
+  'https://vinops.online',
+  'https://www.vinops.online',
+]);
+
+type RLEntry = { count: number; resetAt: number };
+const RL = new Map<string, RLEntry>();
+
+function traceId(): string {
+  return crypto.randomBytes(8).toString('hex');
+}
+function getClientIp(req: NextRequest): string {
+  const xf = req.headers.get('x-forwarded-for');
+  if (xf) return xf.split(',')[0].trim();
+  return crypto.createHash('sha1')
+    .update((req.headers.get('cf-connecting-ip')||'') + (req.headers.get('user-agent')||''))
+    .digest('hex').slice(0,16);
+}
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  const h: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Accept, Accept-Language, Content-Type, If-None-Match',
+    'Vary': 'Origin, Accept-Language',
+  };
+  if (origin && ALLOWED_ORIGINS.has(origin)) h['Access-Control-Allow-Origin'] = origin;
+  return h;
+}
+
+type RLInfo = { limit:number; remaining:number; resetAt:number };
+function stdHeaders(origin: string | null, rl?: RLInfo, includeJsonCt = false): Record<string, string> {
+  const h = corsHeaders(origin);
+  h['X-Api-Version'] = API_VERSION;
+  if (rl) {
+    h['X-RateLimit-Limit'] = String(rl.limit);
+    h['X-RateLimit-Remaining'] = String(Math.max(0, rl.remaining));
+    h['X-RateLimit-Reset'] = String(Math.floor((rl.resetAt || Date.now())/1000));
+  }
+  if (includeJsonCt) h['Content-Type'] = 'application/json; charset=utf-8';
+  return h;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  return new NextResponse(null, { status: 204, headers: stdHeaders(origin) });
+}
+
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{11,17}$/;
+function normalizeVin(raw: string): string {
+  return (raw || '').toUpperCase().trim();
+}
+
+/** Dev-only mock DAL for CI smoke (DAL_MOCK=1 and not production) */
+async function getDbQueryFn(): Promise<(sql: string, params?: any[]) => Promise<{rows:any[]; rowCount:number}>> {
+  const devMock = process.env.DAL_MOCK === '1' && process.env.NODE_ENV !== 'production';
+  if (devMock) {
+    const SAMPLE_VIN = 'ABCDEFGHJKLMNPR12';
+    const nowIso = new Date().toISOString();
+    const mock = {
+      vehicles: [{ vin: SAMPLE_VIN, make: 'Toyota', model: 'Camry', year: 2018, body: 'Sedan', fuel: 'Gasoline',
+                   transmission: 'Automatic', drive: 'FWD', engine: '2.5L', updated_at: nowIso }],
+      lots:     [{ lot_id: 1001, status: 'ACTIVE', site_code: 'CA-SF', city: 'San Francisco', region: 'CA', country: 'US',
+                   auction_datetime_utc: nowIso, retail_value_usd: 15999.00 }],
+      images:   [{ image_count: 12, primary_image_url: 'https://img.vinops.online/demo/camry.jpg' }],
+      sale_events: [
+        { id: 501, lot_id: 1001, status: 'BID', sale_date: nowIso, final_bid_usd: null, currency: 'USD' }
+      ],
+    };
+    return async (sql: string, params: any[] = []) => {
+      const vin = params[0];
+      if (/FROM\s+vehicles/i.test(sql)) {
+        const rows = vin === SAMPLE_VIN ? mock.vehicles : [];
+        return { rows, rowCount: rows.length };
+      }
+      if (/SELECT\s+is_hidden/i.test(sql)) {
+        return { rows: [{ is_hidden: false }], rowCount: 1 };
+      }
+      if (/FROM\s+lots/i.test(sql)) {
+        const rows = vin === SAMPLE_VIN ? mock.lots : [];
+        return { rows, rowCount: rows.length };
+      }
+      if (/FROM\s+images/i.test(sql)) {
+        const rows = vin === SAMPLE_VIN ? mock.images : [{ image_count: 0, primary_image_url: null }];
+        return { rows, rowCount: rows.length };
+      }
+      if (/FROM\s+sale_events/i.test(sql)) {
+        const rows = vin === SAMPLE_VIN ? mock.sale_events : [];
+        return { rows, rowCount: rows.length };
+      }
+      return { rows: [], rowCount: 0 };
+    };
+  }
+
+  // Try central DAL
+  try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const mod = await import('../../../_lib/db');
+    const anyMod: any = mod;
+    if (anyMod?.query && typeof anyMod.query === 'function') return anyMod.query.bind(anyMod);
+    if (anyMod?.default?.query && typeof anyMod.default.query === 'function') return anyMod.default.query.bind(anyMod.default);
+    if (anyMod?.getPool && typeof anyMod.getPool === 'function') {
+      const pool = anyMod.getPool();
+      if (pool?.query) return pool.query.bind(pool);
+    }
+  } catch (_) { /* ignore */ }
+
+  // Fallback pg Pool (read-only)
+  const { Pool } = await import('pg');
+  // @ts-expect-error augment global
+  const g: any = globalThis as any;
+  if (!g.__vinops_pool) {
+    g.__vinops_pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: true },
+      max: 5,
+      idleTimeoutMillis: 10_000,
+    });
+  }
+  const pool = g.__vinops_pool;
+  return pool.query.bind(pool);
+}
+
+function rateLimit(req: NextRequest): RLInfo & { ok: boolean } {
+  const now = Date.now();
+  const ip = getClientIp(req);
+  const ent = RL.get(ip);
+  if (!ent || now >= ent.resetAt) {
+    const resetAt = now + RL_WINDOW_MS;
+    RL.set(ip, { count: 1, resetAt });
+    return { ok: true, remaining: RL_LIMIT_PER_MIN - 1, resetAt, limit: RL_LIMIT_PER_MIN };
+  }
+  if (ent.count >= RL_LIMIT_PER_MIN) {
+    return { ok: false, remaining: 0, resetAt: ent.resetAt, limit: RL_LIMIT_PER_MIN };
+  }
+  ent.count++;
+  return { ok: true, remaining: RL_LIMIT_PER_MIN - ent.count, resetAt: ent.resetAt, limit: RL_LIMIT_PER_MIN };
+}
+
+function json(data: any, init: number | ResponseInit = 200) {
+  const headers = new Headers(typeof init === 'number' ? undefined : (init.headers as any));
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json; charset=utf-8');
+  return new NextResponse(JSON.stringify(data), typeof init === 'number' ? { status: init, headers } : { ...init, headers });
+}
+
+function invalid(trace: string, origin: string | null, rl: RLInfo) {
+  return json({ error: { code: 'INVALID_VIN', message: 'VIN must be 11–17 chars, uppercase, excluding I/O/Q' }, traceId: trace },
+              { status: 422, headers: stdHeaders(origin, rl, true) });
+}
+function notFound(trace: string, origin: string | null, rl: RLInfo) {
+  return json({ error: { code: 'NOT_FOUND', message: 'VIN not found' }, traceId: trace },
+              { status: 404, headers: stdHeaders(origin, rl, true) });
+}
+function gone(trace: string, origin: string | null, rl: RLInfo) {
+  return json({ error: { code: 'SUPPRESSED', message: 'VIN removed/suppressed' }, traceId: trace },
+              { status: 410, headers: stdHeaders(origin, rl, true) });
+}
+function tooMany(trace: string, origin: string | null, rl: RLInfo) {
+  const h = stdHeaders(origin, rl, true);
+  h['Retry-After'] = Math.max(0, Math.ceil((rl.resetAt - Date.now())/1000)).toString();
+  return json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' }, traceId: trace }, { status: 429, headers: h });
+}
+
+export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
+  const started = Date.now();
+  const trace = traceId();
+  const origin = req.headers.get('origin');
+
+  const rl = rateLimit(req);
+  if (!rl.ok) return tooMany(trace, origin, rl);
+
+  const vinRaw = ctx?.params?.vin ?? '';
+  const vin = normalizeVin(vinRaw);
+  if (!VIN_RE.test(vin)) return invalid(trace, origin, rl);
+
+  try {
+    const query = await getDbQueryFn();
+
+    // 1) Vehicle
+    const vRes = await query(
+      `SELECT vin, make, model, year, body, fuel, transmission, drive, engine, updated_at
+         FROM vehicles WHERE vin = $1`,
+      [vin]
+    );
+    if (vRes.rowCount === 0) return notFound(trace, origin, rl);
+    const v = vRes.rows[0];
+
+    // 2) Suppress flag (optional)
+    let suppressed = false;
+    try {
+      const sRes = await query(`SELECT is_hidden FROM vehicles WHERE vin = $1`, [vin]);
+      if (sRes.rowCount > 0 && sRes.rows[0]?.is_hidden === true) suppressed = true;
+    } catch { suppressed = false; }
+    if (suppressed) return gone(trace, origin, rl);
+
+    // 3) Current lot
+    const lRes = await query(
+      `SELECT id AS lot_id, status, site_code, city, region, country,
+              auction_datetime_utc, retail_value_usd
+         FROM lots
+        WHERE vin = $1
+        ORDER BY auction_datetime_utc DESC NULLS LAST, id DESC
+        LIMIT 1`,
+      [vin]
+    );
+    const lot = lRes.rowCount ? lRes.rows[0] : null;
+
+    // 4) Images meta
+    const iRes = await query(
+      `SELECT COUNT(*)::int AS image_count,
+              MIN(source_url) FILTER (WHERE source_url IS NOT NULL) AS primary_image_url
+         FROM images WHERE vin = $1`,
+      [vin]
+    );
+    const img = iRes.rowCount ? iRes.rows[0] : { image_count: 0, primary_image_url: null };
+
+    // 5) Sale events (last 10)
+    const seRes = await query(
+      `SELECT id, lot_id, status, sale_date, final_bid_usd, currency
+         FROM sale_events
+        WHERE vin = $1
+        ORDER BY sale_date DESC NULLS LAST, id DESC
+        LIMIT 10`,
+      [vin]
+    );
+    const saleEvents = seRes.rows ?? [];
+
+    // 6) DTO
+    const dto: any = {
+      vin: v.vin,
+      year: v.year ?? null,
+      make: v.make ?? null,
+      model: v.model ?? null,
+      trim: null,
+      body: v.body ?? null,
+      fuel: v.fuel ?? null,
+      transmission: v.transmission ?? null,
+      drive: v.drive ?? null,
+      engine: v.engine ?? null,
+
+      lotId: lot?.lot_id ?? null,
+      status: lot?.status ?? null,
+      siteCode: lot?.site_code ?? null,
+      city: lot?.city ?? null,
+      region: lot?.region ?? null,
+      country: lot?.country ?? null,
+      auctionDateTimeUtc: lot?.auction_datetime_utc ? new Date(lot.auction_datetime_utc).toISOString() : null,
+      estRetailValueUsd: lot?.retail_value_usd ?? null,
+      runsDrives: null,
+      hasKeys: null,
+
+      primaryImageUrl: img?.primary_image_url ?? null,
+      imageCount: img?.image_count ?? 0,
+
+      saleEvents: saleEvents.map((s: any) => ({
+        id: s.id,
+        lotId: s.lot_id,
+        status: s.status,
+        saleDate: s.sale_date ? new Date(s.sale_date).toISOString() : null,
+        finalBidUsd: s.final_bid_usd ?? null,
+        currency: s.currency ?? null,
+      })),
+    };
+
+    const body = JSON.stringify(dto);
+    const etag = 'W/"' + crypto.createHash('sha1').update(body).digest('hex') + '"';
+    const lastModified = v?.updated_at ? new Date(v.updated_at).toUTCString() : undefined;
+
+    if (req.headers.get('if-none-match') === etag) {
+      const h = stdHeaders(origin, rl);
+      h['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300';
+      h['ETag'] = etag;
+      if (lastModified) h['Last-Modified'] = lastModified;
+      return new NextResponse(null, { status: 304, headers: h });
+    }
+
+    const headers = stdHeaders(origin, rl, true);
+    headers['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300';
+    headers['ETag'] = etag;
+    if (lastModified) headers['Last-Modified'] = lastModified;
+    const latency = Date.now() - started;
+    headers['Server-Timing'] = `db;desc="aggregate";dur=${latency}`;
+
+    return new NextResponse(body, { status: 200, headers });
+  } catch (err: any) {
+    const h = stdHeaders(req.headers.get('origin'), rl, true);
+    return json({ error: { code: 'INTERNAL', message: 'Internal error' }, traceId: traceId() }, { status: 500, headers: h });
+  }
+}

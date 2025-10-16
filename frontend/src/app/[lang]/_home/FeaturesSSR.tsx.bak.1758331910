@@ -1,0 +1,10 @@
+import type { ComponentProps } from 'react'
+import Features from './Features'
+
+type Props = ComponentProps<typeof Features>
+
+export default function FeaturesSSR(props: Props) {
+  // Важно: НИКАКИХ своих <section> и id —
+  // сам <Features> рендерит <section id="home-features" ... />
+  return <Features {...props} />
+}

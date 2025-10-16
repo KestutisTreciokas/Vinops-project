@@ -1,0 +1,293 @@
+[
+    {
+        "Id": "5064e47db755128da1b5b4bc1fee2c54f319a6b396fafc7dbf5f285b7e1ce3ff",
+        "Created": "2025-09-20T20:22:00.503154473Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "node",
+            "node_modules/next/dist/bin/next",
+            "start",
+            "-H",
+            "0.0.0.0",
+            "-p",
+            "3000"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4024311,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2025-09-20T20:22:00.778719781Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2025-09-20T23:50:14.751521662+03:00",
+                        "End": "2025-09-20T23:50:14.798991582+03:00",
+                        "ExitCode": 0,
+                        "Output": "ok"
+                    },
+                    {
+                        "Start": "2025-09-20T23:50:24.800012611+03:00",
+                        "End": "2025-09-20T23:50:24.857600501+03:00",
+                        "ExitCode": 0,
+                        "Output": "ok"
+                    },
+                    {
+                        "Start": "2025-09-20T23:50:34.859042167+03:00",
+                        "End": "2025-09-20T23:50:34.909828655+03:00",
+                        "ExitCode": 0,
+                        "Output": "ok"
+                    },
+                    {
+                        "Start": "2025-09-20T23:50:44.9104194+03:00",
+                        "End": "2025-09-20T23:50:44.962529592+03:00",
+                        "ExitCode": 0,
+                        "Output": "ok"
+                    },
+                    {
+                        "Start": "2025-09-20T23:50:54.963108125+03:00",
+                        "End": "2025-09-20T23:50:55.012103766+03:00",
+                        "ExitCode": 0,
+                        "Output": "ok"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:3a1092019c702b87ad287a90a6c966a06a2cf42ec8f79f31956701033c4870ca",
+        "ResolvConfPath": "/var/lib/docker/containers/5064e47db755128da1b5b4bc1fee2c54f319a6b396fafc7dbf5f285b7e1ce3ff/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/5064e47db755128da1b5b4bc1fee2c54f319a6b396fafc7dbf5f285b7e1ce3ff/hostname",
+        "HostsPath": "/var/lib/docker/containers/5064e47db755128da1b5b4bc1fee2c54f319a6b396fafc7dbf5f285b7e1ce3ff/hosts",
+        "LogPath": "/var/lib/docker/containers/5064e47db755128da1b5b4bc1fee2c54f319a6b396fafc7dbf5f285b7e1ce3ff/5064e47db755128da1b5b4bc1fee2c54f319a6b396fafc7dbf5f285b7e1ce3ff-json.log",
+        "Name": "/vinopsrestore-web-1",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "docker-default",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {
+                    "max-file": "3",
+                    "max-size": "10m"
+                }
+            },
+            "NetworkMode": "vinopsrestore_webnet",
+            "PortBindings": {},
+            "RestartPolicy": {
+                "Name": "unless-stopped",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware",
+                "/sys/devices/virtual/powercap"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": {
+                "ID": "5064e47db755128da1b5b4bc1fee2c54f319a6b396fafc7dbf5f285b7e1ce3ff",
+                "LowerDir": "/var/lib/docker/overlay2/9c481af97732efb16152c9cc256977aee005f8cbf70cd47d36e06e880faaedc4-init/diff:/var/lib/docker/overlay2/q9ztmk8hwho8s03rd1diklcwz/diff:/var/lib/docker/overlay2/asdzdr9jxgvtq6de6shp6348e/diff:/var/lib/docker/overlay2/s0bustlxf35p4od4v4gi2222g/diff:/var/lib/docker/overlay2/vwolxuhvvdp0zw5tmch2qz2wa/diff:/var/lib/docker/overlay2/pdbo7yudvw7n9uokhrtv30d8e/diff:/var/lib/docker/overlay2/z40lh7mwy8rxvv6yztje2cfdq/diff:/var/lib/docker/overlay2/eksnnsv90gamvu5jgdz3voajg/diff:/var/lib/docker/overlay2/1aqxgwl0fjsi5i72f3v3mkkb5/diff:/var/lib/docker/overlay2/a8fb0c48fdfbe476b2fed71f2c36011f0910ccb29b4e95e3cd603df78c840951/diff:/var/lib/docker/overlay2/a3ce8d4ab5a715283603143af713af0bf35cfe558f33c659cb991bf72525ce62/diff:/var/lib/docker/overlay2/e87f1f6ff8f33231d5ce0cc6ed0c2d39afc483dfff2b81432ff6e9ea0449a5a8/diff:/var/lib/docker/overlay2/2b4c52812ce5784bd955772c00520eebc18bff56ebfae68a0b72166b1318c74f/diff",
+                "MergedDir": "/var/lib/docker/overlay2/9c481af97732efb16152c9cc256977aee005f8cbf70cd47d36e06e880faaedc4/merged",
+                "UpperDir": "/var/lib/docker/overlay2/9c481af97732efb16152c9cc256977aee005f8cbf70cd47d36e06e880faaedc4/diff",
+                "WorkDir": "/var/lib/docker/overlay2/9c481af97732efb16152c9cc256977aee005f8cbf70cd47d36e06e880faaedc4/work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [],
+        "Config": {
+            "Hostname": "5064e47db755",
+            "Domainname": "",
+            "User": "nextjs",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "3000/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PORT=3000",
+                "NODE_ENV=production",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NODE_VERSION=20.19.5",
+                "YARN_VERSION=1.22.22",
+                "HOST=0.0.0.0"
+            ],
+            "Cmd": [
+                "node",
+                "node_modules/next/dist/bin/next",
+                "start",
+                "-H",
+                "0.0.0.0",
+                "-p",
+                "3000"
+            ],
+            "Healthcheck": {
+                "Test": [
+                    "CMD-SHELL",
+                    "curl -fsS http://127.0.0.1:3000/health || exit 1"
+                ],
+                "Interval": 10000000000,
+                "Timeout": 3000000000,
+                "StartPeriod": 20000000000,
+                "Retries": 3
+            },
+            "Image": "vinops-web:latest",
+            "Volumes": null,
+            "WorkingDir": "/app",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.docker.compose.config-hash": "e09859aad5cc9647fd6d63a71ff50abb7159619de2b7313090cbacf454ec9589",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:3a1092019c702b87ad287a90a6c966a06a2cf42ec8f79f31956701033c4870ca",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "vinopsrestore",
+                "com.docker.compose.project.config_files": "/root/work/vinops.restore/docker-compose.prod.yml,/root/work/vinops.restore/docker-compose.health.yml",
+                "com.docker.compose.project.working_dir": "/root/work/vinops.restore",
+                "com.docker.compose.replace": "web-1",
+                "com.docker.compose.service": "web",
+                "com.docker.compose.version": "2.39.2"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "fb04d0185453cfed78a039058989807e8cab6898214f5917b929b7de93f51797",
+            "SandboxKey": "/var/run/docker/netns/fb04d0185453",
+            "Ports": {
+                "3000/tcp": null
+            },
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "vinopsrestore_webnet": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "vinopsrestore-web-1",
+                        "web"
+                    ],
+                    "MacAddress": "92:b5:fb:4a:16:05",
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "cbc9fc6b5f482f49d334853b06242960a6902d48a294cecc00460d0fe1e4a4dc",
+                    "EndpointID": "e93084934b3cef93dc00fa77238995e0aec4ff8dd4d43e7af648b01b9935c0c1",
+                    "Gateway": "172.19.0.1",
+                    "IPAddress": "172.19.0.3",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "vinopsrestore-web-1",
+                        "web",
+                        "5064e47db755"
+                    ]
+                }
+            }
+        }
+    }
+]

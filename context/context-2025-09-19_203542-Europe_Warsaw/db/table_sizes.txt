@@ -1,0 +1,9 @@
+### Top table sizes
+### Started: 2025-09-19T21:35:46+03:00
+
+ schemaname | relname | total | n_live_tup 
+------------+---------+-------+------------
+(0 rows)
+
+
+### Finished: 2025-09-19T21:35:46+03:00

@@ -1,0 +1,3 @@
+/root/work/vinops.restore/scripts/smoke_cars.sh
+/root/work/vinops.restore/scripts/db-apply.sh
+/root/work/vinops.restore/scripts/smoke_home_features.sh

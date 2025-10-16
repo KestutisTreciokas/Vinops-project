@@ -1,0 +1,28 @@
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"GHCR_IMAGE_API\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"API_IMAGE_TAG\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_PORT\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"NEXT_PUBLIC_SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DOMAIN_OR_IP\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"PORT_API_HOST\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"NEXT_PUBLIC_SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_PORT\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"GHCR_IMAGE_WEB\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"WEB_IMAGE_TAG\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-23T19:37:20+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+NAME                    IMAGE                COMMAND                  SERVICE   CREATED        STATUS                    PORTS
+vinopsrestore-caddy-1   caddy:2-alpine       "caddy run --config …"   caddy     22 hours ago   Up 22 hours               0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 443/udp, 2019/tcp
+vinopsrestore-db-1      postgres:16-alpine   "docker-entrypoint.s…"   db        4 days ago     Exited (0) 22 hours ago   
+vinopsrestore-web-1     vinops-web:latest    "docker-entrypoint.s…"   web       22 hours ago   Up 22 hours               3000/tcp

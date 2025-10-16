@@ -1,0 +1,5 @@
+ M bin/diag.sh
+ M frontend/src/app/[lang]/vin/[vin]/page.tsx
+ M frontend/src/app/robots.ts
+?? context/context-2025-09-20_182306-Europe_Warsaw/
+?? frontend/src/app/[lang]/vin/[vin]/page.tsx.bak.ms06.1758367741

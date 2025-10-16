@@ -1,0 +1,5 @@
+### 2025-09-20T02:14:45+03:00  CMD: sh -lc echo "branch: $(git rev-parse --abbrev-ref HEAD)"; echo "rev:    $(git rev-parse --short HEAD)"; echo "desc:   $(git describe --tags --always --dirty 2>/dev/null || true)"
+
+branch: feat/s1-efh-fixes
+rev:    f844a01
+desc:   baseline/S1-02_fonts-locked-10-gf844a01-dirty

@@ -1,0 +1,7 @@
+### 2025-09-20T02:16:36+03:00  CMD: lsb_release -a
+
+No LSB modules are available.
+Distributor ID:	Ubuntu
+Description:	Ubuntu 22.04.5 LTS
+Release:	22.04
+Codename:	jammy

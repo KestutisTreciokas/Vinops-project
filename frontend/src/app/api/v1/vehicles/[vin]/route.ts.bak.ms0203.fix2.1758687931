@@ -1,0 +1,234 @@
+// MS-02-03 — GET /api/v1/vehicles/{vin}
+// Read-only, OpenAPI v1, VIN validator, 200/404/410/422, cache/ETag/Vary, rate-limit, CORS, X-Api-Version: 1
+
+import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'node:crypto'
+import { getPool } from '../../_lib/db'
+
+// Invariants / runtime
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic' // do not cache at the framework level
+
+// Allowed origins for CORS (SSR/pages only)
+const ALLOWED_ORIGINS = new Set([
+  'https://vinops.online',
+  'https://www.vinops.online',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+])
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : ''
+  const h: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET,OPTIONS',
+    'Access-Control-Allow-Headers': 'Accept,Accept-Language,Content-Type,If-None-Match',
+    'Access-Control-Max-Age': '600',
+  }
+  if (allowed) h['Access-Control-Allow-Origin'] = allowed
+  return h
+}
+
+function json(body: unknown, init?: { status?: number; headers?: Record<string, string> }) {
+  const res = NextResponse.json(body, { status: init?.status ?? 200 })
+  if (init?.headers) for (const [k, v] of Object.entries(init.headers)) res.headers.set(k, v)
+  return res
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin')
+  return new NextResponse(null, { status: 204, headers: corsHeaders(origin) })
+}
+
+// Simple in-memory rate limiter (per-IP, window 60s). Good enough for MVP on single instance.
+type Bucket = { count: number; reset: number }
+const rlMap: Map<string, Bucket> = new Map()
+const RL_LIMIT = 60
+const RL_WINDOW_MS = 60_000
+
+function rateLimit(key: string) {
+  const now = Date.now()
+  let b = rlMap.get(key)
+  if (!b || b.reset < now) {
+    b = { count: 0, reset: now + RL_WINDOW_MS }
+    rlMap.set(key, b)
+  }
+  b.count++
+  const remaining = Math.max(0, RL_LIMIT - b.count)
+  const resetSec = Math.ceil((b.reset - now) / 1000)
+  const headers = {
+    'X-RateLimit-Limit': String(RL_LIMIT),
+    'X-RateLimit-Remaining': String(remaining),
+    'X-RateLimit-Reset': String(resetSec),
+  }
+  const limited = b.count > RL_LIMIT
+  return { limited, headers }
+}
+
+// VIN validation: normalize to UPPER, then check regex ^[A-HJ-NPR-Z0-9]{11,17}$
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{11,17}$/
+function normalizeVin(input: string): string {
+  return (input || '').trim().toUpperCase()
+}
+
+export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
+  const started = Date.now()
+  const origin = req.headers.get('origin')
+  const trace = crypto.randomUUID()
+
+  // Rate limit per client IP
+  const ip =
+    (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  const { limited, headers: rlHeaders } = rateLimit(`veh:${ip}`)
+  if (limited) {
+    return json(
+      { error: { code: 'RATE_LIMITED', message: 'Too many requests' }, traceId: trace },
+      { status: 429, headers: { ...corsHeaders(origin), ...rlHeaders, 'X-Api-Version': '1' } },
+    )
+  }
+
+  // VIN
+  const vinRaw = ctx.params?.vin ?? ''
+  const vin = normalizeVin(vinRaw)
+  if (!VIN_RE.test(vin)) {
+    return json(
+      { error: { code: 'INVALID_VIN', message: 'VIN must be 11–17 uppercase, excluding I/O/Q' }, traceId: trace },
+      { status: 422, headers: { ...corsHeaders(origin), ...rlHeaders, 'X-Api-Version': '1', Vary: 'Accept-Language' } },
+    )
+  }
+
+  // DB fetch (read-only; errors -> 500)
+  try {
+    const pool = await getPool()
+    // Aggregate vehicle + current lot + sale events + images
+    const qVehicle = `
+      SELECT v.vin, v.year, v.make, v.model, v.body, v.fuel, v.transmission, v.drive, v.engine,
+             COALESCE(v.is_hidden, false) AS is_hidden,
+             v.updated_at
+      FROM vehicles v
+      WHERE v.vin = $1
+      LIMIT 1;
+    `
+    const vRes = await pool.query(qVehicle, [vin])
+    if (vRes.rowCount === 0) {
+      return json(
+        { error: { code: 'NOT_FOUND', message: 'VIN not found' }, traceId: trace },
+        { status: 404, headers: { ...corsHeaders(origin), ...rlHeaders, 'X-Api-Version': '1', Vary: 'Accept-Language' } },
+      )
+    }
+    const vehicle = vRes.rows[0]
+    if (vehicle.is_hidden) {
+      return json(
+        { error: { code: 'SUPPRESSED', message: 'VIN removed/suppressed' }, status: 'suppressed', traceId: trace },
+        { status: 410, headers: { ...corsHeaders(origin), ...rlHeaders, 'X-Api-Version': '1', Vary: 'Accept-Language' } },
+      )
+    }
+
+    const qLot = `
+      WITH curr AS (
+        SELECT *
+        FROM lots
+        WHERE vin = $1
+        ORDER BY auction_datetime_utc DESC NULLS LAST, id DESC
+        LIMIT 1
+      )
+      SELECT c.id AS lot_id, c.source, c.site_code, c.city, c.region, c.country, c.tz,
+             c.auction_datetime_utc, c.retail_value_usd AS est_retail_value_usd,
+             c.status, c.runs_drives, c.has_keys
+      FROM curr c;
+    `
+    const lotRes = await pool.query(qLot, [vin])
+    const lot = lotRes.rows[0] || null
+
+    const qImages = `
+      SELECT lot_id, vin, seq, variant, storage_key, source_url, width, height, bytes
+      FROM images
+      WHERE vin = $1 AND ($2::bigint IS NULL OR lot_id = $2)
+      ORDER BY seq ASC
+      LIMIT 60;
+    `
+    const imagesRes = await pool.query(qImages, [vin, lot?.lot_id ?? null])
+    const images = imagesRes.rows.map((r: any) => ({
+      lotId: r.lot_id,
+      vin: r.vin,
+      seq: r.seq,
+      variant: r.variant,
+      url: r.source_url ?? r.storage_key ?? null,
+      width: r.width ?? null,
+      height: r.height ?? null,
+      bytes: r.bytes ?? null,
+    }))
+
+    const qSales = `
+      SELECT id, vin, lot_id, sale_date, status, final_bid_usd, currency
+      FROM sale_events
+      WHERE vin = $1
+      ORDER BY sale_date DESC NULLS LAST, id DESC
+      LIMIT 10;
+    `
+    const salesRes = await pool.query(qSales, [vin])
+    const saleEvents = salesRes.rows
+
+    // Compose DTO (aligned with OpenAPI v1)
+    const dto: any = {
+      vin,
+      year: vehicle.year ?? null,
+      make: vehicle.make ?? null,
+      model: vehicle.model ?? null,
+      body: vehicle.body ?? null,
+      fuel: vehicle.fuel ?? null,
+      transmission: vehicle.transmission ?? null,
+      drive: vehicle.drive ?? null,
+      engine: vehicle.engine ?? null,
+      currentLot: lot
+        ? {
+            lotId: lot.lot_id,
+            source: lot.source,
+            siteCode: lot.site_code,
+            city: lot.city,
+            region: lot.region,
+            country: lot.country,
+            tz: lot.tz,
+            auctionDateTimeUtc: lot.auction_datetime_utc,
+            estRetailValueUsd: lot.est_retail_value_usd ? Number(lot.est_retail_value_usd) : null,
+            status: lot.status,
+            runsDrives: lot.runs_drives,
+            hasKeys: lot.has_keys,
+          }
+        : null,
+      images,
+      saleEvents,
+    }
+
+    // ETag based on response payload (weak ETag)
+    const payload = JSON.stringify(dto)
+    const etag = 'W/"' + crypto.createHash('sha1').update(payload).digest('hex') + '"'
+    const ifNoneMatch = req.headers.get('if-none-match')
+
+    const baseHeaders: Record<string, string> = {
+      ...corsHeaders(origin),
+      ...rlHeaders,
+      'X-Api-Version': '1',
+      'X-Trace-Id': trace,
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      ETag: etag,
+      Vary: 'Accept-Language',
+    }
+
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      return new NextResponse(null, { status: 304, headers: baseHeaders })
+    }
+
+    const res = json(dto, { headers: baseHeaders })
+    // Basic logging (latency)
+    res.headers.set('Server-Timing', `app;dur=${Date.now() - started}`)
+    return res
+  } catch (err: any) {
+    const rl = rateLimit(`veh_err:${Date.now() >> 10}`) // soft-rate errors to avoid floods of 500
+    return json(
+      { error: { code: 'INTERNAL', message: err?.message || 'Internal error' }, traceId: trace },
+      { status: 500, headers: { ...corsHeaders(origin), ...rl.headers, 'X-Api-Version': '1', Vary: 'Accept-Language' } },
+    )
+  }
+}

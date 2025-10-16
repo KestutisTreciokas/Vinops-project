@@ -1,0 +1,9 @@
+--- /root/work/vinops.restore/context/mini-sprint-1_fix-import-replace_20250919T203920Z/before_page.tsx	2025-09-19 23:39:26.906087049 +0300
++++ /root/work/vinops.restore/context/mini-sprint-1_fix-import-replace_20250919T203920Z/after_page.tsx	2025-09-19 23:39:26.918087062 +0300
+@@ -1,5 +1,5 @@
+ 'use client'
+-import Features from './_home/FeaturesSSR'
++import FeaturesSSR from './_home/FeaturesSSR';
+ import { useState } from 'react'
+ import Script from 'next/script'
+ 

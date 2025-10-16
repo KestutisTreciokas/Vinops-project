@@ -1,0 +1,1560 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- Light тема (по умолчанию) ---------- */
+:root {
+  --shadow-1: 0 1px 2px rgba(0,0,0,.06);
+  --brand: #4F45E5;
+  --brand-hover: #3361E5;
+  --brand-fg: #FFFFFF;
+
+  --fg-default: #1F1F20;
+  --fg-muted: #667080;
+  --fg-subtle: #737880;
+  --fg-on-inverse: #FFFFFF;
+
+  --bg-canvas: #FFFFFF;
+  --bg-surface: #F7FAFF;
+  --bg-muted: #F2F5F7;
+
+  --border-muted: #E5E8ED;
+  --border-strong: #D9D9D9;
+
+  --status-error: #D94D4D;
+  --status-error-hover: #CC4747;
+  --status-error-fg: #FFFFFF;
+  --status-success: #22C55E;
+  --status-success-fg: #FFFFFF;
+
+  --focus-ring: rgba(79, 69, 229, 0.40);
+  --overlay-scrim: rgba(0,0,0,0.5);
+}
+
+/* ---------- Dark тема ---------- */
+:root.dark, :root[data-theme="dark"] {
+  --brand: #4F45E5;
+  --brand-hover: #3361E5;
+  --brand-fg: #FFFFFF;
+
+  --fg-default: #E6E8EB;
+  --fg-muted: #A8B0BD;
+  --fg-subtle: #8D96A5;
+  --fg-on-inverse: #FFFFFF;
+
+  --bg-canvas: #0E1116;
+  --bg-surface: #12161C;
+  --bg-muted: #171C24;
+
+  --border-muted: #232A34;
+  --border-strong: #2E3743;
+
+  --status-error: #F97070;
+  --status-error-hover: #FF6B6B;
+  --status-error-fg: #FFFFFF;
+  --status-success: #22C55E;
+  --status-success-fg: #FFFFFF;
+
+  --focus-ring: rgba(99,102,241,0.55);
+  --overlay-scrim: rgba(0,0,0,0.65);
+}
+
+/* ---------- Базовая типографика и фон ---------- */
+html, body {
+  height: 100%;
+  background: var(--bg-canvas);
+  color: var(--fg-default);
+}
+a { color: var(--brand); }
+a:hover { color: var(--brand-hover); }
+
+/* ---------- Компоненты ---------- */
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors;
+}
+.btn-primary {
+  color: var(--brand-fg);
+  background: var(--brand);
+}
+.btn-primary:hover { background: var(--brand-hover); }
+
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--fg-default);
+  border: 1px solid var(--border-muted);
+}
+
+.input {
+  @apply w-full rounded-xl border px-3 py-2 outline-none;
+  background: var(--bg-surface);
+  color: var(--fg-default);
+  border-color: var(--border-muted);
+}
+.input:focus { box-shadow: var(--focus-ring); }
+
+.card {
+  @apply rounded-2xl border p-4;
+  background: var(--bg-surface);
+  border-color: var(--border-muted);
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs border;
+  background: var(--bg-muted);
+  color: var(--fg-muted);
+  border-color: var(--border-muted);
+}
+
+/* Контейнер-ограничитель контента */
+.container-prose {
+  @apply container max-w-[1200px];
+}
+
+/* ---------- Presets to match design scale ---------- */
+.input-lg { @apply h-14 text-base px-4 rounded-2xl; }     /* 56px */
+.btn-lg   { @apply h-12 px-5 text-base rounded-xl; }      /* 48px */
+.h1       { @apply text-4xl font-semibold leading-tight; }/* ~36-40px */
+.lead     { @apply text-base text-fg-muted; }             /* 16px muted */
+
+/* ---------- Header / Navigation polish ---------- */
+.site-header { 
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-muted);
+}
+.site-header .inner {
+  @apply container;
+  height: 64px; /* фикс высота по макету */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  @apply font-semibold;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+/* Навигация */
+.nav-link {
+  @apply text-sm;
+  color: var(--fg-muted);
+  padding-bottom: 6px;
+  transition: color .15s ease;
+}
+.nav-link:hover { color: var(--fg-default); }
+.nav-link-active {
+  color: var(--fg-default);
+  position: relative;
+}
+.nav-link-active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 0;               /* подчёркивание вплотную к тексту */
+  height: 2px;
+  background: var(--brand);
+  border-radius: 9999px;
+}
+
+/* Layout containers */
+.container { max-width: 1200px; margin-left: auto; margin-right: auto; padding: 0 16px; }
+.container-prose { max-width: 1040px; margin-left: auto; margin-right: auto; padding: 0 16px; }
+
+/* Card baseline (похоже на макет) */
+.card { @apply bg-bg-surface border border-border-muted rounded-2xl; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+
+/* ===== Design tokens (from semantic.json) ===== */
+:root {
+  --shadow-1: 0 1px 2px rgba(0,0,0,.06);
+  --brand: #4F45E5;
+  --brand-fg: #FFFFFF;
+
+  --fg-default: #1F1F20;
+  --fg-muted:   #667080;
+  --fg-subtle:  #737880;
+  --fg-on-inverse: #FFFFFF;
+
+  --bg-canvas:  #FFFFFF;
+  --bg-surface: #F7FAFF;
+  --bg-muted:   #F2F5F7;
+
+  --border-muted: #E5EAF0;
+
+  --status-error: #E03131; /* для invalid полей */
+}
+
+/* ===== Color tokens (Light) ===== */
+:root {
+  --shadow-1: 0 1px 2px rgba(0,0,0,.06);
+  --brand: #4F45E5;
+  --brand-fg: #FFFFFF;
+
+  --fg-default: #1F1F20;
+  --fg-muted:   #667080;
+  --fg-subtle:  #737880;
+  --fg-on-inverse: #FFFFFF;
+
+  --bg-canvas:  #FFFFFF;
+  --bg-surface: #F7FAFF;
+  --bg-muted:   #F2F5F7;
+
+  --border-muted: #E5EAF0;
+
+  --status-error: #E03131;
+}
+
+
+
+/* ===== Color tokens (Dark) ===== */
+:root[data-theme="dark"], [data-theme="dark"] {
+  /* по ТЗ */
+  --brand: #4F45E5;      /* (5) акцент одинаковый */
+  --brand-fg: #FFFFFF;
+
+  --bg-canvas:  #171718; /* (1) фон страницы */
+  --bg-muted:   #1F1F20; /* (2) “внутри полей” и т.п. */
+  --bg-surface: #2E2E30; /* (3) карточки/«что вы получите» */
+  --border-muted: #2E2E30; /* (4) stroke блоков */
+
+  --fg-default: #EDEDF0; /* (6) основной текст */
+  --fg-muted:   #A8A8AD; /* (7) второстепенный текст */
+  --fg-subtle:  #A8A8AD;
+  --fg-on-inverse: #171718;
+
+  --status-error: #F25555;
+}
+
+
+/* Status tokens (Light) */
+:root {
+  --success-bg: #E8F5E9; --success-fg: #2E7D32;
+  --warning-bg: #FFF8E1; --warning-fg: #8D6E63;
+  --error-bg:   #FDECEA; --error-fg:   #C62828;
+}
+/* Status tokens (Dark) */
+:root[data-theme="dark"], [data-theme="dark"] {
+  --success-bg: #1F2A22; --success-fg: #6AD38B;
+  --warning-bg: #2A261A; --warning-fg: #E6C773;
+  --error-bg:   #2A1D1D; --error-fg:   #F27A7A;
+}
+
+/* Status utilities */
+.bg-success { background: var(--success-bg); }
+.text-success { color: var(--success-fg); }
+.bg-warning { background: var(--warning-bg); }
+.text-warning { color: var(--warning-fg); }
+.bg-error { background: var(--error-bg); }
+.text-error { color: var(--error-fg); }
+
+/* ===== Utility mapping
+/* Status tokens (Light) */
+:root {
+  --success-bg: #E8F5E9; --success-fg: #2E7D32;
+  --warning-bg: #FFF8E1; --warning-fg: #8D6E63;
+  --error-bg:   #FDECEA; --error-fg:   #C62828;
+}
+/* Status tokens (Dark) */
+:root[data-theme="dark"], [data-theme="dark"] {
+  --success-bg: #1F2A22; --success-fg: #6AD38B;
+  --warning-bg: #2A261A; --warning-fg: #E6C773;
+  --error-bg:   #2A1D1D; --error-fg:   #F27A7A;
+}
+
+/* Status utilities */
+.bg-success { background: var(--success-bg); }
+.text-success { color: var(--success-fg); }
+.bg-warning { background: var(--warning-bg); }
+.text-warning { color: var(--warning-fg); }
+.bg-error { background: var(--error-bg); }
+.text-error { color: var(--error-fg); }
+
+/* ===== Utility mapping
+/* Status tokens (Light) */
+:root {
+  --success-bg: #E8F5E9; --success-fg: #2E7D32;
+  --warning-bg: #FFF8E1; --warning-fg: #8D6E63;
+  --error-bg:   #FDECEA; --error-fg:   #C62828;
+}
+/* Status tokens (Dark) */
+:root[data-theme="dark"], [data-theme="dark"] {
+  --success-bg: #1F2A22; --success-fg: #6AD38B;
+  --warning-bg: #2A261A; --warning-fg: #E6C773;
+  --error-bg:   #2A1D1D; --error-fg:   #F27A7A;
+}
+
+/* Status utilities */
+.bg-success { background: var(--success-bg); }
+.text-success { color: var(--success-fg); }
+.bg-warning { background: var(--warning-bg); }
+.text-warning { color: var(--warning-fg); }
+.bg-error { background: var(--error-bg); }
+.text-error { color: var(--error-fg); }
+
+/* ===== Utility mapping to variables ===== */
+.text-fg-default { color: var(--fg-default); }
+.text-fg-muted   { color: var(--fg-muted); }
+.text-fg-subtle  { color: var(--fg-subtle); }
+
+.bg-bg-canvas  { background-color: var(--bg-canvas); }
+.bg-bg-surface { background-color: var(--bg-surface); }
+.bg-bg-muted   { background-color: var(--bg-muted); }
+
+.border-border-muted { border-color: var(--border-muted); }
+
+.text-brand      { color: var(--brand); }
+.text-brand-fg   { color: var(--brand-fg); }
+.bg-brand        { background-color: var(--brand); }
+.bg-brand-10     { background-color: color-mix(in hsl, var(--brand) 10%, transparent); }
+
+/* ===== Components: buttons / inputs / cards ===== */
+.btn {
+  @apply inline-flex items-center justify-center font-medium transition-colors select-none;
+  border-radius: 12px;
+  height: 40px;
+  padding: 0 14px;
+}
+.btn-lg { height: 48px; padding: 0 20px; border-radius: 16px; }
+
+.btn-primary {
+  background: var(--brand);
+  color: var(--brand-fg);
+}
+.btn-primary:hover { filter: brightness(0.97); }
+
+.btn-secondary {
+  background: var(--bg-muted);
+  color: var(--fg-default);
+  border: 1px solid var(--border-muted);
+}
+.btn-secondary:hover { filter: brightness(0.98); }
+
+.input {
+  @apply w-full text-sm;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-muted);
+  color: var(--fg-default);
+}
+.input-lg { height: 56px; padding: 0 16px; border-radius: 14px; }
+.input:focus { outline: 2px solid color-mix(in hsl, var(--brand) 35%, transparent); outline-offset: 0; }
+
+.card {
+  @apply border rounded-2xl;
+  background: var(--bg-surface);
+  border-color: var(--border-muted);
+  box-shadow: var(--shadow-1);
+}
+
+/* Header baseline */
+.site-header { background: var(--bg-canvas); border-bottom: 1px solid var(--border-muted); }
+.logo { color: var(--fg-default); }
+.nav-link { color: var(--fg-muted); }
+.nav-link:hover, .nav-link-active { color: var(--fg-default); }
+.nav-link-active::after { background: var(--brand); }
+
+/* Layout containers */
+.container { max-width: 1200px; margin-left: auto; margin-right: auto; padding: 0 16px; }
+.container-prose { max-width: 1040px; margin-left: auto; margin-right: auto; padding: 0 16px; }
+
+/* Typo helpers */
+.h1 { @apply text-4xl font-semibold leading-tight; }
+.lead { @apply text-base; color: var(--fg-muted); }
+
+/* Hero background (светлая/тёмная) */
+.hero {
+  background:
+    radial-gradient(1200px 400px at 50% -150px, color-mix(in hsl, var(--brand) 10%, transparent), transparent),
+    var(--bg-canvas);
+}
+[data-theme="dark"] .hero {
+  background:
+    radial-gradient(1400px 520px at 50% -200px, color-mix(in hsl, var(--brand) 14%, transparent), transparent),
+    var(--bg-canvas);
+}
+
+/* Theme-aware logo (две картинки, отображаем одну) */
+.logo-img-dark { display: none; }
+[data-theme="dark"] .logo-img-light { display: none; }
+[data-theme="dark"] .logo-img-dark { display: block; }
+
+/* Чуть выше контраст инпутов/карт на тёмной */
+[data-theme="dark"] .input { background: #0E1522; border-color: #253141; }
+[data-theme="dark"] .card  { background: #101826; border-color: #253141; box-shadow: none; }
+
+
+/* Тонкая подстройка под dark */
+[data-theme="dark"] .input {
+  background: var(--bg-muted);
+  border-color: var(--border-muted);
+  color: var(--fg-default);
+}
+[data-theme="dark"] .input::placeholder { color: var(--fg-muted); }
+
+[data-theme="dark"] .card  {
+  background: var(--bg-surface);
+  border-color: var(--border-muted);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .site-header {
+  background: var(--bg-surface);
+  border-bottom-color: var(--border-muted);
+}
+
+[data-theme="dark"] .nav-link { color: var(--fg-muted); }
+[data-theme="dark"] .nav-link:hover,
+[data-theme="dark"] .nav-link-active { color: var(--fg-default); }
+
+/* Кнопки */
+[data-theme="dark"] .btn-secondary {
+  background: var(--bg-muted);
+  color: var(--fg-default);
+  border-color: var(--border-muted);
+}
+
+
+/* Тонкая подстройка под заданные тёмные токены */
+[data-theme="dark"] .input {
+  background: var(--bg-muted);
+  border-color: var(--border-muted);
+  color: var(--fg-default);
+}
+[data-theme="dark"] .input::placeholder { color: var(--fg-muted); }
+
+[data-theme="dark"] .card  {
+  background: var(--bg-surface);
+  border-color: var(--border-muted);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .site-header {
+  background: var(--bg-surface);
+  border-bottom-color: var(--border-muted);
+}
+
+[data-theme="dark"] .nav-link { color: var(--fg-muted); }
+[data-theme="dark"] .nav-link:hover,
+[data-theme="dark"] .nav-link-active { color: var(--fg-default); }
+
+/* вторичная кнопка — как “muted” фон */
+[data-theme="dark"] .btn-secondary {
+  background: var(--bg-muted);
+  color: var(--fg-default);
+  border-color: var(--border-muted);
+}
+
+/* hero — мягкий градиент поверх #171718 */
+[data-theme="dark"] .hero {
+  background:
+    radial-gradient(1400px 520px at 50% -200px, color-mix(in hsl, var(--brand) 14%, transparent), transparent),
+    var(--bg-canvas);
+}
+
+/* Header layout */
+.site-header { background: var(--bg-canvas); border-bottom: 1px solid var(--border-muted); }
+[data-theme="dark"] .site-header { background: var(--bg-surface); }
+.site-header-inner { height: 72px; display:flex; align-items:center; }
+
+/* Nav links (base + active underline) */
+.nav-link { position: relative; display:inline-flex; align-items:center; height: 40px; padding: 0 10px; color: var(--fg-muted); }
+.nav-link:hover { color: var(--fg-default); }
+.nav-link::after {
+  content:''; position:absolute; left:10px; right:10px; bottom:0;
+  height:2px; border-radius:2px; background: transparent; transform: scaleX(0);
+  transition: transform .18s ease, background-color .18s ease;
+}
+.nav-link:hover::after { background: var(--border-muted); transform: scaleX(1); }
+.nav-link-active { color: var(--fg-default); }
+.nav-link-active::after { background: var(--brand); transform: scaleX(1); }
+
+/* Inputs: placeholder + focus */
+.input::placeholder { color: var(--fg-muted); opacity: 1; }
+.input:focus { outline: 2px solid color-mix(in hsl, var(--brand) 35%, transparent); outline-offset: 0; }
+
+/* Hero paddings (по макету ближе к 80px сверху/снизу) */
+.hero { padding-top: 80px !important; padding-bottom: 80px !important; }
+
+/* Brand tint для плашек иконок */
+.brand-tint { background: color-mix(in hsl, var(--brand) 15%, transparent); }
+
+/* Карточка преимуществ — subtle hover */
+.feature-card { transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.feature-card:hover { transform: translateY(-1px); border-color: var(--brand); }
+
+/* === Catalog filters === */
+.pill-tabs { display:flex; gap:8px; flex-wrap:wrap; }
+.pill {
+  display:inline-flex; align-items:center; height:40px; padding:0 14px;
+  border-radius:999px; border:1px solid var(--border-muted);
+  background: var(--bg-surface); color: var(--fg-muted);
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.pill:hover { color: var(--fg-default); }
+.pill-active { background: var(--brand); color: var(--brand-fg); border-color: var(--brand); }
+
+.select {
+  appearance:none; height:44px; border-radius:12px;
+  background: var(--bg-surface); color: var(--fg-default);
+  border:1px solid var(--border-muted);
+  padding:0 36px 0 12px; /* справа место под стрелку */
+  outline:none;
+}
+.select:focus { border-color: var(--brand); box-shadow: 0 0 0 2px color-mix(in hsl, var(--brand) 30%, transparent); }
+.select-wrap { position:relative; }
+.select-wrap .chev {
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  width:16px; height:16px; pointer-events:none; color: var(--fg-muted);
+}
+
+/* === Catalog cards === */
+.vehicle-card {
+  border:1px solid var(--border-muted); border-radius:16px; overflow:hidden;
+  background: var(--bg-surface); transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.vehicle-card:hover { transform: translateY(-1px); border-color: var(--brand); box-shadow: 0 6px 22px rgba(0,0,0,.08); }
+
+.vimg { aspect-ratio: 16/9; width:100%; background: var(--bg-muted); display:block; }
+.vbody { padding:12px 14px 14px; }
+.vtitle { font-weight:600; }
+.vmeta { color: var(--fg-muted); font-size: .9rem; margin-top:4px; }
+.vvin { margin-top:8px; font-size:.85rem; color: var(--fg-subtle); }
+
+/* Пагинация */
+.pager { display:flex; gap:8px; align-items:center; justify-content:center; margin-top:16px; }
+.pager-btn {
+  height:36px; min-width:36px; padding:0 10px; border-radius:10px;
+  background: var(--bg-surface); color: var(--fg-default); border:1px solid var(--border-muted);
+}
+.pager-btn-active { background: var(--brand); color: var(--brand-fg); border-color: var(--brand); }
+
+/* Контейнер секции каталога */
+.catalog-head { padding-top: 24px; padding-bottom: 12px; }
+.filters-bar { display:grid; gap:10px; grid-template-columns: 1fr; }
+@media (min-width: 768px) {
+  .filters-bar { grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; } /* 6 ячеек под селекты */
+}
+
+/* ===== Catalog filters: layout/size fix ===== */
+.filters-bar{
+  display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+}
+
+/* общий контейнер селекта */
+.select-wrap{
+  position:relative;
+  min-width:180px;   /* базовая ширина всех селектов */
+  height:40px;
+}
+
+/* сам <select> — единая высота/линия, фон и радиус по токенам */
+.select{
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  display:block; width:100%; height:40px; line-height:40px;
+  padding:0 36px 0 14px;
+  border:1px solid var(--border-muted);
+  background:var(--bg-surface);
+  color:var(--fg-default);
+  border-radius:12px;
+}
+
+/* фокус */
+.select:focus{
+  outline:2px solid color-mix(in hsl, var(--brand) 40%, transparent);
+  outline-offset:0;
+}
+
+/* стрелка в правом краю, по центру по Y */
+.select-wrap .chev{
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  pointer-events:none; color:var(--fg-muted);
+  font-size:14px; line-height:1;
+}
+
+/* Узкие селекты только для 4-го и 5-го (диапазон "От" / "До") */
+
+/* Кнопки справа смотрятся плотнее */
+.filters-bar .btn{ height:40px; }
+.filters-bar .btn.btn-primary{ height:40px; }
+
+/* На узких экранах — селекты во всю ширину ряда */
+@media (max-width: 640px){
+  .select-wrap{ min-width: 100%; }
+  .filters-bar{ gap:10px; }
+}
+
+/* Catalog filters: attribute-sized "small" selects (Year From/To) */
+.select-wrap[data-size="sm"]{ min-width:120px; }
+
+/* ===== Sticky filters bar ===== */
+.filters-sticky{
+  position: sticky;
+  top: 0;                 /* хедер у нас не sticky — можно 0 */
+  z-index: 30;
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-muted);
+  padding: 12px 0;
+  backdrop-filter: saturate(180%) blur(6px);
+}
+
+/* Hover/disabled для селектов */
+.select:hover{
+  border-color: color-mix(in hsl, var(--fg-muted) 35%, transparent);
+}
+.select:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* ===== Vehicle card: overlay-бейджи и ценник ===== */
+.vimgwrap{ position:relative; background: var(--bg-muted); aspect-ratio: 16/9; overflow:hidden; }
+.badge{
+  position:absolute; left:8px; top:8px;
+  display:inline-flex; align-items:center; height:24px; padding:0 10px;
+  border-radius: 999px; font-size:.75rem; font-weight:600;
+  border:1px solid var(--border-muted); background: var(--bg-canvas); color: var(--fg-default);
+}
+.badge-live{
+  background: color-mix(in hsl, var(--brand) 18%, var(--bg-canvas));
+  border-color: color-mix(in hsl, var(--brand) 55%, transparent);
+  color: var(--brand);
+}
+.badge-sold{
+  background: var(--bg-surface);
+  color: var(--fg-muted);
+}
+
+.price-chip{
+  position:absolute; right:8px; top:8px;
+  background: var(--bg-canvas);
+  border:1px solid var(--border-muted);
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
+/* ---------- Catalog UI polish v2 ---------- */
+
+/* Карточка: мягкий hover и быстрые переходы */
+[data-page="catalog"] .card {
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+[data-page="catalog"] .card:hover {
+  border-color: color-mix(in hsl, var(--brand) 55%, transparent);
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+}
+[data-theme="dark"] [data-page="catalog"] .card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.35);
+}
+
+/* Карточка: единая высота медиа-зоны (первый дочерний блок) */
+[data-page="catalog"] .card > :first-child {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* Плашка цены: прячем «иконку-тег», оставляем только цену */
+[data-page="catalog"] .card [class*="price"] svg,
+[data-page="catalog"] .card [data-badge="price"] svg {
+  display: none;
+}
+/* Небольшой зазор для текста цены (если вдруг где-то остался отступ под иконку) */
+[data-page="catalog"] .card [class*="price"],
+[data-page="catalog"] .card [data-badge="price"] {
+  gap: 6px;
+}
+
+/* Фокус для кликабельной карточки (если обёрнута ссылкой) */
+[data-page="catalog"] a:has(.card):focus-visible .card {
+  outline: 2px solid color-mix(in hsl, var(--brand) 60%, transparent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px color-mix(in hsl, var(--brand) 12%, transparent);
+}
+
+/* ----------------------------------------- */
+
+/* ---------- Catalog • Filters polish ---------- */
+
+/* Находим «полосу фильтров» эвристически: первый блок под заголовком,
+   где есть input/select/combobox/кнопки — выстраиваем его во флекс-сетку */
+[data-page="catalog"] > *:has(> :is(input, select, button, [role="combobox"], [data-filter])) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Базовые размеры контролов на полосе фильтров */
+[data-page="catalog"] :is(input[type="text"], input[type="search"], select, button, [role="combobox"], [data-filter]) {
+  min-height: 40px;
+  border-radius: 12px;
+  /* унифицируем вертикальный ритм */
+  padding-block: 9px;
+}
+
+/* Внутренние паддинги «боксов» (типы: селекты/триггеры дропдаунов/кнопки) */
+[data-page="catalog"] :is(select, [role="combobox"], button) {
+  padding-inline: 12px;
+}
+
+/* Группы диапазонов «От/До»: ставим минимальную ширину, чтобы не «плавали» */
+[data-page="catalog"] :is([data-filter="yearFrom"], [data-filter="yearTo"],
+                          [data-filter="mileageFrom"], [data-filter="mileageTo"]) {
+  min-width: 110px;
+}
+
+/* Кнопки «Сбросить / Применить»: лёгкий акцент и одинаковая высота */
+[data-page="catalog"] button.btn {
+  min-height: 40px;
+}
+
+/* Между блоками комбобоксов и кнопками — чуть больше воздуха на узких экранах */
+@media (max-width: 1280px) {
+  [data-page="catalog"] > *:has(> :is(input, select, button, [role="combobox"], [data-filter])) {
+    row-gap: 14px;
+  }
+}
+
+/* Тёмная/светлая тема — цвета берём из токенов */
+[data-page="catalog"] :is(input, select, [role="combobox"]) {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  color: var(--fg-default);
+}
+[data-page="catalog"] :is(input, select, [role="combobox"])::placeholder {
+  color: var(--fg-muted);
+}
+
+/* Состояния */
+[data-page="catalog"] :is(input, select, [role="combobox"]):focus {
+  outline: 2px solid color-mix(in hsl, var(--brand) 40%, transparent);
+  outline-offset: 0;
+  border-color: color-mix(in hsl, var(--brand) 35%, var(--border-muted));
+}
+[data-page="catalog"] :is(input, select, [role="combobox"]):disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------- */
+
+/* ---------- Catalog • Card hover/focus, badges, empty state ---------- */
+
+/* Карточка: мягкий hover/фокус, без прыжков layout */
+[data-page="catalog"] .card {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background-color .18s ease;
+  will-change: transform, box-shadow, border-color, background-color;
+}
+[data-page="catalog"] .card:hover,
+[data-page="catalog"] .card:focus-within {
+  border-color: color-mix(in hsl, var(--brand) 35%, var(--border-muted));
+  box-shadow: 0 6px 22px rgba(0,0,0,.08);
+}
+[data-theme="dark"] [data-page="catalog"] .card:hover,
+[data-theme="dark"] [data-page="catalog"] .card:focus-within {
+  box-shadow: 0 8px 26px rgba(0,0,0,.45);
+  background: color-mix(in hsl, var(--bg-surface) 92%, var(--bg-canvas));
+}
+
+/* Бейджи статусов — выравнивание, читаемость, одинаковая высота */
+[data-page="catalog"] .card .badge,
+[data-page="catalog"] .card [data-badge] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  line-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-muted);
+  color: var(--fg-muted);
+  border: 1px solid var(--border-muted);
+  backdrop-filter: saturate(120%) blur(2px);
+}
+[data-page="catalog"] .card .badge:is(.sold,[data-variant="sold"]),
+[data-page="catalog"] .card [data-badge]:is(.sold,[data-variant="sold"]) {
+  background: color-mix(in hsl, #A8A8AD 14%, transparent);
+  color: var(--fg-default);
+  border-color: color-mix(in hsl, #A8A8AD 28%, var(--border-muted));
+}
+[data-page="catalog"] .card .badge:is(.active,[data-variant="active"]),
+[data-page="catalog"] .card [data-badge]:is(.active,[data-variant="active"]) {
+  background: color-mix(in hsl, var(--brand) 20%, transparent);
+  color: var(--fg-default);
+  border-color: color-mix(in hsl, var(--brand) 35%, var(--border-muted));
+}
+
+/* Цена в правом верхнем углу — выравнивание и отступы */
+[data-page="catalog"] .card [data-price],
+[data-page="catalog"] .card .price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  color: var(--fg-default);
+}
+/* если рядом рисуется «ярлычок-иконка» — скрываем, чтобы не съедал место */
+[data-page="catalog"] .card [data-price] svg:first-child,
+[data-page="catalog"] .card .price > svg:first-child {
+  display: none !important;
+}
+
+/* Плейсхолдер пустого состояния «без JS»:
+   сработает, когда grid действительно пустой (после фильтров) */
+[data-page="catalog"] .grid:empty {
+  position: relative;
+  min-height: 220px;
+  border: 1px dashed var(--border-muted);
+  border-radius: 16px;
+  background:
+    linear-gradient(0deg, color-mix(in hsl, var(--bg-surface) 86%, transparent),
+                         color-mix(in hsl, var(--bg-surface) 86%, transparent));
+}
+[data-page="catalog"] .grid:empty::before {
+  content: "Ничего не найдено";
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 18px; font-weight: 600;
+  color: var(--fg-default);
+}
+[data-page="catalog"] .grid:empty::after {
+  content: "Измените фильтры или сбросьте их — попробуем ещё раз.";
+  position: absolute; left: 0; right: 0; bottom: 38%;
+  text-align: center;
+  font-size: 14px; color: var(--fg-muted);
+}
+
+/* Английская локаль через атрибут на <html lang="en"> */
+html[lang="en"] [data-page="catalog"] .grid:empty::before { content: "No results found"; }
+html[lang="en"] [data-page="catalog"] .grid:empty::after  { content: "Adjust filters or reset them and try again."; }
+
+/* -------------------------------------------------------------------- */
+
+/* --- VIN page helpers --- */
+[data-page="vin"] .card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+}
+
+/* badges */
+.badge{
+  display:inline-flex;align-items:center;gap:.375rem;
+  height:24px;padding:0 .5rem;border-radius:9999px;
+  font-size:12px;border:1px solid var(--border-muted);
+  background: var(--bg-canvas-subtle); color: var(--fg-muted);
+}
+.badge-success{ border-color: color-mix(in hsl, var(--brand) 40%, var(--border-muted)); color: var(--brand);}
+.badge-neutral{ opacity:.9; }
+
+/* extra tiny text */
+.text-2xs{ font-size:11px; line-height: 1rem; }
+
+/* VIN layout helpers */
+[data-page="vin"] .card{ @apply p-4 rounded-2xl border; border-color: var(--border-muted); background: var(--bg-surface); }
+
+
+/* --- VIN details panels --- */
+.panel{
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 16px;
+  padding: 16px;
+}
+.panel h3{
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--fg-default);
+}
+.specs-grid{
+  display:grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  color: var(--fg-default);
+}
+.specs-grid .k{ color: var(--fg-muted); }
+.specs-grid .v{ color: var(--fg-default); }
+.table{
+  width:100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+.table th{
+  text-align:left;
+  font-weight:500;
+  color:var(--fg-muted);
+  padding: 0 12px;
+}
+.table td{
+  background: var(--bg-surface);
+  border:1px solid var(--border-muted);
+  padding:10px 12px;
+  color:var(--fg-default);
+}
+
+/* -- VIN v2 tweaks -------------------------------------------------------- */
+.card       { @apply rounded-2xl bg-bg-surface ring-1 ring-border-muted; }
+.card-title { @apply text-base font-semibold text-fg-default; }
+
+/* VIN: миниатюры галереи — акцентные рамки на hover/focus/active */
+.thumb { outline: 0; }
+.thumb:hover,
+.thumb:focus-visible { box-shadow: 0 0 0 2px var(--border-muted), 0 0 0 4px color-mix(in hsl, var(--brand) 40%, transparent); }
+.thumb[aria-current="true"] { box-shadow: 0 0 0 2px var(--brand); }
+
+/* KV layout в карточках VIN */
+.kv { display:grid; grid-template-columns: 160px 1fr; gap: 8px; align-items: center; }
+.kv .k { color: var(--fg-muted); }
+.kv .v { color: var(--fg-default); }
+
+/* Бейджи статуса */
+.badge {
+  display:inline-flex; align-items:center; height:24px;
+  padding:0 10px; border-radius:999px; font-size:.8125rem; line-height:1;
+  border:1px solid transparent; background: var(--bg-surface); color: var(--fg-default);
+}
+.badge--neutral { background: var(--bg-surface); color: var(--fg-muted); border-color: var(--border-muted); }
+.badge--sold    { color:#22c55e; background: color-mix(in hsl, #22c55e 12%, transparent); border-color: color-mix(in hsl, #22c55e 35%, transparent); }
+.badge--active  { color:var(--brand); background: color-mix(in hsl, var(--brand) 12%, transparent); border-color: color-mix(in hsl, var(--brand) 35%, transparent); }
+.badge--pending { color:#eab308; background: color-mix(in hsl, #eab308 12%, transparent); border-color: color-mix(in hsl, #eab308 35%, transparent); }
+.badge--upcoming{ color:#60a5fa; background: color-mix(in hsl, #60a5fa 12%, transparent); border-color: color-mix(in hsl, #60a5fa 35%, transparent); }
+
+/* Таблица истории */
+.table-vin thead th { text-align:left; font-weight:600; color: var(--fg-muted); padding:.5rem .5rem; }
+.table-vin tbody td { padding:.5rem .5rem; }
+.table-vin tbody tr:nth-child(odd) { background: color-mix(in hsl, var(--bg-surface) 40%, transparent); }
+
+/* === Token & Typography Lock v1 =============================== */
+/* Базовые токены темы. Приоритетом идут эти значения. */
+:root {
+  /* brand */
+  --brand: #4F45E5;
+
+  /* light (дефолт; dark ниже) */
+  --bg-canvas: #FFFFFF;
+  --bg-surface: #F6F7F9;
+  --bg-elevated: #FFFFFF;
+
+  --fg-default: #0F1115;
+  --fg-muted:   #6B7280;
+
+  --border-muted: #E5E7EB;
+  --ring: color-mix(in oklab, var(--brand) 55%, white 45%);
+
+  /* типографика (шкала) */
+  --fs-h1: clamp(28px, 3.0vw, 40px);
+  --fs-h2: clamp(24px, 2.4vw, 32px);
+  --fs-h3: clamp(20px, 2.0vw, 24px);
+  --fs-base: 16px;
+  --lh-tight: 1.2;
+  --lh-base: 1.55;
+}
+
+[data-theme="dark"] {
+  /* тёмная тема по макету */
+  --bg-canvas: #171718;
+  --bg-surface: #1F1F20;
+  --bg-elevated: #2E2E30;
+
+  --fg-default: #EDEDF0;
+  --fg-muted:   #A8A8AD;
+
+  --border-muted: #2E2E30;
+  --ring: color-mix(in oklab, var(--brand) 60%, black 40%);
+}
+
+/* Глобальные применения токенов */
+html, body {
+  background: var(--bg-canvas);
+  color: var(--fg-default);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+}
+
+/* Карточные поверхности и границы в темах */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 12px;
+}
+
+/* Ссылки/hover/фокус по brand */
+a { color: var(--brand); }
+a:hover { opacity: .9; }
+
+/* Унифицированный focus-visible */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Заголовки по шкале */
+h1, .h1 { font-size: var(--fs-h1); line-height: var(--lh-tight); font-weight: 700; letter-spacing: -0.01em; }
+h2, .h2 { font-size: var(--fs-h2); line-height: var(--lh-tight); font-weight: 650; letter-spacing: -0.005em; }
+h3, .h3 { font-size: var(--fs-h3); line-height: 1.35;        font-weight: 600; }
+
+/* Мелкие утилиты */
+.text-muted { color: var(--fg-muted); }
+.badge {
+  display:inline-flex; align-items:center; gap:.35rem;
+  height:24px; padding:0 8px; border-radius:999px;
+  font-size:12px; line-height:1; border:1px solid var(--border-muted);
+  background: var(--bg-elevated); color: var(--fg-default);
+}
+.badge--ok    { border-color: color-mix(in oklab, var(--brand) 50%, var(--border-muted)); }
+.badge--warn  { color:#EAB308; border-color:#EAB30822; }
+.badge--sold  { color:#22C55E; border-color:#22C55E22; }
+.badge--fail  { color:#EF4444; border-color:#EF444422; }
+
+/* =============================================================== */
+
+/* === Catalog UI Lock =================================================== */
+
+/* Сетка каталога: 1 → 2 → 3 → 4 колонки */
+.grid-catalog {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px){ .grid-catalog{ grid-template-columns: repeat(2, 1fr);} }
+@media (min-width: 1024px){ .grid-catalog{ grid-template-columns: repeat(3, 1fr);} }
+@media (min-width: 1280px){ .grid-catalog{ grid-template-columns: repeat(4, 1fr);} }
+
+/* Медиа-зона карточки (строгий 4:3) */
+.media-4x3 { aspect-ratio: 4 / 3; position: relative; overflow: hidden; border-radius: 10px; }
+.media-4x3 > img, .media-4x3 > video, .media-4x3 > picture img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+
+/* Универсальный скелетон (shimmer) */
+.skeleton {
+  position: relative; overflow: hidden;
+  background: color-mix(in oklab, var(--fg-muted) 14%, transparent);
+  border-radius: 10px;
+}
+.skeleton::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--fg-muted) 25%, transparent) 45%,
+    transparent 90%);
+  animation: skel 1.2s infinite linear;
+}
+@keyframes skel { from { transform: translateX(-100%);} to { transform: translateX(100%);} }
+
+/* Выровнять высоту фильтров/селектов */
+.filters .btn, .filters select, .filters input { height: 40px; }
+
+/* Hover у карточек */
+.card-hover:hover { box-shadow: 0 8px 24px rgba(0,0,0,.06); transform: translateY(-1px); transition: .15s ease; }
+
+/* ====================================================================== */
+
+/* A11y: видимый фокус при навигации с клавиатуры */
+:where(a, button, [role="button"], input, select, textarea, .btn, .chip, .copy-btn):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* --- unified status badges --- */
+.badge{
+  display:inline-flex;align-items:center;gap:.375rem;
+  height:22px;padding:0 .5rem;border-radius:9999px;
+  font-size:12px; line-height:1; border:1px solid var(--border-muted);
+  color:var(--fg-muted); background:var(--bg-surface);
+}
+.badge--sold   { border-color:#10b981; color:#10b981; }   /* emerald-500 */
+.badge--active { border-color:#3b82f6; color:#3b82f6; }   /* blue-500   */
+.badge--nosale { border-color:#f59e0b; color:#f59e0b; }   /* amber-500  */
+
+/* слегка подсветим фокус по Tab */
+:where(a,button,[role="button"],input,select,textarea,.copy-btn):focus-visible{
+  outline:2px solid var(--brand); outline-offset:2px;
+}
+
+/* приведение статусов каталога к единому виду, если есть data-status на чипе */
+.card [data-status]{
+  display:inline-flex;align-items:center;height:22px;padding:0 .5rem;border-radius:9999px;
+  font-size:12px;line-height:1;border:1px solid var(--border-muted);color:var(--fg-muted);background:var(--bg-surface);
+}
+.card [data-status="sold"]    { border-color:#10b981; color:#10b981; }
+.card [data-status="active"]  { border-color:#3b82f6;  color:#3b82f6;  }
+.card [data-status="no_sale"] { border-color:#f59e0b;  color:#f59e0b;  }
+
+/* VIN history responsive */
+@media (max-width: 768px) {
+  .history-table { display: none; }
+  .history-cards { display: grid; gap: 12px; }
+}
+@media (min-width: 769px) {
+  .history-cards { display: none; }
+}
+
+/* ==== Catalog: hover, media equalize, title clamp, focus ==== */
+[data-page="catalog"] .card{
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+@media (hover:hover){
+  [data-page="catalog"] .card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px hsl(0 0% 0% / 8%);
+  }
+}
+[data-theme="dark"] [data-page="catalog"] .card:hover{
+  box-shadow: 0 6px 24px hsl(0 0% 0% / 35%);
+}
+
+/* Единая медиа-зона карточки (если есть .media — применим её; если нет, не навредит) */
+[data-page="catalog"] .card .media{
+  position: relative;
+  aspect-ratio: 16/10;
+  overflow: hidden;
+  background: var(--bg-muted);
+  border-radius: 10px;
+}
+[data-page="catalog"] .card .media img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .35s ease;
+}
+@media (hover:hover){
+  [data-page="catalog"] .card:hover .media img{
+    transform: scale(1.03);
+  }
+}
+
+/* Заголовок в две строки макс., одинаковая высота блока с текстом */
+[data-page="catalog"] .card h3,
+[data-page="catalog"] .card .title{
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.8em; /* визуально держит 2 строки */
+}
+
+/* Мелкие выравнивания мета-строки и бейджей */
+[data-page="catalog"] .card .meta,
+[data-page="catalog"] .card .badges{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+}
+
+/* Видимый фокус по кнопкам/ссылкам карточки (a11y) */
+[data-page="catalog"] .card:focus-within{
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ===== Catalog: финальный полиш карточек ===== */
+
+/* 1) Плашка цены — закрепляем в правом верхнем углу медиа, единая высота/отступы */
+[data-page="catalog"] .card .media{ position: relative; } /* страховка */
+[data-page="catalog"] .card .price,
+[data-page="catalog"] .card [data-price]{
+  position: absolute;
+  top: 10px; right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: .2px;
+  background: var(--bg-surface);
+  color: var(--fg-default);
+  border: 1px solid var(--border-muted);
+  box-shadow: 0 2px 10px hsl(0 0% 0% / 8%);
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+[data-theme="dark"] [data-page="catalog"] .card .price,
+[data-theme="dark"] [data-page="catalog"] .card [data-price]{
+  background: color-mix(in hsl, var(--bg-surface) 86%, transparent);
+  box-shadow: 0 2px 10px hsl(0 0% 0% / 28%);
+}
+@media (hover:hover){
+  [data-page="catalog"] .card:hover .price,
+  [data-page="catalog"] .card:hover [data-price]{
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px hsl(0 0% 0% / 14%);
+  }
+}
+
+/* 2) Лента бейджей/меты под заголовком — ровная сетка, одинаковые отступы */
+[data-page="catalog"] .card .meta,
+[data-page="catalog"] .card .badges{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  row-gap: 6px;
+  margin-top: 8px;
+}
+
+/* 3) Унифицированный вид бейджей (подходит для статусов/тегов) */
+[data-page="catalog"] .card .badge,
+[data-page="catalog"] .card .chip,
+[data-page="catalog"] .card [data-badge]{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  border: 1px solid var(--border-muted);
+  background: var(--bg-canvas);
+  color: var(--fg-muted);
+}
+
+/* 3.1) Цвета для частых статусов (если в разметке есть data-status) */
+[data-page="catalog"] .card [data-status]{
+  font-weight: 600;
+  letter-spacing: .15px;
+}
+[data-page="catalog"] .card [data-status="active" i]{
+  background: color-mix(in hsl, #22c55e 12%, transparent);
+  color: #16a34a;
+  border-color: color-mix(in hsl, #22c55e 20%, var(--border-muted));
+}
+[data-page="catalog"] .card [data-status="sold" i]{
+  background: color-mix(in hsl, #a78bfa 14%, transparent);
+  color: #7c3aed;
+  border-color: color-mix(in hsl, #a78bfa 28%, var(--border-muted));
+}
+[data-page="catalog"] .card [data-status="pending" i],
+[data-page="catalog"] .card [data-status="upcoming" i]{
+  background: color-mix(in hsl, #f59e0b 14%, transparent);
+  color: #b45309;
+  border-color: color-mix(in hsl, #f59e0b 28%, var(--border-muted));
+}
+
+/* 4) Ровные вертикальные отступы в карточке (контентные зоны) */
+[data-page="catalog"] .card .body,
+[data-page="catalog"] .card .content{
+  display: grid;
+  gap: 8px;
+}
+
+/* 5) Кламп заголовка (чтобы сетка не «плясала») — вдруг не применилось ранее */
+[data-page="catalog"] .card h3,
+[data-page="catalog"] .card .title{
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.8em;
+}
+
+/* 6) Легкий ховер по заголовку/кликабельным ссылкам внутри карточки */
+@media (hover:hover){
+  [data-page="catalog"] .card a:hover{
+    text-decoration-color: color-mix(in hsl, var(--brand) 60%, transparent);
+    text-decoration-thickness: .08em;
+    text-underline-offset: .18em;
+  }
+}
+
+/* 7) Единый промежуток между карточками в сетке, если используется gap */
+[data-page="catalog"] .grid,
+[data-page="catalog"] .cards{
+  gap: 16px;
+}
+
+/* 8) Если цена бывает внутри body (не в .media) — страхующий вариант */
+[data-page="catalog"] .card .body > .price{
+  position: static;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* ===== Catalog: финальный полиш карточек ===== */
+
+/* 1) Плашка цены — закрепляем в правом верхнем углу медиа, единая высота/отступы */
+[data-page="catalog"] .card .media{ position: relative; } /* страховка */
+[data-page="catalog"] .card .price,
+[data-page="catalog"] .card [data-price]{
+  position: absolute;
+  top: 10px; right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: .2px;
+  background: var(--bg-surface);
+  color: var(--fg-default);
+  border: 1px solid var(--border-muted);
+  box-shadow: 0 2px 10px hsl(0 0% 0% / 8%);
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+[data-theme="dark"] [data-page="catalog"] .card .price,
+[data-theme="dark"] [data-page="catalog"] .card [data-price]{
+  background: color-mix(in hsl, var(--bg-surface) 86%, transparent);
+  box-shadow: 0 2px 10px hsl(0 0% 0% / 28%);
+}
+@media (hover:hover){
+  [data-page="catalog"] .card:hover .price,
+  [data-page="catalog"] .card:hover [data-price]{
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px hsl(0 0% 0% / 14%);
+  }
+}
+
+/* 2) Лента бейджей/меты под заголовком — ровная сетка, одинаковые отступы */
+[data-page="catalog"] .card .meta,
+[data-page="catalog"] .card .badges{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  row-gap: 6px;
+  margin-top: 8px;
+}
+
+/* 3) Унифицированный вид бейджей (подходит для статусов/тегов) */
+[data-page="catalog"] .card .badge,
+[data-page="catalog"] .card .chip,
+[data-page="catalog"] .card [data-badge]{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  border: 1px solid var(--border-muted);
+  background: var(--bg-canvas);
+  color: var(--fg-muted);
+}
+
+/* 3.1) Цвета для частых статусов (если в разметке есть data-status) */
+[data-page="catalog"] .card [data-status]{
+  font-weight: 600;
+  letter-spacing: .15px;
+}
+[data-page="catalog"] .card [data-status="active" i]{
+  background: color-mix(in hsl, #22c55e 12%, transparent);
+  color: #16a34a;
+  border-color: color-mix(in hsl, #22c55e 20%, var(--border-muted));
+}
+[data-page="catalog"] .card [data-status="sold" i]{
+  background: color-mix(in hsl, #a78bfa 14%, transparent);
+  color: #7c3aed;
+  border-color: color-mix(in hsl, #a78bfa 28%, var(--border-muted));
+}
+[data-page="catalog"] .card [data-status="pending" i],
+[data-page="catalog"] .card [data-status="upcoming" i]{
+  background: color-mix(in hsl, #f59e0b 14%, transparent);
+  color: #b45309;
+  border-color: color-mix(in hsl, #f59e0b 28%, var(--border-muted));
+}
+
+/* 4) Ровные вертикальные отступы в карточке (контентные зоны) */
+[data-page="catalog"] .card .body,
+[data-page="catalog"] .card .content{
+  display: grid;
+  gap: 8px;
+}
+
+/* 5) Кламп заголовка (чтобы сетка не «плясала») — вдруг не применилось ранее */
+[data-page="catalog"] .card h3,
+[data-page="catalog"] .card .title{
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.8em;
+}
+
+/* 6) Легкий ховер по заголовку/кликабельным ссылкам внутри карточки */
+@media (hover:hover){
+  [data-page="catalog"] .card a:hover{
+    text-decoration-color: color-mix(in hsl, var(--brand) 60%, transparent);
+    text-decoration-thickness: .08em;
+    text-underline-offset: .18em;
+  }
+}
+
+/* 7) Единый промежуток между карточками в сетке, если используется gap */
+[data-page="catalog"] .grid,
+[data-page="catalog"] .cards{
+  gap: 16px;
+}
+
+/* 8) Если цена бывает внутри body (не в .media) — страхующий вариант */
+[data-page="catalog"] .card .body > .price{
+  position: static;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* ===== Price badge tones (used in catalog cards) ===== */
+.price.pill{border-radius:999px;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;font-weight:600;font-size:13px;letter-spacing:.2px;border:1px solid var(--border-muted);box-shadow:0 2px 10px hsl(0 0% 0% / 8%)}
+[data-theme="dark"] .price.pill{box-shadow:0 2px 10px hsl(0 0% 0% / 28%)}
+.price.pill.tone-violet{background:color-mix(in hsl,#a78bfa 14%,transparent);color:#7c3aed;border-color:color-mix(in hsl,#a78bfa 28%,var(--border-muted))}
+.price.pill.tone-green {background:color-mix(in hsl,#22c55e 12%,transparent);color:#16a34a;border-color:color-mix(in hsl,#22c55e 20%,var(--border-muted))}
+.price.pill.tone-blue  {background:color-mix(in hsl,#60a5fa 14%,transparent);color:#2563eb;border-color:color-mix(in hsl,#60a5fa 28%,var(--border-muted))}
+.price.pill.tone-amber {background:color-mix(in hsl,#f59e0b 14%,transparent);color:#b45309;border-color:color-mix(in hsl,#f59e0b 28%,var(--border-muted))}
+.price.pill.tone-neutral{background:var(--bg-surface);color:var(--fg-default);border-color:var(--border-muted)}
+.price.pill.tone-gray  {background:color-mix(in hsl,#94a3b8 12%,transparent);color:#334155;border-color:color-mix(in hsl,#94a3b8 28%,var(--border-muted))}
+:root{
+  --grad-brand: radial-gradient(1200px 420px at 50% -240px,
+    color-mix(in hsl, var(--brand) 18%, transparent), transparent);
+  --glow-brand: 0 8px 28px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+:root[data-theme=dark]{
+  --grad-brand: radial-gradient(1400px 520px at 50% -260px,
+    color-mix(in hsl, var(--brand) 24%, transparent), transparent);
+  --glow-brand: 0 10px 34px color-mix(in oklab, var(--brand) 28%, transparent);
+}
+
+.brand-gradient { background-image: var(--grad-brand); }
+.glow-brand     { box-shadow: var(--glow-brand); }
+
+.icon-grad {
+  background:
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--brand) 65%, #7c3aed 35%),
+      color-mix(in oklab, var(--brand) 35%, #22c55e 65%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.card-accent { transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.card-accent:hover {
+  transform: translateY(-1px);
+  border-color: var(--brand);
+  box-shadow: 0 6px 22px color-mix(in oklab, var(--brand) 18%, transparent);
+}
+/* === Accent utilities (light/dark safe) === */
+:root{
+  --grad-brand: radial-gradient(1200px 420px at 50% -240px,
+    color-mix(in hsl, var(--brand) 18%, transparent), transparent);
+  --glow-brand: 0 8px 28px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+:root[data-theme=dark]{
+  --grad-brand: radial-gradient(1400px 520px at 50% -260px,
+    color-mix(in hsl, var(--brand) 24%, transparent), transparent);
+  --glow-brand: 0 10px 34px color-mix(in oklab, var(--brand) 28%, transparent);
+}
+
+.brand-gradient { background-image: var(--grad-brand); }
+.glow-brand     { box-shadow: var(--glow-brand); }
+
+/* Gradient chip for feature icons (background gradient + white icon) */
+.icon-chip{
+  background:
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--brand) 65%, #7c3aed 35%),
+      color-mix(in oklab, var(--brand) 35%, #22c55e 65%));
+  color: #fff; /* SVGs with currentColor */
+  border: 1px solid color-mix(in oklab, var(--brand) 35%, transparent);
+  box-shadow: var(--glow-brand);
+}
+
+/* Card subtle hover accent */
+.card-accent { transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.card-accent:hover {
+  transform: translateY(-1px);
+  border-color: var(--brand);
+  box-shadow: 0 6px 22px color-mix(in oklab, var(--brand) 18%, transparent);
+}
+
+/* === S1-A: header & hero tweaks (idempotent) === */
+.logo { display: inline-flex; align-items: center; gap: 8px; }
+.logo-text { font-weight: 600; letter-spacing: -0.01em; }
+
+/* Убираем активную обводку/свечение у поля поиска в герое */
+.hero input[type="text"],
+.hero input[type="search"],
+.hero .input {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.hero input[type="text"]:focus,
+.hero input[type="search"]:focus,
+.hero .input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: var(--border-muted);
+}
+
+/* __S1_A_HERO_INPUT_TWEAK__ — hero search input: no glow/outline */
+.hero .input,
+.hero input[type="text"],
+.hero input[type="search"]{
+  outline: none !important;
+  box-shadow: none !important;
+}
+.hero .input:focus,
+.hero input[type="text"]:focus,
+.hero input[type="search"]:focus{
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: var(--border-muted);
+}
+
+/* __S1_A_HERO_RING_OFF__ — S1-A: убрать обводку/свечение у формы поиска на главной */
+.hero :where(input,.input,button,.btn):focus,
+.hero :where(input,.input,button,.btn):focus-visible{
+  outline: none !important;
+  box-shadow: none !important;
+}
+.hero :where(input,.input){
+  border-color: var(--border-muted) !important;
+}
+
+.hero{box-shadow:none !important;}
+
+/* S1-A: turn off legacy glow/gradient on search hero */
+.hero,
+.container-prose > section:first-of-type,
+#home-hero{
+  background: var(--bg-canvas) !important;
+  box-shadow: none !important;
+}
+
+/* S1-B: VIN chip + accent panels */
+.chip {
+  display:inline-flex; align-items:center; gap:.375rem;
+  height:24px; padding:0 8px; border-radius:9999px;
+  font-size:12px; line-height:1; border:1px solid var(--border-muted);
+  background: var(--bg-surface); color: var(--fg-muted);
+}
+.chip--vin { font-weight:600; letter-spacing:.2px; }
+
+.panel-accent {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 16px; padding: 16px;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background-color .16s ease;
+  box-shadow: 0 1px 2px rgba(16,24,40,.04);
+}
+.panel-accent:hover, .panel-accent:focus-within {
+  transform: translateY(-1px);
+  border-color: color-mix(in hsl, var(--brand) 35%, var(--border-muted));
+  box-shadow: 0 6px 22px rgba(0,0,0,.08);
+}
+[data-theme=dark] .panel-accent:hover, [data-theme=dark] .panel-accent:focus-within {
+  box-shadow: 0 8px 26px rgba(0,0,0,.35);
+  background: color-mix(in hsl, var(--bg-surface) 92%, var(--bg-canvas));
+}

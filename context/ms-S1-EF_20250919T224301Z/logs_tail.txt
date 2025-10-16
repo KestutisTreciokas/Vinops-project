@@ -1,0 +1,6 @@
+web-1  |   ▲ Next.js 14.2.5
+web-1  |   - Local:        http://localhost:3000
+web-1  |   - Network:      http://0.0.0.0:3000
+web-1  | 
+web-1  |  ✓ Starting...
+web-1  |  ✓ Ready in 424ms

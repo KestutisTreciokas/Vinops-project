@@ -1,0 +1,5 @@
+### cmd: free -h
+### at:  2025-09-20 20:31  local | 2025-09-20 19:31  Europe/Warsaw
+               total        used        free      shared  buff/cache   available
+Mem:           7.8Gi       1.2Gi       274Mi        17Mi       6.3Gi       6.3Gi
+Swap:             0B          0B          0B

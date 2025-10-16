@@ -1,0 +1,45 @@
+# syntax=docker/dockerfile:1.7
+########### deps ###########
+FROM node:20-alpine AS deps
+WORKDIR /app
+ENV CI=1
+COPY package*.json ./
+RUN npm ci || npm install --no-audit --no-fund
+
+########### build ###########
+FROM node:20-alpine AS build
+WORKDIR /app
+# Важно: ровно "production" без пробелов/доп. значений
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+# (чтобы не было варнинга от BuildKit)
+ARG DAL_MOCK=0
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Проверка, что берем именно next.config.mjs (у вас он приоритетный и с ним билд проходил)
+RUN test -f next.config.mjs && echo "[using next.config.mjs]" || echo "[fallback next.config.js]"
+
+# Строго сборка сервера (никаких "export")
+RUN npm run build
+
+########### runner ###########
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+# Небольшой runtime-пользователь
+RUN adduser -D -H -s /sbin/nologin nextjs
+
+# Копируем всё нужное для next start
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public 2>/dev/null || true
+COPY --from=build /app/next.config.mjs ./next.config.mjs 2>/dev/null || true
+COPY --from=build /app/next.config.js ./next.config.js 2>/dev/null || true
+
+USER nextjs
+EXPOSE 3000
+CMD ["node","node_modules/next/dist/bin/next","start","-H","0.0.0.0","-p","3000"]

@@ -1,0 +1,43 @@
+/etc/nginx/uwsgi_params:17:uwsgi_param  SERVER_NAME        $server_name;
+/etc/nginx/scgi_params:17:scgi_param  SERVER_NAME        $server_name;
+/etc/nginx/nginx.conf:22:	# server_names_hash_bucket_size 64;
+/etc/nginx/nginx.conf:23:	# server_name_in_redirect off;
+/etc/nginx/nginx.conf:32:	ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; # Dropping SSLv3, ref: POODLE
+/etc/nginx/nginx.conf:33:	ssl_prefer_server_ciphers on;
+/etc/nginx/nginx.conf:73:#		listen     localhost:110;
+/etc/nginx/nginx.conf:79:#		listen     localhost:143;
+/etc/nginx/sites-enabled/vinops.conf:2:  server_name vinops.online www.vinops.online;
+/etc/nginx/sites-enabled/vinops.conf:9:    proxy_pass http://127.0.0.1:3002;
+/etc/nginx/sites-enabled/vinops.conf:18:    proxy_pass http://127.0.0.1:3002;
+/etc/nginx/sites-enabled/vinops.conf:24:    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+/etc/nginx/sites-enabled/vinops.conf:25:    listen 443 ssl; # managed by Certbot
+/etc/nginx/sites-enabled/vinops.conf:26:    ssl_certificate /etc/letsencrypt/live/vinops.online/fullchain.pem; # managed by Certbot
+/etc/nginx/sites-enabled/vinops.conf:27:    ssl_certificate_key /etc/letsencrypt/live/vinops.online/privkey.pem; # managed by Certbot
+/etc/nginx/sites-enabled/vinops.conf:29:    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+/etc/nginx/sites-enabled/vinops.conf:44:  listen 80;
+/etc/nginx/sites-enabled/vinops.conf:45:  listen [::]:80;
+/etc/nginx/sites-enabled/vinops.conf:46:  server_name vinops.online www.vinops.online;
+/etc/nginx/fastcgi.conf:24:fastcgi_param  SERVER_NAME        $server_name;
+/etc/nginx/sites-available/default:22:	listen 80 default_server;
+/etc/nginx/sites-available/default:23:	listen [::]:80 default_server;
+/etc/nginx/sites-available/default:27:	# listen 443 ssl default_server;
+/etc/nginx/sites-available/default:28:	# listen [::]:443 ssl default_server;
+/etc/nginx/sites-available/default:33:	# Read up on ssl_ciphers to ensure a secure configuration.
+/etc/nginx/sites-available/default:46:	server_name _;
+/etc/nginx/sites-available/default:80:#	listen 80;
+/etc/nginx/sites-available/default:81:#	listen [::]:80;
+/etc/nginx/sites-available/default:83:#	server_name example.com;
+/etc/nginx/sites-available/vinops.conf:2:  server_name vinops.online www.vinops.online;
+/etc/nginx/sites-available/vinops.conf:9:    proxy_pass http://127.0.0.1:3002;
+/etc/nginx/sites-available/vinops.conf:18:    proxy_pass http://127.0.0.1:3002;
+/etc/nginx/sites-available/vinops.conf:24:    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+/etc/nginx/sites-available/vinops.conf:25:    listen 443 ssl; # managed by Certbot
+/etc/nginx/sites-available/vinops.conf:26:    ssl_certificate /etc/letsencrypt/live/vinops.online/fullchain.pem; # managed by Certbot
+/etc/nginx/sites-available/vinops.conf:27:    ssl_certificate_key /etc/letsencrypt/live/vinops.online/privkey.pem; # managed by Certbot
+/etc/nginx/sites-available/vinops.conf:29:    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+/etc/nginx/sites-available/vinops.conf:44:  listen 80;
+/etc/nginx/sites-available/vinops.conf:45:  listen [::]:80;
+/etc/nginx/sites-available/vinops.conf:46:  server_name vinops.online www.vinops.online;
+/etc/nginx/fastcgi_params:23:fastcgi_param  SERVER_NAME        $server_name;
+/etc/nginx/snippets/snakeoil.conf:4:ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+/etc/nginx/snippets/snakeoil.conf:5:ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;

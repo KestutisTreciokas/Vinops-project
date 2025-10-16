@@ -1,0 +1,25 @@
+/* site-wide contrast + font smoothing */
+html, body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-kerning: normal; font-variant-ligatures: contextual common-ligatures; }
+html[data-theme="light"], :root[data-theme="light"] {
+  --bg-canvas:#f6f7fb; --bg-surface:#fff; --bg-muted:#eef1f6;
+  --fg-default:#0f1115; --fg-muted:#5f6673; --border-muted:#e5e9f0;
+}
+/* dark stays minimal but a tad more contrast (already close) */
+:root[data-theme="dark"], html[data-theme="dark"] {
+  --bg-canvas:#0e1116; --bg-surface:#12161c; --bg-muted:#171c24;
+  --fg-default:#e6e8eb; --fg-muted:#a8b0bd; --border-muted:#232a34;
+}
+/* remove any residual hero glow/gradient everywhere */
+.hero { background: var(--bg-canvas) !important; box-shadow:none !important; }
+.hero * { box-shadow:none !important; }
+.h1, h1 { font-weight:700!important; } .h2, h2 { font-weight:600!important; } .h3, h3 { font-weight:600!important; }
+/* cards/panels hover */
+.card, .panel { background:var(--bg-surface); border:1px solid var(--border-muted); }
+.card:hover, .panel:hover { border-color: color-mix(in hsl, var(--brand) 35%, var(--border-muted)); }
+/* catalog + vin typography unify */
+[data-page="catalog"] .card .title,
+[data-page="vin"] .card-title, [data-page="vin"] .panel h3 {
+  font-family: var(--font-sans, ui-sans-serif); font-weight:600; letter-spacing:-.005em;
+}
+/* monospaced for VIN bits */
+.code, code, kbd, pre, .vin, [data-vin], .font-mono { font-family: var(--font-mono, ui-monospace); }

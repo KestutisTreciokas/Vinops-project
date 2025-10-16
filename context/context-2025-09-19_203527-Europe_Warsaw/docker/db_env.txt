@@ -1,0 +1,48 @@
+### Environment inside db container (masked)
+### Started: 2025-09-19T21:35:28+03:00
+
+time="2025-09-19T21:35:28+03:00" level=warning msg="/root/work/vinops.restore/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_PORT\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"NEXT_PUBLIC_SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"GHCR_IMAGE_API\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"API_IMAGE_TAG\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_PORT\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"NEXT_PUBLIC_SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"DOMAIN_OR_IP\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"PORT_API_HOST\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"GHCR_IMAGE_WEB\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:28+03:00" level=warning msg="The \"WEB_IMAGE_TAG\" variable is not set. Defaulting to a blank string."
+HOSTNAME=20976aaee317
+DOCKER_PG_LLVM_DEPS=llvm19-dev 		clang19
+SHLVL=1
+HOME=/root
+PG_VERSION=16.10
+PAGER=less
+POSTGRES_PASSWORD=****
+LC_COLLATE=C
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+POSTGRES_USER=vinops
+LANG=en_US.utf8
+PG_MAJOR=16
+PG_SHA256=***HEX*** 
+GOSU_VERSION=1.18
+PWD=****
+POSTGRES_DB=vinops
+CHARSET=UTF-8
+PGDATA=/var/lib/postgresql/data
+
+### Finished: 2025-09-19T21:35:28+03:00

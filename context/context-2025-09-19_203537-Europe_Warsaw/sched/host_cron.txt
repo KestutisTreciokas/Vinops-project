@@ -1,0 +1,46 @@
+# Host crontab (root)
+0 2 * * * cd /root/work/vinops && ./bin/backup-db.sh >> context/backup.log 2>&1 && find backups -type f -name "*.dump" -mtime +7 -delete
+*/5 * * * * /root/work/vinops.restore/ops/smoke.sh >> /var/log/vinops-smoke.log 2>&1
+
+# /etc/cron*
+-rw-r--r-- 1 root root 1136 Mar 23  2022 /etc/crontab
+
+/etc/cron.d:
+total 20
+drwxr-xr-x  2 root root 4096 Sep 16 16:35 .
+drwxr-xr-x 99 root root 4096 Sep 16 16:35 ..
+-rw-r--r--  1 root root  775 Sep 15  2018 certbot
+-rw-r--r--  1 root root  201 Jan  8  2022 e2scrub_all
+-rw-r--r--  1 root root  102 Mar 23  2022 .placeholder
+
+/etc/cron.daily:
+total 32
+drwxr-xr-x  2 root root 4096 Sep  1 12:25 .
+drwxr-xr-x 99 root root 4096 Sep 16 16:35 ..
+-rwxr-xr-x  1 root root  376 Jul 24  2023 apport
+-rwxr-xr-x  1 root root 1478 Apr  8  2022 apt-compat
+-rwxr-xr-x  1 root root  123 Dec  6  2021 dpkg
+-rwxr-xr-x  1 root root  377 May 25  2022 logrotate
+-rwxr-xr-x  1 root root 1330 Mar 17  2022 man-db
+-rw-r--r--  1 root root  102 Mar 23  2022 .placeholder
+
+/etc/cron.hourly:
+total 12
+drwxr-xr-x  2 root root 4096 Sep 11  2024 .
+drwxr-xr-x 99 root root 4096 Sep 16 16:35 ..
+-rw-r--r--  1 root root  102 Mar 23  2022 .placeholder
+
+/etc/cron.monthly:
+total 12
+drwxr-xr-x  2 root root 4096 Sep 11  2024 .
+drwxr-xr-x 99 root root 4096 Sep 16 16:35 ..
+-rw-r--r--  1 root root  102 Mar 23  2022 .placeholder
+
+/etc/cron.weekly:
+total 16
+drwxr-xr-x  2 root root 4096 Sep 11  2024 .
+drwxr-xr-x 99 root root 4096 Sep 16 16:35 ..
+-rwxr-xr-x  1 root root 1020 Mar 17  2022 man-db
+-rw-r--r--  1 root root  102 Mar 23  2022 .placeholder
+
+# /etc/periodic (Alpine)

@@ -1,0 +1,27 @@
+### cron and periodic dirs inside caddy
+### Started: 2025-09-19T21:35:47+03:00
+
+# do daily/weekly/monthly maintenance
+# min	hour	day	month	weekday	command
+*/15	*	*	*	*	run-parts /etc/periodic/15min
+0	*	*	*	*	run-parts /etc/periodic/hourly
+0	2	*	*	*	run-parts /etc/periodic/daily
+0	3	*	*	6	run-parts /etc/periodic/weekly
+0	5	1	*	*	run-parts /etc/periodic/monthly
+
+
+total 12
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 .
+drwxr-xr-x    1 root     root          4096 Sep 19 15:22 ..
+-rw-------    1 root     root           283 Mar 25 13:16 root
+
+total 28
+drwxr-xr-x    7 root     root          4096 Jul 15 10:42 .
+drwxr-xr-x    1 root     root          4096 Sep 19 15:22 ..
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 15min
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 daily
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 hourly
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 monthly
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 weekly
+
+### Finished: 2025-09-19T21:35:47+03:00

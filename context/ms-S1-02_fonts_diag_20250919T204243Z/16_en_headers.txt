@@ -1,0 +1,10 @@
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+content-type: text/html; charset=utf-8
+date: Fri, 19 Sep 2025 20:43:55 GMT
+link: </_next/static/media/21350d82a1f187e9-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/558ca1a6aa3cb55e-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/e4af272ccee01ff0-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2"
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding
+via: 1.1 Caddy
+x-powered-by: Next.js
+

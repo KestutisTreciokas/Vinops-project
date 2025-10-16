@@ -1,0 +1,9 @@
+### raw /robots.txt
+### Started: 2025-09-20T02:13:24+03:00
+
+User-Agent: *
+Allow: /
+
+Sitemap: http://185.200.243.100:3002/sitemap.xml
+
+### Finished: 2025-09-20T02:13:24+03:00

@@ -1,0 +1,21 @@
+### 2025-09-20T02:16:37+03:00  CMD: sh -lc find '/root/work/vinops.restore/frontend/src/app' -maxdepth 5 -type f -name 'page.*' -o -name 'layout.*' -o -name 'route.*' 2>/dev/null | sed 's#^#/#'
+
+//root/work/vinops.restore/frontend/src/app/[lang]/page.tsx
+//root/work/vinops.restore/frontend/src/app/[lang]/terms/page.tsx
+//root/work/vinops.restore/frontend/src/app/[lang]/layout.tsx
+//root/work/vinops.restore/frontend/src/app/[lang]/healthz/route.ts
+//root/work/vinops.restore/frontend/src/app/[lang]/layout.tsx.bak
+//root/work/vinops.restore/frontend/src/app/[lang]/contacts/page.tsx
+//root/work/vinops.restore/frontend/src/app/[lang]/cars/page.tsx
+//root/work/vinops.restore/frontend/src/app/[lang]/vin/[vin]/page.tsx
+//root/work/vinops.restore/frontend/src/app/[lang]/vin/[vin]/layout.tsx
+//root/work/vinops.restore/frontend/src/app/[lang]/vin/[vin]/page.tsx.bak-multi-leftcol
+//root/work/vinops.restore/frontend/src/app/[lang]/vin/[vin]/page.tsx.bak.1757865872
+//root/work/vinops.restore/frontend/src/app/[lang]/vin/[vin]/page.tsx.bak
+//root/work/vinops.restore/frontend/src/app/[lang]/vin/[vin]/details/page.tsx
+//root/work/vinops.restore/frontend/src/app/[lang]/health/route.ts
+//root/work/vinops.restore/frontend/src/app/[lang]/demo/page.tsx
+//root/work/vinops.restore/frontend/src/app/layout.tsx
+//root/work/vinops.restore/frontend/src/app/healthz/route.ts
+//root/work/vinops.restore/frontend/src/app/health/route.ts
+//root/work/vinops.restore/frontend/src/app/demo/page.tsx

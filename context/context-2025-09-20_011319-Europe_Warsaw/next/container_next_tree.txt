@@ -1,0 +1,28 @@
+### Container /app/.next snapshot (head)
+### Started: 2025-09-20T02:13:23+03:00
+
+total 568
+drwxr-xr-x    1 root     root          4096 Sep 19 22:26 .
+drwxr-xr-x    1 root     root          4096 Sep 19 22:26 ..
+-rw-r--r--    1 root     root            21 Sep 19 22:26 BUILD_ID
+-rw-r--r--    1 root     root          4097 Sep 19 22:25 app-build-manifest.json
+-rw-r--r--    1 root     root           572 Sep 19 22:26 app-path-routes-manifest.json
+-rw-r--r--    1 root     root           967 Sep 19 22:25 build-manifest.json
+drwxr-xr-x    4 root     root          4096 Sep 19 22:25 cache
+-rw-r--r--    1 root     root            94 Sep 19 22:26 export-marker.json
+-rw-r--r--    1 root     root           511 Sep 19 22:26 images-manifest.json
+-rw-r--r--    1 root     root          4643 Sep 19 22:26 next-minimal-server.js.nft.json
+-rw-r--r--    1 root     root         30127 Sep 19 22:26 next-server.js.nft.json
+-rw-r--r--    1 root     root            20 Sep 19 22:25 package.json
+-rw-r--r--    1 root     root          2809 Sep 19 22:26 prerender-manifest.js
+-rw-r--r--    1 root     root          2540 Sep 19 22:26 prerender-manifest.json
+-rw-r--r--    1 root     root             2 Sep 19 22:25 react-loadable-manifest.json
+-rw-r--r--    1 root     root          4455 Sep 19 22:26 required-server-files.json
+-rw-r--r--    1 root     root          2654 Sep 19 22:25 routes-manifest.json
+drwxr-xr-x    6 root     root          4096 Sep 19 22:26 server
+drwxr-xr-x    1 root     root          4096 Sep 19 22:25 static
+-rw-r--r--    1 root     root        445800 Sep 19 22:26 trace
+drwxr-xr-x    3 root     root          4096 Sep 19 22:25 types
+
+
+### Finished: 2025-09-20T02:13:23+03:00

@@ -1,0 +1,32 @@
+
+## NEXT ARTIFACTS — .next, manifests
+# Проверяем, что собрано/развёрнуто
+
+
+## NEXT ROUTES — файловая иерархия app/*
+# Ищем page.tsx/layout.tsx/head.tsx и динамические сегменты
+./demo/page.tsx
+./[lang]/cars/layout.tsx
+./[lang]/cars/page.tsx
+./[lang]/contacts/page.tsx
+./[lang]/demo/page.tsx
+./[lang]/layout.tsx
+./[lang]/page.tsx
+./[lang]/terms/page.tsx
+./[lang]/vin/[vin]/details/page.tsx
+./[lang]/vin/[vin]/layout.tsx
+./[lang]/vin/[vin]/page.tsx
+./layout.tsx
+
+[dynamic segments]
+./[lang]
+./[lang]/cars
+./[lang]/contacts
+./[lang]/demo
+./[lang]/health
+./[lang]/healthz
+./[lang]/_home
+./[lang]/terms
+./[lang]/vin
+./[lang]/vin/[vin]
+./[lang]/vin/[vin]/details

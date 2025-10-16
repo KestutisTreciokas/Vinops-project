@@ -1,0 +1,16 @@
+total 308
+drwxr-xr-x 2 root root  4096 Sep 19 23:40 .
+drwxr-xr-x 4 root root  4096 Sep 19 23:46 ..
+-rw-r--r-- 1 root root 19044 Sep 19 23:40 19cfc7226ec3afaa-s.woff2
+-rw-r--r-- 1 root root 18744 Sep 19 23:40 21350d82a1f187e9-s.p.woff2
+-rw-r--r-- 1 root root 31340 Sep 19 23:40 558ca1a6aa3cb55e-s.p.woff2
+-rw-r--r-- 1 root root  6800 Sep 19 23:40 64d784ea54a4acde-s.woff2
+-rw-r--r-- 1 root root 11596 Sep 19 23:40 6d831b18ae5b01dc-s.woff2
+-rw-r--r-- 1 root root 85272 Sep 19 23:40 8e9860b6e62d6359-s.woff2
+-rw-r--r-- 1 root root  8892 Sep 19 23:40 ac0e76ddaeeb7981-s.woff2
+-rw-r--r-- 1 root root 25844 Sep 19 23:40 ba9851c3c22cd980-s.woff2
+-rw-r--r-- 1 root root 11272 Sep 19 23:40 c5fe6dc8356a8c31-s.woff2
+-rw-r--r-- 1 root root 10280 Sep 19 23:40 df0a9ae256c0569c-s.woff2
+-rw-r--r-- 1 root root 48432 Sep 19 23:40 e4af272ccee01ff0-s.p.woff2
+-rw-r--r-- 1 root root  1664 Sep 19 23:40 edc640959b0c7826-s.woff2
+-rw-r--r-- 1 root root  5872 Sep 19 23:40 ff71da380fbe67dd-s.woff2

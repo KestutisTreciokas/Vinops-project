@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16
+    container_name: vinops_db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  api:
+    image: ${GHCR_IMAGE_API}:${API_IMAGE_TAG}
+    container_name: vinops_api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      API_BASE_URL: http://api:3001
+      SENTRY_DSN: ${SENTRY_DSN}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_NAME}
+      DB_USERNAME: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+    ports:
+      - "${PORT_API_HOST:-3001}:3001"
+    restart: unless-stopped
+  web:
+    image: ${GHCR_IMAGE_WEB}:${WEB_IMAGE_TAG}
+    container_name: vinops_web
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://${DOMAIN_OR_IP}:${PORT_API_HOST}
+      SENTRY_DSN: ${SENTRY_DSN}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_NAME}
+      DB_USERNAME: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+    ports:
+      - "${PORT_WEB_HOST:-80}:3000"
+    restart: unless-stopped
+volumes:
+  db_data:

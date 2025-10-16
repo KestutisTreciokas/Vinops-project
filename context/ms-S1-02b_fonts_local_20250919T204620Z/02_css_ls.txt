@@ -1,0 +1,4 @@
+total 68
+drwxr-xr-x 2 root root  4096 Sep 19 23:40 .
+drwxr-xr-x 4 root root  4096 Sep 19 23:46 ..
+-rw-r--r-- 1 root root 58534 Sep 19 23:40 4ac5eefb79dfa84b.css

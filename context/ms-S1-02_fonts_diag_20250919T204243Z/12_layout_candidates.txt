@@ -1,0 +1,2 @@
+frontend/src/app/[lang]/layout.tsx
+frontend/src/app/layout.tsx

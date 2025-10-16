@@ -1,0 +1,318 @@
+[
+  {
+    "Id": "ef654053e8f29deadcb3b48f10e2ad5c5777903910057b06daf723f0094bf5f3",
+    "Created": "2025-09-19T15:22:22.05982694Z",
+    "Path": "caddy",
+    "Args": [
+      "run",
+      "--config",
+      "/etc/caddy/Caddyfile",
+      "--adapter",
+      "caddyfile"
+    ],
+    "State": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 3303471,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2025-09-19T15:22:22.160435899Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "Image": "sha256:572a72cdc384a6f6b8c1d99f569290cee6606bec3cca68812feba43bfda45028",
+    "ResolvConfPath": "/var/lib/docker/containers/ef654053e8f29deadcb3b48f10e2ad5c5777903910057b06daf723f0094bf5f3/resolv.conf",
+    "HostnamePath": "/var/lib/docker/containers/ef654053e8f29deadcb3b48f10e2ad5c5777903910057b06daf723f0094bf5f3/hostname",
+    "HostsPath": "/var/lib/docker/containers/ef654053e8f29deadcb3b48f10e2ad5c5777903910057b06daf723f0094bf5f3/hosts",
+    "LogPath": "/var/lib/docker/containers/ef654053e8f29deadcb3b48f10e2ad5c5777903910057b06daf723f0094bf5f3/ef654053e8f29deadcb3b48f10e2ad5c5777903910057b06daf723f0094bf5f3-json.log",
+    "Name": "/vinopsrestore-caddy-1",
+    "RestartCount": 0,
+    "Driver": "overlay2",
+    "Platform": "linux",
+    "MountLabel": "",
+    "ProcessLabel": "",
+    "AppArmorProfile": "docker-default",
+    "ExecIDs": null,
+    "HostConfig": {
+      "Binds": [
+        "/root/work/vinops.restore/caddy/Caddyfile:/etc/caddy/Caddyfile:ro",
+        "vinopsrestore_caddy_data:/data:rw",
+        "vinopsrestore_caddy_config:/config:rw"
+      ],
+      "ContainerIDFile": "",
+      "LogConfig": {
+        "Type": "json-file",
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        }
+      },
+      "NetworkMode": "vinopsrestore_webnet",
+      "PortBindings": {
+        "443/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "443"
+          }
+        ],
+        "80/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "80"
+          }
+        ]
+      },
+      "RestartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      },
+      "AutoRemove": false,
+      "VolumeDriver": "",
+      "VolumesFrom": null,
+      "ConsoleSize": [
+        0,
+        0
+      ],
+      "CapAdd": null,
+      "CapDrop": null,
+      "CgroupnsMode": "private",
+      "Dns": null,
+      "DnsOptions": null,
+      "DnsSearch": null,
+      "ExtraHosts": [],
+      "GroupAdd": null,
+      "IpcMode": "private",
+      "Cgroup": "",
+      "Links": null,
+      "OomScoreAdj": 0,
+      "PidMode": "",
+      "Privileged": false,
+      "PublishAllPorts": false,
+      "ReadonlyRootfs": false,
+      "SecurityOpt": null,
+      "UTSMode": "",
+      "UsernsMode": "",
+      "ShmSize": 67108864,
+      "Runtime": "runc",
+      "Isolation": "",
+      "CpuShares": 0,
+      "Memory": 0,
+      "NanoCpus": 0,
+      "CgroupParent": "",
+      "BlkioWeight": 0,
+      "BlkioWeightDevice": null,
+      "BlkioDeviceReadBps": null,
+      "BlkioDeviceWriteBps": null,
+      "BlkioDeviceReadIOps": null,
+      "BlkioDeviceWriteIOps": null,
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpuRealtimePeriod": 0,
+      "CpuRealtimeRuntime": 0,
+      "CpusetCpus": "",
+      "CpusetMems": "",
+      "Devices": null,
+      "DeviceCgroupRules": null,
+      "DeviceRequests": null,
+      "MemoryReservation": 0,
+      "MemorySwap": 0,
+      "MemorySwappiness": null,
+      "OomKillDisable": null,
+      "PidsLimit": null,
+      "Ulimits": null,
+      "CpuCount": 0,
+      "CpuPercent": 0,
+      "IOMaximumIOps": 0,
+      "IOMaximumBandwidth": 0,
+      "MaskedPaths": [
+        "/proc/asound",
+        "/proc/acpi",
+        "/proc/interrupts",
+        "/proc/kcore",
+        "/proc/keys",
+        "/proc/latency_stats",
+        "/proc/timer_list",
+        "/proc/timer_stats",
+        "/proc/sched_debug",
+        "/proc/scsi",
+        "/sys/firmware",
+        "/sys/devices/virtual/powercap"
+      ],
+      "ReadonlyPaths": [
+        "/proc/bus",
+        "/proc/fs",
+        "/proc/irq",
+        "/proc/sys",
+        "/proc/sysrq-trigger"
+      ]
+    },
+    "GraphDriver": {
+      "Data": {
+        "ID": "ef654053e8f29deadcb3b48f10e2ad5c5777903910057b06daf723f0094bf5f3",
+        "LowerDir": "/var/lib/docker/overlay2/996f9df766d84bba9bb513fea09cc209e01317062c33eec79dcf2ff28cdd2f32-init/diff:/var/lib/docker/overlay2/176a5adef6959e74c6cea67567f88e20d5b93d8dfffe23b086666cda1db8b491/diff:/var/lib/docker/overlay2/313207df53872c5dcfda04c2f843e360b65cb362709d4f98e49b6e85266153f2/diff:/var/lib/docker/overlay2/20abddecdc05b3f9b108d6b5f17236300348e0da0dce757f6431597fbbbec118/diff:/var/lib/docker/overlay2/f2c257b3f9863f41350d95c56587456c720f4e7ac4f1190f73e6d645ef7b98ff/diff:/var/lib/docker/overlay2/2b4c52812ce5784bd955772c00520eebc18bff56ebfae68a0b72166b1318c74f/diff",
+        "MergedDir": "/var/lib/docker/overlay2/996f9df766d84bba9bb513fea09cc209e01317062c33eec79dcf2ff28cdd2f32/merged",
+        "UpperDir": "/var/lib/docker/overlay2/996f9df766d84bba9bb513fea09cc209e01317062c33eec79dcf2ff28cdd2f32/diff",
+        "WorkDir": "/var/lib/docker/overlay2/996f9df766d84bba9bb513fea09cc209e01317062c33eec79dcf2ff28cdd2f32/work"
+      },
+      "Name": "overlay2"
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/root/work/vinops.restore/caddy/Caddyfile",
+        "Destination": "/etc/caddy/Caddyfile",
+        "Mode": "ro",
+        "RW": false,
+        "Propagation": "rprivate"
+      },
+      {
+        "Type": "volume",
+        "Name": "vinopsrestore_caddy_data",
+        "Source": "/var/lib/docker/volumes/vinopsrestore_caddy_data/_data",
+        "Destination": "/data",
+        "Driver": "local",
+        "Mode": "rw",
+        "RW": true,
+        "Propagation": ""
+      },
+      {
+        "Type": "volume",
+        "Name": "vinopsrestore_caddy_config",
+        "Source": "/var/lib/docker/volumes/vinopsrestore_caddy_config/_data",
+        "Destination": "/config",
+        "Driver": "local",
+        "Mode": "rw",
+        "RW": true,
+        "Propagation": ""
+      }
+    ],
+    "Config": {
+      "Hostname": "ef654053e8f2",
+      "Domainname": "",
+      "User": "",
+      "AttachStdin": false,
+      "AttachStdout": true,
+      "AttachStderr": true,
+      "ExposedPorts": {
+        "2019/tcp": {},
+        "443/tcp": {},
+        "443/udp": {},
+        "80/tcp": {}
+      },
+      "Tty": false,
+      "OpenStdin": false,
+      "StdinOnce": false,
+      "Env": [
+        "PATH=***REDACTED***",
+        "CADDY_VERSION=***REDACTED***",
+        "XDG_CONFIG_HOME=***REDACTED***",
+        "XDG_DATA_HOME=***REDACTED***"
+      ],
+      "Cmd": [
+        "caddy",
+        "run",
+        "--config",
+        "/etc/caddy/Caddyfile",
+        "--adapter",
+        "caddyfile"
+      ],
+      "Image": "caddy:2-alpine",
+      "Volumes": null,
+      "WorkingDir": "/srv",
+      "Entrypoint": null,
+      "OnBuild": null,
+      "Labels": {
+        "com.docker.compose.config-hash": "edf12818ff2a083bb2e275fc7ca58431c72f81a0dca82e1cc20c9307d0854c0e",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:572a72cdc384a6f6b8c1d99f569290cee6606bec3cca68812feba43bfda45028",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "vinopsrestore",
+        "com.docker.compose.project.config_files": "/root/work/vinops.restore/docker-compose.prod.yml,/root/work/vinops.restore/docker-compose.db.yml,/root/work/vinops.restore/docker-compose.health.yml,/root/work/vinops.restore/docker-compose.hostfix.yml",
+        "com.docker.compose.project.working_dir": "/root/work/vinops.restore",
+        "com.docker.compose.replace": "caddy-1",
+        "com.docker.compose.service": "caddy",
+        "com.docker.compose.version": "2.39.2",
+        "org.opencontainers.image.description": "a powerful, enterprise-ready, open source web server with automatic HTTPS written in Go",
+        "org.opencontainers.image.documentation": "https://caddyserver.com/docs",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.source": "https://github.com/caddyserver/caddy-docker",
+        "org.opencontainers.image.title": "Caddy",
+        "org.opencontainers.image.url": "https://caddyserver.com",
+        "org.opencontainers.image.vendor": "Light Code Labs",
+        "org.opencontainers.image.version": "v2.10.2"
+      }
+    },
+    "NetworkSettings": {
+      "Bridge": "",
+      "SandboxID": "f797c8fa19a3b8cd1dd5cf2fb9a8bf16ad4c96a0f4cb51f36a49c4ff7c7d0621",
+      "SandboxKey": "/var/run/docker/netns/f797c8fa19a3",
+      "Ports": {
+        "2019/tcp": null,
+        "443/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "443"
+          },
+          {
+            "HostIp": "::",
+            "HostPort": "443"
+          }
+        ],
+        "443/udp": null,
+        "80/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "80"
+          },
+          {
+            "HostIp": "::",
+            "HostPort": "80"
+          }
+        ]
+      },
+      "HairpinMode": false,
+      "LinkLocalIPv6Address": "",
+      "LinkLocalIPv6PrefixLen": 0,
+      "SecondaryIPAddresses": null,
+      "SecondaryIPv6Addresses": null,
+      "EndpointID": "",
+      "Gateway": "",
+      "GlobalIPv6Address": "",
+      "GlobalIPv6PrefixLen": 0,
+      "IPAddress": "",
+      "IPPrefixLen": 0,
+      "IPv6Gateway": "",
+      "MacAddress": "",
+      "Networks": {
+        "vinopsrestore_webnet": {
+          "IPAMConfig": null,
+          "Links": null,
+          "Aliases": [
+            "vinopsrestore-caddy-1",
+            "caddy"
+          ],
+          "MacAddress": "da:fb:4b:9d:e5:12",
+          "DriverOpts": null,
+          "GwPriority": 0,
+          "NetworkID": "cbc9fc6b5f482f49d334853b06242960a6902d48a294cecc00460d0fe1e4a4dc",
+          "EndpointID": "a93719d2767e00ab28fb97c37b05fc7ec63eecd7505d8fbb46d9273cbb349ac8",
+          "Gateway": "172.19.0.1",
+          "IPAddress": "172.19.0.2",
+          "IPPrefixLen": 16,
+          "IPv6Gateway": "",
+          "GlobalIPv6Address": "",
+          "GlobalIPv6PrefixLen": 0,
+          "DNSNames": [
+            "vinopsrestore-caddy-1",
+            "caddy",
+            "ef654053e8f2"
+          ]
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,28 @@
+Node: v20.14.0
+npm: 10.7.0
+--- curl /en ---
+HTTP/1.1 500 Internal Server Error
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cache-Control: no-store, must-revalidate
+ETag: "daxatul4y2lr"
+Content-Type: text/html; charset=utf-8
+Content-Length: 3375
+Vary: Accept-Encoding
+Date: Sat, 27 Sep 2025 20:19:46 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+--- curl VIN ---
+HTTP/1.1 500 Internal Server Error
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Cache-Control: no-store, must-revalidate
+ETag: "daxatul4y2lr"
+Content-Type: text/html; charset=utf-8
+Content-Length: 3375
+Vary: Accept-Encoding
+Date: Sat, 27 Sep 2025 20:19:47 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

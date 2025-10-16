@@ -1,0 +1,10 @@
+### Ports listening inside db container
+### Started: 2025-09-19T21:35:34+03:00
+
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:5432            0.0.0.0:*               LISTEN      -
+tcp        0      0 127.0.0.11:46811        0.0.0.0:*               LISTEN      -
+tcp        0      0 :::5432                 :::*                    LISTEN      -
+
+### Finished: 2025-09-19T21:35:34+03:00

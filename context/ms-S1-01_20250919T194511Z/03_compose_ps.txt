@@ -1,0 +1,4 @@
+time="2025-09-19T22:45:33+03:00" level=warning msg="/root/work/vinops.restore/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+NAME                    IMAGE                COMMAND                  SERVICE   CREATED       STATUS                 PORTS
+vinopsrestore-caddy-1   caddy:2-alpine       "caddy run --config …"   caddy     4 hours ago   Up 4 hours             0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 443/udp, 2019/tcp
+vinopsrestore-db-1      postgres:16-alpine   "docker-entrypoint.s…"   db        4 hours ago   Up 4 hours (healthy)   5432/tcp

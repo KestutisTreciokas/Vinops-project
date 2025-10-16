@@ -1,0 +1,47 @@
+import type { Metadata } from 'next'
+
+type Lang = 'en' | 'ru'
+
+export function buildVinMeta(lang: Lang, vinRaw: string): Metadata {
+  const vin = (vinRaw || '').toUpperCase()
+  const base = 'https://vinops.online'
+  const title = lang === 'ru' ? `VIN ${vin}` : `VIN ${vin}`
+
+  return {
+    title,
+    },
+    robots: { index: true, follow: true },
+  }
+}
+
+/** Минимально валидный Vehicle JSON-LD; поля year/make/model/trim можно подставить позже (MS-06). */
+export function buildVehicleJsonLd(lang: Lang, vinRaw: string, opts?: {
+  year?: number; make?: string; model?: string; trim?: string; mileage?: number;
+}) {
+  const vin = (vinRaw || '').toUpperCase()
+  const year = opts?.year
+  const make = opts?.make
+  const model = opts?.model
+  const trim = opts?.trim
+  const mileage = opts?.mileage
+
+  const nameBase = [year, make, model].filter(Boolean).join(' ')
+  const name = (nameBase ? nameBase + (trim ? `, ${trim}` : '') : `VIN ${vin}`)
+
+  const json: Record<string, any> = {
+    '@context': 'https://schema.org',
+    '@type': 'Vehicle',
+    name,
+    vehicleIdentificationNumber: vin,
+    url: `https://vinops.online/${lang}/vin/${vin}`,
+  }
+
+  if (make) json.brand = { '@type': 'Brand', name: make }
+  if (model) json.model = model
+  if (year) json.productionDate = String(year)
+  if (typeof mileage === 'number') {
+    json.mileageFromOdometer = { '@type': 'QuantitativeValue', value: mileage, unitCode: 'SMI' }
+  }
+
+  return JSON.stringify(json)
+}

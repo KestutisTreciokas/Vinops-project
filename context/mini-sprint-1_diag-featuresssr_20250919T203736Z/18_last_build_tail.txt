@@ -1,0 +1,80 @@
+#12 DONE 0.3s
+
+#10 [deps 5/5] RUN npm ci
+#10 ...
+
+#13 [runner 4/9] WORKDIR /app
+#13 DONE 0.1s
+
+#10 [deps 5/5] RUN npm ci
+#10 9.356 
+#10 9.356 added 145 packages, and audited 146 packages in 9s
+#10 9.356 
+#10 9.356 35 packages are looking for funding
+#10 9.356   run `npm fund` for details
+#10 9.447 
+#10 9.447 1 critical severity vulnerability
+#10 9.447 
+#10 9.447 To address all issues, run:
+#10 9.447   npm audit fix --force
+#10 9.447 
+#10 9.447 Run `npm audit` for details.
+#10 9.449 npm notice
+#10 9.449 npm notice New major version of npm available! 10.8.2 -> 11.6.0
+#10 9.449 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.0
+#10 9.449 npm notice To update run: npm install -g npm@11.6.0
+#10 9.449 npm notice
+#10 DONE 10.3s
+
+#14 [build 4/7] COPY --from=deps /app/node_modules ./node_modules
+#14 DONE 2.9s
+
+#15 [build 5/7] COPY --from=deps /app/package*.json ./
+#15 DONE 0.2s
+
+#16 [build 6/7] COPY . .
+#16 DONE 0.1s
+
+#17 [build 7/7] RUN npm run build
+#17 0.609 
+#17 0.609 > vinops-web@0.1.0 build
+#17 0.609 > next build
+#17 0.609 
+#17 1.442   ▲ Next.js 14.2.5
+#17 1.443   - Experiments (use with caution):
+#17 1.443     · typedRoutes
+#17 1.444 
+#17 1.464    Creating an optimized production build ...
+#17 17.51  ✓ Compiled successfully
+#17 17.51    Linting and checking validity of types ...
+#17 22.17 Failed to compile.
+#17 22.17 
+#17 22.17 ./src/app/[lang]/page.tsx:72:8
+#17 22.17 Type error: Cannot find name 'FeaturesSSR'. Did you mean 'Features'?
+#17 22.17 
+#17 22.17 [0m [90m 70 |[39m         [33m<[39m[33m/[39m[33mp[39m[33m>[39m[0m
+#17 22.17 [0m [90m 71 |[39m       [33m<[39m[33m/[39m[33msection[39m[33m>[39m[0m
+#17 22.17 [0m[31m[1m>[22m[39m[90m 72 |[39m       [33m<[39m[33mFeaturesSSR[39m lang[33m=[39m{lang} [33m/[39m[33m>[39m[0m
+#17 22.17 [0m [90m    |[39m        [31m[1m^[22m[39m[0m
+#17 22.17 [0m [90m 73 |[39m     [33m<[39m[33m/[39m[33m>[39m[0m
+#17 22.17 [0m [90m 74 |[39m   )[0m
+#17 22.17 [0m [90m 75 |[39m }[0m
+#17 22.21 npm notice
+#17 22.21 npm notice New major version of npm available! 10.8.2 -> 11.6.0
+#17 22.21 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.0
+#17 22.21 npm notice To update run: npm install -g npm@11.6.0
+#17 22.21 npm notice
+#17 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+------
+ > [build 7/7] RUN npm run build:
+22.17 [0m[31m[1m>[22m[39m[90m 72 |[39m       [33m<[39m[33mFeaturesSSR[39m lang[33m=[39m{lang} [33m/[39m[33m>[39m[0m
+22.17 [0m [90m    |[39m        [31m[1m^[22m[39m[0m
+22.17 [0m [90m 73 |[39m     [33m<[39m[33m/[39m[33m>[39m[0m
+22.17 [0m [90m 74 |[39m   )[0m
+22.17 [0m [90m 75 |[39m }[0m
+22.21 npm notice
+22.21 npm notice New major version of npm available! 10.8.2 -> 11.6.0
+22.21 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.0
+22.21 npm notice To update run: npm install -g npm@11.6.0
+22.21 npm notice
+------

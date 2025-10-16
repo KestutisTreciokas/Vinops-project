@@ -1,0 +1,59 @@
+
+## SEO — canonical/hreflang scan
+# Проверяем на ключевых страницах (grep)
+[scan] https://vinops.online/en
+counts: canonical=1 alternate=1
+<link rel="canonical" href="https://vinops.online/en"/>
+<link rel="alternate" hrefLang="en" href="https://vinops.online/en"/>
+<link rel="alternate" hrefLang="ru" href="https://vinops.online/ru"/>
+<link rel="alternate" hrefLang="x-default" href="https://vinops.online/en"/>
+
+[scan] https://vinops.online/ru
+counts: canonical=1 alternate=1
+<link rel="canonical" href="https://vinops.online/ru"/>
+<link rel="alternate" hrefLang="en" href="https://vinops.online/en"/>
+<link rel="alternate" hrefLang="ru" href="https://vinops.online/ru"/>
+<link rel="alternate" hrefLang="x-default" href="https://vinops.online/en"/>
+
+[scan] https://vinops.online/en/cars
+counts: canonical=1 alternate=1
+<link rel="canonical" href="https://vinops.online/en/cars"/>
+<link rel="alternate" hrefLang="en" href="https://vinops.online/en/cars"/>
+<link rel="alternate" hrefLang="ru" href="https://vinops.online/ru/cars"/>
+<link rel="alternate" hrefLang="x-default" href="https://vinops.online/en/cars"/>
+
+[scan] https://vinops.online/ru/cars
+counts: canonical=1 alternate=1
+<link rel="canonical" href="https://vinops.online/ru/cars"/>
+<link rel="alternate" hrefLang="en" href="https://vinops.online/en/cars"/>
+<link rel="alternate" hrefLang="ru" href="https://vinops.online/ru/cars"/>
+<link rel="alternate" hrefLang="x-default" href="https://vinops.online/en/cars"/>
+
+[scan] https://vinops.online/en/contacts
+counts: canonical=1 alternate=1
+<link rel="canonical" href="https://vinops.online/en/contacts"/>
+<link rel="alternate" hrefLang="en" href="https://vinops.online/en/contacts"/>
+<link rel="alternate" hrefLang="ru" href="https://vinops.online/ru/contacts"/>
+<link rel="alternate" hrefLang="x-default" href="https://vinops.online/en/contacts"/>
+
+[scan] https://vinops.online/ru/contacts
+counts: canonical=1 alternate=1
+<link rel="canonical" href="https://vinops.online/ru/contacts"/>
+<link rel="alternate" hrefLang="en" href="https://vinops.online/en/contacts"/>
+<link rel="alternate" hrefLang="ru" href="https://vinops.online/ru/contacts"/>
+<link rel="alternate" hrefLang="x-default" href="https://vinops.online/en/contacts"/>
+
+[scan] https://vinops.online/en/terms
+counts: canonical=1 alternate=1
+<link rel="canonical" href="https://vinops.online/en/terms"/>
+<link rel="alternate" hrefLang="en" href="https://vinops.online/en/terms"/>
+<link rel="alternate" hrefLang="ru" href="https://vinops.online/ru/terms"/>
+<link rel="alternate" hrefLang="x-default" href="https://vinops.online/en/terms"/>
+
+[scan] https://vinops.online/ru/terms
+counts: canonical=1 alternate=1
+<link rel="canonical" href="https://vinops.online/ru/terms"/>
+<link rel="alternate" hrefLang="en" href="https://vinops.online/en/terms"/>
+<link rel="alternate" hrefLang="ru" href="https://vinops.online/ru/terms"/>
+<link rel="alternate" hrefLang="x-default" href="https://vinops.online/en/terms"/>
+

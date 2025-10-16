@@ -1,0 +1,26 @@
+## S1-header-wordmark
+ M docker-compose.health.yml
+ M frontend/src/app/[lang]/_home/Features.tsx
+ M frontend/src/app/[lang]/page.tsx
+?? bin/diag.sh
+?? context/LAST_MS_S1-01_DIR.txt
+?? context/S1-prep_header_20250919T214510Z/
+?? context/context-2025-09-19_203527-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203527-Europe_Warsaw/
+?? context/context-2025-09-19_203532-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203532-Europe_Warsaw/
+?? context/context-2025-09-19_203537-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203537-Europe_Warsaw/
+?? context/context-2025-09-19_203542-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203542-Europe_Warsaw/
+?? context/mini-sprint-1_20250919T194728Z/
+?? context/mini-sprint-1_diag-featuresssr_20250919T203736Z/
+?? context/mini-sprint-1_fix-featuresssr-import_20250919T203454Z/
+?? context/mini-sprint-1_fix-featuresssr_20250919T203115Z/
+?? context/mini-sprint-1_fix-import-replace_20250919T203920Z/
+?? context/ms-S1-01_20250919T194511Z/
+?? context/ms-S1-02_fonts_diag_20250919T204243Z/
+?? context/ms-S1-02b_fonts_local_20250919T204620Z/
+?? context/ms-S1-02b_fonts_local_fix_20250919T205015Z/
+?? frontend/public/fonts/inter/.keep
+?? frontend/public/fonts/jetbrains/.keep

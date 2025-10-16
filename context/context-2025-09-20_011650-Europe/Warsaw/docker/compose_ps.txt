@@ -1,0 +1,5 @@
+### 2025-09-20T02:16:51+03:00  CMD: docker compose -p vinops.restore -f /root/work/vinops.restore/docker-compose.yml -f /root/work/vinops.restore/docker-compose.prod.yml -f /root/work/vinops.restore/docker-compose.db.yml -f /root/work/vinops.restore/docker-compose.hostfix.yml -f /root/work/vinops.restore/docker-compose.health.yml ps
+
+invalid project name "vinops.restore": must consist only of lowercase alphanumeric characters, hyphens, and underscores as well as start with a letter or number
+
+[warn] command exited non-zero (captured above).

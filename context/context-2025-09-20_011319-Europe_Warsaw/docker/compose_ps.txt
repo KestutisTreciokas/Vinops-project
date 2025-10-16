@@ -1,0 +1,4 @@
+NAME                    IMAGE                COMMAND                  SERVICE   CREATED          STATUS                    PORTS
+vinopsrestore-caddy-1   caddy:2-alpine       "caddy run --config …"   caddy     8 hours ago      Up 8 hours                0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 443/udp, 2019/tcp
+vinopsrestore-db-1      postgres:16-alpine   "docker-entrypoint.s…"   db        8 hours ago      Up 8 hours (healthy)      5432/tcp
+vinopsrestore-web-1     vinops-web:latest    "docker-entrypoint.s…"   web       10 minutes ago   Up 10 minutes (healthy)   3000/tcp

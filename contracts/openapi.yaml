@@ -1,0 +1,654 @@
+openapi: 3.0.3
+info:
+  title: vinops.online Public API
+  version: 1.0.0
+  description: 'Read-only API v1.
+
+    Invariants:
+
+    - VIN: 11–17 uppercase, no I/O/Q (regex: ^[A-HJ-NPR-Z0-9]{11,17}$)
+
+    - Suppressed VIN returns 410.
+
+    - Breaking changes -> /api/v2.
+
+    '
+servers:
+- url: https://vinops.online
+- url: http://localhost:3000
+tags:
+- name: vehicles
+- name: search
+paths:
+  /api/v1/vehicles/{vin}:
+    get:
+      tags:
+      - vehicles
+      summary: Get aggregated vehicle card by VIN
+      operationId: getVehicleByVin
+      parameters:
+      - name: vin
+        in: path
+        required: true
+        description: VIN (11–17 uppercase, no I/O/Q)
+        schema:
+          type: string
+          pattern: ^[A-HJ-NPR-Z0-9]{11,17}$
+      - name: Accept-Language
+        in: header
+        required: false
+        description: i18n labels (en|ru)
+        schema:
+          type: string
+          enum:
+          - en
+          - ru
+      responses:
+        '200':
+          description: OK
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+            Last-Modified:
+              schema:
+                type: string
+            X-Api-Version:
+              schema:
+                type: string
+                example: '1'
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+                example: 59
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+                example: 30
+                description: seconds to reset window
+            Vary:
+              schema:
+                type: string
+                example: Accept-Language
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleAggregate'
+              examples:
+                sample:
+                  value:
+                    vehicle:
+                      vin: WAUZZZAAAAAAAAAAA
+                      year: 2019
+                      make: Toyota
+                      model: Camry
+                      trim: SE
+                      body: SEDAN
+                      fuel: GASOLINE
+                      transmission: AUTOMATIC
+                      drive: FWD
+                      engine: 2.5L
+                      color: BLACK
+                      odometer:
+                        value: 52123
+                        unit: mi
+                        brand: ACTUAL
+                    currentLot:
+                      lotId: 12345678
+                      vin: WAUZZZAAAAAAAAAAA
+                      source: copart
+                      status: SCHEDULED
+                      siteCode: CA-SAN
+                      city: San Diego
+                      region: CA
+                      country: US
+                      auctionDateTimeUtc: '2025-10-02T17:00:00Z'
+                      estRetailValueUsd: 17850
+                      runsDrives: true
+                      hasKeys: true
+                      damagePrimary: FRONT_END
+                      damageSecondary: MINOR_DENT
+                      titleBrand: SALVAGE
+                      titleState: CA
+                      odometer:
+                        value: 52123
+                        unit: mi
+                        brand: ACTUAL
+                    images:
+                    - seq: 1
+                      variant: xl
+                      url: https://img.vinops.online/img/copart/WAUZZZAAAAAAAAAAA/12345678/xl/1.webp
+                      width: 1280
+                      height: 720
+                    - seq: 1
+                      variant: thumb
+                      url: https://img.vinops.online/img/copart/WAUZZZAAAAAAAAAAA/12345678/thumb/1.webp
+                      width: 320
+                      height: 180
+                    saleEvents:
+                    - id: se-001
+                      vin: WAUZZZAAAAAAAAAAA
+                      lotId: 12345678
+                      saleDate: '2025-10-05'
+                      status: SOLD
+                      finalBidUsd: 8600
+                      currency: USD
+                      collectedVia: live
+        '404':
+          description: VIN not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    error:
+                      code: NOT_FOUND
+                      message: VIN not found
+        '410':
+          description: VIN suppressed/removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuppressedResponse'
+        '422':
+          description: Invalid VIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid:
+                  value:
+                    error:
+                      code: INVALID_VIN
+                      message: VIN must match ^[A-HJ-NPR-Z0-9]{11,17}$
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/search:
+    get:
+      tags:
+      - search
+      summary: Search active lots
+      operationId: searchLots
+      parameters:
+      - in: query
+        name: make
+        schema:
+          type: string
+      - in: query
+        name: model
+        schema:
+          type: string
+      - in: query
+        name: yearFrom
+        schema:
+          type: integer
+          minimum: 1900
+          maximum: 2100
+      - in: query
+        name: yearTo
+        schema:
+          type: integer
+          minimum: 1900
+          maximum: 2100
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - FUTURE
+          - SCHEDULED
+          - LIVE
+          - ON_APPROVAL
+          - SOLD
+          - NO_SALE
+          - CANCELLED
+          - RELISTED
+      - in: query
+        name: damage
+        schema:
+          type: string
+      - in: query
+        name: titleBrand
+        schema:
+          type: string
+      - in: query
+        name: runsDrives
+        schema:
+          type: boolean
+      - in: query
+        name: hasKeys
+        schema:
+          type: boolean
+      - in: query
+        name: sort
+        description: Sort by -auctionDateTimeUtc (default) or +auctionDateTimeUtc
+        schema:
+          type: string
+          enum:
+          - -auctionDateTimeUtc
+          - +auctionDateTimeUtc
+        example: -auctionDateTimeUtc
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          description: Opaque cursor for keyset pagination
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 24
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - ru
+          default: en
+      responses:
+        '200':
+          description: OK
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            X-Api-Version:
+              schema:
+                type: string
+                example: '1'
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+                example: 59
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+                example: 30
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResult'
+              examples:
+                sample:
+                  value:
+                    items:
+                    - lotId: 12345678
+                      vin: WAUZZZAAAAAAAAAAA
+                      year: 2019
+                      make: Toyota
+                      model: Camry
+                      trim: SE
+                      status: SCHEDULED
+                      siteCode: CA-SAN
+                      city: San Diego
+                      region: CA
+                      country: US
+                      auctionDateTimeUtc: '2025-10-02T17:00:00Z'
+                      estRetailValueUsd: 17850
+                      runsDrives: true
+                      hasKeys: true
+                      primaryImageUrl: https://img.vinops.online/img/copart/WAUZZZAAAAAAAAAAA/12345678/xl/1.webp
+                      imageCount: 12
+                    nextCursor: eyJwdCI6IjIwMjUtMTAtMDJUMTc6MDA6MDBaIiwibG90SWQiOjEyMzQ1Njc4fQ==
+        '400':
+          description: Bad request (conflicting filters or invalid ranges)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error (type/format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    SuppressedResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - suppressed
+    Odometer:
+      type: object
+      properties:
+        value:
+          type: integer
+          nullable: true
+        unit:
+          type: string
+          enum:
+          - mi
+          - km
+          nullable: true
+        brand:
+          type: string
+          enum:
+          - ACTUAL
+          - NOT_ACTUAL
+          - EXEMPT
+          - UNKNOWN
+          nullable: true
+    VehicleDto:
+      type: object
+      required:
+      - vin
+      properties:
+        vin:
+          type: string
+          pattern: ^[A-HJ-NPR-Z0-9]{11,17}$
+        year:
+          type: integer
+          nullable: true
+        make:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        trim:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+        fuel:
+          type: string
+          nullable: true
+        transmission:
+          type: string
+          nullable: true
+        drive:
+          type: string
+          nullable: true
+        engine:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        odometer:
+          $ref: '#/components/schemas/Odometer'
+    LotDto:
+      type: object
+      required:
+      - lotId
+      - vin
+      - source
+      - status
+      properties:
+        lotId:
+          type: integer
+        vin:
+          type: string
+        source:
+          type: string
+          enum:
+          - copart
+        status:
+          type: string
+          enum:
+          - FUTURE
+          - SCHEDULED
+          - LIVE
+          - ON_APPROVAL
+          - SOLD
+          - NO_SALE
+          - CANCELLED
+          - RELISTED
+        siteCode:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        region:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        auctionDateTimeUtc:
+          type: string
+          format: date-time
+          nullable: true
+        estRetailValueUsd:
+          type: number
+          format: float
+          nullable: true
+        runsDrives:
+          type: boolean
+          nullable: true
+        hasKeys:
+          type: boolean
+          nullable: true
+        damagePrimary:
+          type: string
+          nullable: true
+        damageSecondary:
+          type: string
+          nullable: true
+        titleBrand:
+          type: string
+          nullable: true
+        titleState:
+          type: string
+          nullable: true
+        odometer:
+          $ref: '#/components/schemas/Odometer'
+    ImageDto:
+      type: object
+      required:
+      - seq
+      - variant
+      - url
+      properties:
+        seq:
+          type: integer
+        variant:
+          type: string
+          enum:
+          - thumb
+          - md
+          - xl
+          - orig
+        url:
+          type: string
+          format: uri
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+    SaleEventDto:
+      type: object
+      required:
+      - vin
+      - lotId
+      - saleDate
+      - status
+      properties:
+        id:
+          type: string
+          nullable: true
+        vin:
+          type: string
+        lotId:
+          type: integer
+        saleDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+          - SOLD
+          - NO_SALE
+          - CANCELLED
+          - RELISTED
+        finalBidUsd:
+          type: number
+          format: float
+          nullable: true
+        currency:
+          type: string
+          enum:
+          - USD
+          nullable: true
+        collectedVia:
+          type: string
+          enum:
+          - live
+          - heuristics
+          nullable: true
+    VehicleAggregate:
+      type: object
+      required:
+      - vehicle
+      properties:
+        vehicle:
+          $ref: '#/components/schemas/VehicleDto'
+        currentLot:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/LotDto'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageDto'
+        saleEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleEventDto'
+    LotCardDto:
+      type: object
+      required:
+      - lotId
+      - vin
+      - year
+      - make
+      - model
+      - status
+      - auctionDateTimeUtc
+      properties:
+        lotId:
+          type: integer
+        vin:
+          type: string
+        year:
+          type: integer
+          nullable: true
+        make:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        trim:
+          type: string
+          nullable: true
+        status:
+          type: string
+        siteCode:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        region:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        auctionDateTimeUtc:
+          type: string
+          format: date-time
+          nullable: true
+        estRetailValueUsd:
+          type: number
+          format: float
+          nullable: true
+        runsDrives:
+          type: boolean
+          nullable: true
+        hasKeys:
+          type: boolean
+          nullable: true
+        primaryImageUrl:
+          type: string
+          format: uri
+          nullable: true
+        imageCount:
+          type: integer
+          nullable: true
+    SearchResult:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LotCardDto'
+        nextCursor:
+          type: string
+          nullable: true

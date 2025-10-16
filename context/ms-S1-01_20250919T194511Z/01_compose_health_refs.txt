@@ -1,0 +1,6 @@
+docker-compose.db.yml:8:    healthcheck:
+docker-compose.health.yml:3:    healthcheck:
+docker-compose.health.yml:4:      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/health || curl -fsS http://127.0.0.1:3000/en/health || exit 1"]
+docker-compose.hostfix.yml:5:    healthcheck:
+docker-compose.hostfix.yml:6:      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/v1/health | grep -q '\"status\":\"ok\"'"]
+docker-compose.yml:13:    healthcheck:

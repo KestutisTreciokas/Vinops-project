@@ -1,0 +1,5 @@
+# CODEOWNERS (template) — apply as .github/CODEOWNERS in NEW REPOSITORY
+# Syntax: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+*  @KestutisTreciokas
+frontend/**  @KestutisTreciokas
+backend/**   @KestutisTreciokas

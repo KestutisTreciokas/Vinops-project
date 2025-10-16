@@ -1,0 +1,19 @@
+### cron and periodic dirs inside web
+### Started: 2025-09-20T02:13:25+03:00
+
+
+total 12
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 .
+drwxr-xr-x    1 root     root          4096 Sep 19 23:03 ..
+-rw-------    1 root     root           283 Mar 25 13:16 root
+
+total 28
+drwxr-xr-x    7 root     root          4096 Jul 15 10:42 .
+drwxr-xr-x    1 root     root          4096 Sep 19 23:03 ..
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 15min
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 daily
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 hourly
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 monthly
+drwxr-xr-x    2 root     root          4096 Jul 15 10:42 weekly
+
+### Finished: 2025-09-20T02:13:25+03:00

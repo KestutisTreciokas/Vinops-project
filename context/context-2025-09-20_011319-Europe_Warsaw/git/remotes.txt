@@ -1,0 +1,2 @@
+origin	git@github.com:KestutisTreciokas/vinops.git (fetch)
+origin	git@github.com:KestutisTreciokas/vinops.git (push)

@@ -1,0 +1,138 @@
+
+## GIT — branch, last 10 commits, status, tags
+# Подтверждаем актуальную ветку и незакоммиченные изменения
+[repo] /root/work/vinops.restore
+branch: fix/ssr-home-features-and-typedroutes
+
+[last 10 commits]
+d2da843 fix(seo): clean segment layout for /[lang]/cars; remove head.tsx; ensure canonical + hreflang [MS-06]
+7cb8cc4 fix(seo): canonical + hreflang for /[lang]/cars via segment layout generateMetadata [MS-06]
+30a26a3 fix(seo): force canonical + hreflang on /[lang]/cars via route head.tsx [MS-06]
+9cfa4d4 fix(build): wrap /[lang]/cars PageClient in <Suspense> for useSearchParams [MS-06]
+3ba95b2 fix(seo): merge metadataBase into [lang]/layout metadata; remove duplicate export [MS-06]
+e0ff082 fix(seo): correct metadataBase placement inside generateMetadata return [MS-06]
+fd82fff fix(seo): ensure canonical/hreflang render by adding metadataBase to pages [MS-06]
+62d859b fix(seo): split client/server for pages; enable generateMetadata tags [MS-06]
+58e1035 feat(seo): canonical + hreflang metadata for static pages [MS-06]
+6d99367 feat(seo): robots.txt + sitemap.xml with i18n alternates [MS-05]
+
+[status]
+ M docker-compose.health.yml
+ M frontend/src/app/[lang]/_home/Features.tsx
+ M frontend/src/app/[lang]/cars/layout.tsx
+ M frontend/src/app/[lang]/contacts/page.tsx
+ M frontend/src/app/[lang]/page.tsx
+ M frontend/src/app/[lang]/terms/page.tsx
+?? 11.6.0
+?? Build
+?? bin/diag.sh
+?? caddy/Caddyfile.bak.1758336205
+?? context/2025-09-20_01-05-06/
+?? context/2025-09-20_03-55-34/
+?? context/LAST_MS_S1-01_DIR.txt
+?? context/S1-A_fix_header_hero_20250919T215459Z/
+?? context/S1-prep_header_20250919T214510Z/
+?? context/context-2025-09-19_203527-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203527-Europe_Warsaw/
+?? context/context-2025-09-19_203532-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203532-Europe_Warsaw/
+?? context/context-2025-09-19_203537-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203537-Europe_Warsaw/
+?? context/context-2025-09-19_203542-Europe_Warsaw.tar.gz
+?? context/context-2025-09-19_203542-Europe_Warsaw/
+?? context/context-2025-09-20_011319-Europe_Warsaw.tar.gz
+?? context/context-2025-09-20_011319-Europe_Warsaw/
+?? context/context-2025-09-20_011445-Europe/
+?? context/context-2025-09-20_011624-Europe/
+?? context/context-2025-09-20_011636-Europe/
+?? context/context-2025-09-20_011650-Europe/
+?? context/context-2025-09-20_121331-Europe_Warsaw/
+?? context/mini-sprint-1_20250919T194728Z/
+?? context/mini-sprint-1_diag-featuresssr_20250919T203736Z/
+?? context/mini-sprint-1_fix-featuresssr-import_20250919T203454Z/
+?? context/mini-sprint-1_fix-featuresssr_20250919T203115Z/
+?? context/mini-sprint-1_fix-import-replace_20250919T203920Z/
+?? context/mini-sprint-MS06_20250920T032249Z/
+?? context/mini-sprint-MS06_20250920T032300Z/
+?? context/ms-S1-01_20250919T194511Z/
+?? context/ms-S1-02_fonts_diag_20250919T204243Z/
+?? context/ms-S1-02b_fonts_local_20250919T204620Z/
+?? context/ms-S1-02b_fonts_local_fix_20250919T205015Z/
+?? context/ms-S1-EFH_20250919T230251Z/
+?? context/ms-S1-EF_20250919T224301Z/
+?? context/s1-BF_20250919T223536Z/
+?? context/s1-BF_20250919T223712Z/
+?? context/s1-a_kill-hero-gradient_20250919T221738Z/
+?? context/s1-b_ui_scaffold_20250919T222517Z/
+?? frontend/next.config.mjs.bak.1758335978
+?? frontend/public/fonts/inter/.keep
+?? frontend/public/fonts/jetbrains/.keep
+?? frontend/src/app/[lang]/_home/FeaturesSSR.tsx.bak.1758328381
+?? frontend/src/app/[lang]/_home/FeaturesSSR.tsx.bak.1758329941
+?? frontend/src/app/[lang]/_home/FeaturesSSR.tsx.bak.1758331910
+?? frontend/src/app/[lang]/_home/FeaturesSSR.tsx.bak.1758331930
+?? frontend/src/app/[lang]/cars/head.tsx.bak.ms06.rm.1758362350
+?? frontend/src/app/[lang]/cars/page.tsx.bak.1758328381
+?? frontend/src/app/[lang]/cars/page.tsx.bak.1758332078
+?? frontend/src/app/[lang]/cars/page.tsx.bak.ms06.1758342652
+?? frontend/src/app/[lang]/cars/page.tsx.bak.ms06.fix.1758343133
+?? frontend/src/app/[lang]/cars/page.tsx.bak.ms06.mb.1758343021
+?? frontend/src/app/[lang]/cars/page.tsx.bak.ms06.rel.1758343740
+?? frontend/src/app/[lang]/cars/page.tsx.bak.ms06.suspense.1758361837
+?? frontend/src/app/[lang]/cars/page.tsx.bak.ms06split.1758342805
+?? frontend/src/app/[lang]/contacts/page.tsx.bak.ms06.1758342652
+?? frontend/src/app/[lang]/contacts/page.tsx.bak.ms06.fix.1758343134
+?? frontend/src/app/[lang]/contacts/page.tsx.bak.ms06.mb.1758343022
+?? frontend/src/app/[lang]/contacts/page.tsx.bak.ms06.rel.1758343740
+?? frontend/src/app/[lang]/contacts/page.tsx.bak.ms06split.1758342805
+?? frontend/src/app/[lang]/layout.tsx.bak.ms06.dupe.1758343851
+?? frontend/src/app/[lang]/layout.tsx.bak.ms06.layout.1758343330
+?? frontend/src/app/[lang]/layout.tsx.bak.ms06.seg.1758343586
+?? frontend/src/app/[lang]/layout.tsx.bak.ms06.seg.1758343622
+?? frontend/src/app/[lang]/page.tsx.bak.1758334274
+?? frontend/src/app/[lang]/page.tsx.bak.ms06.1758342652
+?? frontend/src/app/[lang]/page.tsx.bak.ms06.fix.1758343133
+?? frontend/src/app/[lang]/page.tsx.bak.ms06.mb.1758343021
+?? frontend/src/app/[lang]/page.tsx.bak.ms06.rel.1758343740
+?? frontend/src/app/[lang]/page.tsx.bak.ms06split.1758342805
+?? frontend/src/app/[lang]/terms/page.tsx.bak.ms06.1758342652
+?? frontend/src/app/[lang]/terms/page.tsx.bak.ms06.fix.1758343134
+?? frontend/src/app/[lang]/terms/page.tsx.bak.ms06.mb.1758343022
+?? frontend/src/app/[lang]/terms/page.tsx.bak.ms06.rel.1758343740
+?? frontend/src/app/[lang]/terms/page.tsx.bak.ms06split.1758342805
+?? frontend/src/app/[lang]/vin/[vin]/_SeoVinJsonLd.tsx
+?? frontend/src/app/[lang]/vin/[vin]/_SeoVinJsonLd.tsx.bak.ms04.1758342070
+?? frontend/src/app/[lang]/vin/[vin]/layout.tsx.bak.ms06.1758338344
+?? frontend/src/app/[lang]/vin/[vin]/layout.tsx.bak.ms07.1758338979
+?? frontend/src/app/[lang]/vin/[vin]/layout.tsx.bak.ms08.1758339401
+?? frontend/src/app/[lang]/vin/[vin]/page.tsx.bak.1758336591
+?? frontend/src/app/[lang]/vin/[vin]/page.tsx.bak.ms06.1758338344
+?? frontend/src/app/fonts.ts.bak.1758334274
+?? frontend/src/app/fonts.ts.bak.1758334484
+?? frontend/src/app/fonts.ts.bak.1758335061
+?? frontend/src/app/fonts.ts.bak.ms02.1758340789
+?? frontend/src/app/fonts.ts.bak.ms021.1758341376
+?? frontend/src/app/layout.tsx.bak.ms06.layout.1758343330
+?? frontend/src/app/robots.ts.bak.ms05.1758337567
+?? frontend/src/app/robots.ts.bak.ms05.1758342403
+?? frontend/src/app/sitemap.ts.bak.ms05
+?? frontend/src/middleware.ts.bak.1758327673
+?? frontend/src/styles/globals.css.bak.1758335061
+
+[tags]
+baseline/S1-02_fonts-locked
+prod-20250917-152908
+safekeep/fe-20250919-1737
+safekeep/fe-before-restore-20250919-1919
+safekeep/root-20250919-1725
+safekeep/root-20250919-1731
+safekeep/root-20250919-1733
+safekeep/root-20250919-1738
+v0.1.0
+v0.1.0-restored
+v0.1.1
+v0.1.2
+v0.1.3
+v0.1.4
+v0.1.5
+v0.1.6

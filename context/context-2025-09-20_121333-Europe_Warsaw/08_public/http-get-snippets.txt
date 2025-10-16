@@ -1,0 +1,24 @@
+[GET-SNIPPET] http://localhost:3000/en
+curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused
+
+[GET-SNIPPET] http://localhost:3000/ru
+curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused
+
+[GET-SNIPPET] http://localhost:3000/en/cars
+curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused
+
+[GET-SNIPPET] http://localhost:3000/ru/cars
+curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused
+
+[GET-SNIPPET] http://localhost:3000/en/contacts
+curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused
+
+[GET-SNIPPET] http://localhost:3000/ru/contacts
+curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused
+
+[GET-SNIPPET] http://localhost:3000/en/terms
+curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused
+
+[GET-SNIPPET] http://localhost:3000/ru/terms
+curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused
+

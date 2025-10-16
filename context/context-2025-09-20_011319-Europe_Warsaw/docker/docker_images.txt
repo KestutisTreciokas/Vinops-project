@@ -1,0 +1,17 @@
+REPOSITORY    TAG           IMAGE ID       CREATED             SIZE
+vinops-web    latest        8127a404390e   47 minutes ago      609MB
+<none>        <none>        9b9bda74d5b6   54 minutes ago      609MB
+<none>        <none>        4bc14e5b9262   59 minutes ago      609MB
+<none>        <none>        e604c8c8b8c4   About an hour ago   609MB
+<none>        <none>        d3c2aa3643a3   About an hour ago   609MB
+<none>        <none>        d0690e4441a3   About an hour ago   609MB
+<none>        <none>        5f9b2fddde14   About an hour ago   609MB
+<none>        <none>        239a1e2dc56d   2 hours ago         608MB
+<none>        <none>        9650c1835239   3 hours ago         608MB
+<none>        <none>        4dd82937c738   7 hours ago         598MB
+postgres      16            8216e24fab1e   11 days ago         451MB
+postgres      16-alpine     31d86079818e   11 days ago         281MB
+node          20-bullseye   b90726631d87   2 weeks ago         1GB
+node          20-alpine     6c47bbfd232e   2 weeks ago         134MB
+caddy         2-alpine      572a72cdc384   3 weeks ago         53.4MB
+hello-world   latest        1b44b5a3e06a   6 weeks ago         10.1kB

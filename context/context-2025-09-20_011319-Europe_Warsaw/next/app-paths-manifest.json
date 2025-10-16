@@ -1,0 +1,18 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/demo/page": "app/demo/page.js",
+  "/health/route": "app/health/route.js",
+  "/healthz/route": "app/healthz/route.js",
+  "/icon.svg/route": "app/icon.svg/route.js",
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/sitemap.xml/route": "app/sitemap.xml/route.js",
+  "/[lang]/cars/page": "app/[lang]/cars/page.js",
+  "/[lang]/health/route": "app/[lang]/health/route.js",
+  "/[lang]/healthz/route": "app/[lang]/healthz/route.js",
+  "/[lang]/demo/page": "app/[lang]/demo/page.js",
+  "/[lang]/page": "app/[lang]/page.js",
+  "/[lang]/terms/page": "app/[lang]/terms/page.js",
+  "/[lang]/contacts/page": "app/[lang]/contacts/page.js",
+  "/[lang]/vin/[vin]/page": "app/[lang]/vin/[vin]/page.js",
+  "/[lang]/vin/[vin]/details/page": "app/[lang]/vin/[vin]/details/page.js"
+}

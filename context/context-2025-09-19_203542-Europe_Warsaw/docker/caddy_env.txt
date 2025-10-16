@@ -1,0 +1,17 @@
+### Environment inside caddy container (masked)
+### Started: 2025-09-19T21:35:44+03:00
+
+HOSTNAME=ef654053e8f2
+SHLVL=1
+HOME=/root
+CADDY_VERSION=v2.10.2
+PAGER=less
+LC_COLLATE=C
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+LANG=C.UTF-8
+XDG_CONFIG_HOME=/config
+XDG_DATA_HOME=/data
+PWD=****
+CHARSET=UTF-8
+
+### Finished: 2025-09-19T21:35:44+03:00

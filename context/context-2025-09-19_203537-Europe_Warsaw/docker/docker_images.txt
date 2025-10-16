@@ -1,0 +1,8 @@
+REPOSITORY    TAG           IMAGE ID       CREATED       SIZE
+<none>        <none>        4dd82937c738   3 hours ago   598MB
+postgres      16-alpine     31d86079818e   10 days ago   281MB
+postgres      16            8216e24fab1e   10 days ago   451MB
+node          20-bullseye   b90726631d87   2 weeks ago   1GB
+node          20-alpine     6c47bbfd232e   2 weeks ago   134MB
+caddy         2-alpine      572a72cdc384   3 weeks ago   53.4MB
+hello-world   latest        1b44b5a3e06a   6 weeks ago   10.1kB

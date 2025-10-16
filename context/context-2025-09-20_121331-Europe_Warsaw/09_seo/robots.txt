@@ -1,0 +1,6 @@
+User-Agent: *
+Allow: /
+Disallow: /*/health
+
+Host: vinops.online
+Sitemap: https://vinops.online/sitemap.xml

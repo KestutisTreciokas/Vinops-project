@@ -1,0 +1,34 @@
+### Top table sizes
+### Started: 2025-09-19T21:35:31+03:00
+
+time="2025-09-19T21:35:31+03:00" level=warning msg="/root/work/vinops.restore/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_PORT\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DATABASE_URL\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"NEXT_PUBLIC_SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"GHCR_IMAGE_API\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"API_IMAGE_TAG\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"GHCR_IMAGE_WEB\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"WEB_IMAGE_TAG\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_NAME\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_USER\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"NEXT_PUBLIC_SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DOMAIN_OR_IP\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"PORT_API_HOST\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"SENTRY_DSN\" variable is not set. Defaulting to a blank string."
+time="2025-09-19T21:35:31+03:00" level=warning msg="The \"DB_PORT\" variable is not set. Defaulting to a blank string."
+ schemaname | relname | total | n_live_tup 
+------------+---------+-------+------------
+(0 rows)
+
+
+### Finished: 2025-09-19T21:35:31+03:00

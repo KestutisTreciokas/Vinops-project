@@ -1,0 +1,12 @@
+ M docker-compose.health.yml
+?? bin/diag.sh
+?? context/context-2025-09-19_203527-Europe_Warsaw/README.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/git/branch.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/git/last10.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/git/status_porcelain.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/system/disk.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/system/lscpu.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/system/memory.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/system/os.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/system/ports_host.txt
+?? context/context-2025-09-19_203527-Europe_Warsaw/system/time.txt

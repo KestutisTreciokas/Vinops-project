@@ -1,0 +1,4 @@
+-rw-r--r-- 1 root root 200 Sep 19 20:02 frontend/src/app/health/route.ts
+-rw-r--r-- 1 root root 200 Sep 19 20:02 frontend/src/app/healthz/route.ts
+-rw-r--r-- 1 root root 200 Sep 19 20:08 frontend/src/app/[lang]/health/route.ts
+-rw-r--r-- 1 root root 200 Sep 19 20:08 frontend/src/app/[lang]/healthz/route.ts

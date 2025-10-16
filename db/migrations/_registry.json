@@ -1,0 +1,44 @@
+[
+  {
+    "id": "0001",
+    "file": "0001_init.sql",
+    "purpose": "Baseline: create tables (vehicles, lots, sale_events, images) without constraints",
+    "rollback": "Not applicable in S-02 (no destructive ops); drop tables is forbidden",
+    "timestamp_tz": "2025-09-21 00:02"
+  },
+  {
+    "id": "0002",
+    "file": "0002_constraints.sql",
+    "purpose": "Add PK/FK/CHECK, VIN validation, uniqueness; non-destructive constraints",
+    "rollback": "ALTER TABLE ... DROP CONSTRAINT IF EXISTS ...; DROP INDEX IF EXISTS ...;",
+    "timestamp_tz": "2025-09-21 00:02"
+  },
+  {
+    "id": "0003",
+    "file": "0003_indexes.sql",
+    "purpose": "Read-path indexes for catalog & VIN card",
+    "rollback": "DROP INDEX IF EXISTS lots_status_auction_idx; DROP INDEX IF EXISTS lots_vin_idx; DROP INDEX IF EXISTS sale_events_vin_date_idx; DROP INDEX IF EXISTS images_vin_idx; DROP INDEX IF EXISTS images_lot_id_idx;",
+    "timestamp_tz": "2025-09-21 00:02"
+  },
+  {
+    "id": "0004",
+    "file": "0004_policy_flags.sql",
+    "purpose": "Soft-delete flags + partial indexes (is_removed) for vehicles/lots/images",
+    "rollback": "DROP INDEX IF EXISTS lots_status_auction_active_idx; DROP INDEX IF EXISTS lots_vin_not_removed_idx; DROP INDEX IF EXISTS images_vin_not_removed_idx; DROP INDEX IF EXISTS images_lot_id_not_removed_idx; (колонки is_removed удаляются только отдельной согласованной миграцией)",
+    "timestamp_tz": "2025-09-23 05:24"
+  },
+  {
+    "id": "0005",
+    "file": "0005_vin_normalized_fix.sql",
+    "purpose": "Superseded by 0006; do not apply (generated-column write conflict)",
+    "rollback": "N/A",
+    "timestamp_tz": "2025-09-23 06:30"
+  },
+  {
+    "id": "0006",
+    "file": "0006_vin_normalized_ck_uidx.sql",
+    "purpose": "Guarded CHECK + UNIQUE for vehicles.vin_normalized (generated column)",
+    "rollback": "DROP INDEX IF EXISTS vehicles_vin_normalized_uidx; ALTER TABLE public.vehicles DROP CONSTRAINT IF EXISTS vehicles_vin_normalized_format_ck;",
+    "timestamp_tz": "2025-09-23 06:23"
+  }
+]

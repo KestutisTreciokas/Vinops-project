@@ -1,0 +1,3 @@
+CONTAINER ID   NAMES                   IMAGE                STATUS                 PORTS
+ef654053e8f2   vinopsrestore-caddy-1   caddy:2-alpine       Up 3 hours             0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 443/udp, 2019/tcp
+20976aaee317   vinopsrestore-db-1      postgres:16-alpine   Up 3 hours (healthy)   5432/tcp
