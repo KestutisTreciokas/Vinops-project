@@ -103,6 +103,18 @@ export async function fetchVehicles(
       const hasMore = result.rows.length > limit
       const items = result.rows.slice(0, limit)
 
+      // Generate next cursor if there are more results
+      let nextCursor: string | null = null
+      if (hasMore && items.length > 0) {
+        const lastItem = items[items.length - 1]
+        const cursorData = {
+          lastVin: lastItem.vin,
+          lastAuctionDate: lastItem.auction_datetime_utc,
+          lastYear: lastItem.year,
+        }
+        nextCursor = Buffer.from(JSON.stringify(cursorData)).toString('base64url')
+      }
+
       return {
         items: items.map((row) => ({
           vin: row.vin,
@@ -132,7 +144,7 @@ export async function fetchVehicles(
           updatedAt: row.updated_at,
         })),
         pagination: {
-          nextCursor: null,
+          nextCursor,
           hasMore,
           count: items.length,
         },
