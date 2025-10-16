@@ -206,7 +206,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   }
 
   return (
-    <main>
+    <main data-page="catalog">
       <section className="container catalog-head">
         <h1 className="text-xl font-semibold mb-1">{t(lang,'Catalog • VIN', 'Каталог • VIN')}</h1>
         <p className="text-fg-muted">{t(lang,
