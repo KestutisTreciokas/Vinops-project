@@ -32,8 +32,6 @@ jobs:
           tags: |
             ghcr.io/kestutistreciokas/vinops-web:prod
             ghcr.io/kestutistreciokas/vinops-web:${{ env.SHORT_SHA }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
       - name: Build & Push API
         if: ${{ hashFiles('backend/package.json', 'backend/pyproject.toml', 'backend/requirements.txt', 'backend/go.mod', 'backend/composer.json') != '' }}
         uses: docker/build-push-action@v6
@@ -43,5 +41,3 @@ jobs:
           tags: |
             ghcr.io/KestutisTreciokas/vinops-api:prod
             ghcr.io/KestutisTreciokas/vinops-api:${{ env.SHORT_SHA }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
