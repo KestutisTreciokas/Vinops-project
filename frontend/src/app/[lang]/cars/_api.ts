@@ -167,7 +167,9 @@ export function transformVehicles(response: SearchResponse) {
     damage: item.damageLabel || item.damageDescription || 'Unknown',
     title: item.titleLabel || item.titleType || 'Unknown',
     location: [item.city, item.region, item.country].filter(Boolean).join(', ') || 'Unknown',
-    status: (item.status === 'active' ? 'ACTIVE' : 'SOLD') as 'ACTIVE' | 'SOLD',
-    price: item.estRetailValueUsd ? `$${item.estRetailValueUsd.toLocaleString()}` : 'N/A',
+    status: item.status || 'unknown',
+    statusLabel: item.statusLabel || undefined,
+    estMin: item.estRetailValueUsd || undefined,
+    estMax: item.estRetailValueUsd || undefined,
   }))
 }
