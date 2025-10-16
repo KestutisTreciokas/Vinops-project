@@ -232,3 +232,168 @@ export enum ApiStatusCode {
   /** Internal Server Error - Database or server error */
   INTERNAL_SERVER_ERROR = 500,
 }
+
+/**
+ * Search/Catalog API Types
+ */
+
+/**
+ * Search Request Query Parameters
+ */
+export interface SearchQueryParams {
+  /** Filter by make (e.g., "TOYOTA") */
+  make?: string
+
+  /** Filter by model (e.g., "CAMRY") */
+  model?: string
+
+  /** Minimum year (e.g., 2015) */
+  year_min?: number
+
+  /** Maximum year (e.g., 2020) */
+  year_max?: number
+
+  /** Filter by lot status (e.g., "active", "upcoming") */
+  status?: string
+
+  /** Filter by auction site code (e.g., "CA-LOS_ANGELES") */
+  site_code?: string
+
+  /** Filter by country code (e.g., "US") */
+  country?: string
+
+  /** Results per page (default 20, max 100) */
+  limit?: number
+
+  /** Pagination cursor (base64-encoded) */
+  cursor?: string
+
+  /** Language for taxonomy labels ("en" or "ru", default "en") */
+  lang?: 'en' | 'ru'
+
+  /** Sort order (default "auction_date_asc") */
+  sort?: 'auction_date_asc' | 'auction_date_desc' | 'year_desc' | 'year_asc'
+}
+
+/**
+ * Search Response
+ */
+export interface SearchResponse {
+  /** Array of vehicle listings */
+  items: VehicleListingItem[]
+
+  /** Pagination metadata */
+  pagination: PaginationMetadata
+
+  /** Applied filters for debugging */
+  filters: AppliedFilters
+
+  /** Language used for taxonomy labels */
+  lang: 'en' | 'ru'
+}
+
+/**
+ * Vehicle Listing Item (lighter than full VehicleDetailsResponse)
+ */
+export interface VehicleListingItem {
+  /** Vehicle Identification Number */
+  vin: string
+
+  /** Vehicle year */
+  year: number | null
+
+  /** Manufacturer */
+  make: string | null
+
+  /** Model name */
+  model: string | null
+
+  /** Body style code */
+  body: string | null
+
+  /** Body style label */
+  bodyLabel: string | null
+
+  /** Lot ID */
+  lotId: number | null
+
+  /** Lot status code */
+  status: string | null
+
+  /** Lot status label */
+  statusLabel: string | null
+
+  /** Auction site code */
+  siteCode: string | null
+
+  /** City name */
+  city: string | null
+
+  /** State/region code */
+  region: string | null
+
+  /** Country code */
+  country: string | null
+
+  /** Auction date/time in UTC (ISO 8601) */
+  auctionDateTimeUtc: string | null
+
+  /** Estimated retail value in USD */
+  estRetailValueUsd: number | null
+
+  /** Damage description code */
+  damageDescription: string | null
+
+  /** Damage description label */
+  damageLabel: string | null
+
+  /** Title type code */
+  titleType: string | null
+
+  /** Title type label */
+  titleLabel: string | null
+
+  /** Odometer reading */
+  odometer: number | null
+
+  /** Primary image URL */
+  primaryImageUrl: string | null
+
+  /** Total image count */
+  imageCount: number
+
+  /** Last update timestamp */
+  updatedAt: string
+}
+
+/**
+ * Pagination Metadata
+ */
+export interface PaginationMetadata {
+  /** Next page cursor (base64-encoded), null if no more pages */
+  nextCursor: string | null
+
+  /** Whether there are more results */
+  hasMore: boolean
+
+  /** Number of items in current page */
+  count: number
+
+  /** Total count of matching results (optional, expensive to compute) */
+  totalCount?: number
+}
+
+/**
+ * Applied Filters (for debugging and UI display)
+ */
+export interface AppliedFilters {
+  make?: string
+  model?: string
+  yearMin?: number
+  yearMax?: number
+  status?: string
+  siteCode?: string
+  country?: string
+  limit: number
+  sort: string
+}
