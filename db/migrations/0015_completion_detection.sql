@@ -10,6 +10,7 @@ ALTER TABLE lots ADD COLUMN IF NOT EXISTS detection_method TEXT;
 ALTER TABLE lots ADD COLUMN IF NOT EXISTS detection_notes TEXT;
 
 -- Expand status domain to include completion statuses
+ALTER TABLE lots DROP CONSTRAINT IF EXISTS lots_status_ck;  -- Drop old constraint from earlier migration
 ALTER TABLE lots DROP CONSTRAINT IF EXISTS lots_status_check;
 ALTER TABLE lots ADD CONSTRAINT lots_status_check
   CHECK (status IN (
@@ -275,15 +276,16 @@ CREATE OR REPLACE VIEW audit.v_pending_results AS
 SELECT
   l.lot_external_id,
   l.vin,
-  l.make,
-  l.model,
-  l.year,
+  v.make,
+  v.model,
+  v.year,
   l.auction_datetime_utc,
   l.sale_confirmed_at,
   EXTRACT(HOURS FROM (now() - l.sale_confirmed_at)) as hours_pending,
   l.detection_method,
   l.detection_notes
 FROM lots l
+LEFT JOIN vehicles v ON l.vin = v.vin
 WHERE l.status = 'pending_result'
 ORDER BY l.sale_confirmed_at DESC;
 
