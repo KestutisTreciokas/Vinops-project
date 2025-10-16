@@ -47,7 +47,29 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [loadingModels, setLoadingModels] = useState(false)
+  const [availableMakes, setAvailableMakes] = useState<string[]>(MAKES)
+  const [loadingMakes, setLoadingMakes] = useState(false)
   const [showMoreDropdown, setShowMoreDropdown] = useState(false)
+
+  // Fetch makes when type changes
+  useEffect(() => {
+    setLoadingMakes(true)
+    fetch(`/api/v1/makes-models?type=${encodeURIComponent(type)}`)
+      .then(res => res.json())
+      .then(data => {
+        setAvailableMakes(data.makes || MAKES)
+        // Reset make and model if current make is not in the new list
+        if (make && data.makes && !data.makes.includes(make)) {
+          setMake('')
+          setModel('')
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch makes:', err)
+        setAvailableMakes(MAKES)
+      })
+      .finally(() => setLoadingMakes(false))
+  }, [type])
 
   // Fetch models when make changes
   useEffect(()=>{
@@ -72,7 +94,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
         setAvailableModels([])
       })
       .finally(() => setLoadingModels(false))
-  },[make])
+  },[make, type])
 
   // табы - основные
   const mainTabs = useMemo(()=>[
@@ -234,9 +256,13 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
           </div>
           <div className="filters-bar">
             <div className="select-wrap">
-              <select className="select" value={make} onChange={e=>setMake(e.target.value)}>
-                <option value="">{t(lang,'All makes','Все марки')}</option>
-                {MAKES.map(m=><option key={m} value={m}>{m}</option>)}
+              <select className="select" value={make} onChange={e=>setMake(e.target.value)} disabled={loadingMakes}>
+                <option value="">
+                  {loadingMakes
+                    ? t(lang,'Loading...','Загрузка...')
+                    : t(lang,'All makes','Все марки')}
+                </option>
+                {availableMakes.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
               <span className="chev"><ChevronDown/></span>
             </div>
