@@ -17,7 +17,6 @@ const MAKES = [
   'BMW', 'VOLKSWAGEN', 'RAM', 'AUDI', 'MERCEDES-BENZ'
 ]
 const MODELS: Record<string,string[]> = {}
-const GENERATIONS = ['All','I','II','III']
 const YEARS = Array.from({length: 30}).map((_,i)=> String(2025 - i))
 
 interface CatalogPageProps {
@@ -40,12 +39,12 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [type, setType] = useState(sp.get('type') ?? 'auto')
   const [make, setMake] = useState(sp.get('make') ?? '')
   const [model, setModel] = useState(sp.get('model') ?? '')
-  const [gen, setGen] = useState(sp.get('gen') ?? '')
   const [yFrom, setYFrom] = useState(sp.get('yfrom') ?? '')
   const [yTo, setYTo] = useState(sp.get('yto') ?? '')
   const [page, setPage] = useState(Number(sp.get('page') ?? '1') || 1)
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [loadingModels, setLoadingModels] = useState(false)
+  const [showMoreDropdown, setShowMoreDropdown] = useState(false)
 
   // Fetch models when make changes
   useEffect(()=>{
@@ -72,35 +71,45 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
       .finally(() => setLoadingModels(false))
   },[make])
 
-  // табы
-  const tabs = useMemo(()=>[
+  // табы - основные
+  const mainTabs = useMemo(()=>[
     { id:'auto', label: t(lang,'Auto','Авто') },
     { id:'moto', label: t(lang,'Moto','Мото') },
     { id:'atv',  label: 'ATV' },
-    { id:'more', label: t(lang,'More','Еще') },
   ],[lang])
+
+  // More dropdown options
+  const moreOptions = useMemo(()=>[
+    { id:'dirt_bikes', label: t(lang,'Dirt Bikes','Эндуро') },
+    { id:'bus', label: t(lang,'Bus','Автобусы') },
+    { id:'pickup', label: t(lang,'Pickup Trucks','Пикапы') },
+    { id:'rv', label: t(lang,'RVs','Дома на колесах') },
+    { id:'trailer', label: t(lang,'Trailers','Трейлеры') },
+    { id:'boat', label: t(lang,'Boats','Лодки') },
+    { id:'jet_ski', label: t(lang,'Jet Skis','Гидроциклы') },
+    { id:'snowmobile', label: t(lang,'Snowmobile','Снегоходы') },
+  ],[lang])
+
+  const isMoreType = !['auto', 'moto', 'atv'].includes(type)
+  const tabs = isMoreType
+    ? [...mainTabs, { id: type, label: moreOptions.find(o => o.id === type)?.label || t(lang,'More','Еще') }]
+    : [...mainTabs, { id:'more', label: t(lang,'More','Еще') }]
 
   // Применить -> в URL
   const apply = () => {
     const q = buildQuery(sp, {
       type, make, model,
-      gen,
       yfrom: yFrom,
       yto: yTo,
       page: String(page),
     })
-    
-    
-    
-router.replace(`${pathname}${q}` as Route)
-  
-  
+    router.replace(`${pathname}${q}` as Route)
   }
 
   // Сброс -> чистим всё, кроме type
   const reset = () => {
-    setMake(''); setModel(''); setGen(''); setYFrom(''); setYTo(''); setPage(1)
-    const q = buildQuery(sp, { make:'', model:'', gen:'', yfrom:'', yto:'', page:'1' })
+    setMake(''); setModel(''); setYFrom(''); setYTo(''); setPage(1)
+    const q = buildQuery(sp, { make:'', model:'', yfrom:'', yto:'', page:'1' })
     
     
     
@@ -145,7 +154,42 @@ router.replace(`${pathname}${q}` as Route)
       {/* sticky */}
       <div className="filters-sticky">
         <section className="container">
-          <PillTabs items={tabs} value={type} onChange={onTab} className="mb-3" />
+          <div className="mb-3 flex items-center gap-2">
+            <PillTabs items={mainTabs} value={type} onChange={onTab} />
+            <div className="relative">
+              <button
+                className={`pill ${isMoreType ? 'pill-active' : ''}`}
+                onClick={() => {
+                  if (isMoreType) {
+                    onTab('auto')
+                  } else {
+                    setShowMoreDropdown(!showMoreDropdown)
+                  }
+                }}
+              >
+                {isMoreType
+                  ? (moreOptions.find(o => o.id === type)?.label || t(lang,'More','Еще'))
+                  : t(lang,'More','Еще')}
+                <ChevronDown className="inline ml-1 w-4 h-4" />
+              </button>
+              {showMoreDropdown && !isMoreType && (
+                <div className="absolute top-full mt-1 left-0 bg-bg-canvas border border-border-muted rounded-lg shadow-lg z-10 min-w-[180px]">
+                  {moreOptions.map(opt => (
+                    <button
+                      key={opt.id}
+                      className="block w-full text-left px-4 py-2 hover:bg-bg-muted text-sm"
+                      onClick={() => {
+                        onTab(opt.id)
+                        setShowMoreDropdown(false)
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="filters-bar">
             <div className="select-wrap">
               <select className="select" value={make} onChange={e=>setMake(e.target.value)}>
@@ -167,13 +211,6 @@ router.replace(`${pathname}${q}` as Route)
                     : t(lang,'All models','Все модели')}
                 </option>
                 {availableModels.map(m=><option key={m} value={m}>{m}</option>)}
-              </select>
-              <span className="chev"><ChevronDown/></span>
-            </div>
-            <div className="select-wrap">
-              <select className="select" value={gen} onChange={e=>setGen(e.target.value)}>
-                <option value="">{t(lang,'All generations','Все поколения')}</option>
-                {GENERATIONS.map(g=><option key={g} value={g}>{g}</option>)}
               </select>
               <span className="chev"><ChevronDown/></span>
             </div>

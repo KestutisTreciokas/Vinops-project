@@ -20,8 +20,10 @@ interface VehicleCardProps {
 }
 
 export default function VehicleCard({ v, lang = 'en' }: VehicleCardProps) {
+  const t = (en: string, ru: string) => lang === 'ru' ? ru : en
+
   const statusClass = v.status === 'SOLD' ? 'badge badge-sold' : v.status === 'ACTIVE' ? 'badge badge-live' : 'badge'
-  const statusLabel = v.status === 'SOLD' ? 'Sold' : v.status === 'ACTIVE' ? 'Active' : ''
+  const statusLabel = v.status === 'SOLD' ? t('Sold', 'Продано') : v.status === 'ACTIVE' ? t('Active', 'Активно') : ''
   const vinPageUrl = `/${lang}/vin/${v.vin}` as `/en/vin/${string}` | `/ru/vin/${string}`
 
   return (
