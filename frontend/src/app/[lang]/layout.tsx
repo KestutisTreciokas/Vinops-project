@@ -1,9 +1,11 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 
 import type { Route } from 'next';
 import type { Metadata } from 'next'
 import NavLink from '../../components/NavLink'
 import ThemeToggle from '../../components/ThemeToggle'
+import LangSwitcher from '../../components/LangSwitcher'
 
 const NAV = [
   { href: '/[lang]/cars',     label: { en: 'Catalog',  ru: 'Каталог' } },
@@ -41,7 +43,9 @@ export default function LangLayout({
               </NavLink>
             ))}
             <ThemeToggle />
-            <LangSwitcher lang={params.lang} />
+            <Suspense fallback={<div className="h-8 w-20" />}>
+              <LangSwitcher lang={params.lang} />
+            </Suspense>
           </nav>
         </div>
       </header>
@@ -49,25 +53,51 @@ export default function LangLayout({
       <main className="container-prose py-8 flex-1">{children}</main>
 
       <footer className="mt-12 border-t border-border-muted">
-        <div className="container-prose py-8 text-sm text-fg-muted flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>© {new Date().getFullYear()} vinops</div>
-          <div className="flex items-center gap-4">
-            <a href="mailto:request@vinops.online">request@vinops.online</a>
+        <div className="container-prose py-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-6">
+            <div>
+              <h3 className="font-semibold mb-3">{t('Navigation', 'Навигация')}</h3>
+              <nav className="flex flex-col gap-2 text-sm">
+                <Link href={href('/[lang]') as Route} className="text-fg-muted hover:text-fg-default">
+                  {t('Home', 'Главная')}
+                </Link>
+                <Link href={href('/[lang]/cars') as Route} className="text-fg-muted hover:text-fg-default">
+                  {t('Catalog', 'Каталог')}
+                </Link>
+                <Link href={href('/[lang]/contacts') as Route} className="text-fg-muted hover:text-fg-default">
+                  {t('Contacts', 'Контакты')}
+                </Link>
+                <Link href={href('/[lang]/terms') as Route} className="text-fg-muted hover:text-fg-default">
+                  {t('Terms', 'Условия')}
+                </Link>
+              </nav>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-3">{t('Contacts', 'Контакты')}</h3>
+              <div className="flex flex-col gap-2 text-sm">
+                <a href="mailto:request@vinops.online" className="text-fg-muted hover:text-fg-default">
+                  request@vinops.online
+                </a>
+                <a href="https://t.me/vinops" target="_blank" rel="noopener noreferrer" className="text-fg-muted hover:text-fg-default">
+                  Telegram
+                </a>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-3">{t('About', 'О сервисе')}</h3>
+              <p className="text-sm text-fg-muted">
+                {t(
+                  'VIN lookup service for auction vehicles with real-time data from major US auction sites.',
+                  'Сервис проверки VIN для аукционных автомобилей с актуальными данными с крупнейших аукционов США.'
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="pt-6 border-t border-border-muted text-sm text-fg-muted text-center">
+            © {new Date().getFullYear()} vinops. {t('All rights reserved.', 'Все права защищены.')}
           </div>
         </div>
       </footer>
-    </div>
-  )
-}
-
-function LangSwitcher({ lang }: { lang: 'en' | 'ru' }) {
-  const other = lang === 'en' ? 'ru' : 'en'
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-fg-muted text-sm">Lang</span>
-      <a className="btn btn-secondary h-8 px-3 text-xs" href={`/${other}`}>
-        {other.toUpperCase()}
-      </a>
     </div>
   )
 }
