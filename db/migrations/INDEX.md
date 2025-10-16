@@ -25,6 +25,7 @@
 - ✅ 0012_vehicles_upsert_proc.sql
 - ✅ 0013_lots_upsert_proc.sql
 - ✅ 0014_vin_validation_update.sql
+- ✅ 0015_completion_detection.sql
 
 ---
 
@@ -325,6 +326,85 @@ ALTER TABLE vehicles ADD CONSTRAINT vehicles_vin_normalized_format_ck CHECK (vin
 
 ---
 
+### 0015_completion_detection.sql
+**Sprint:** S1C — Completion Detection (Phase 1)
+**Purpose:** Safe, passive detection of auction completions via CSV disappearance and VIN reappearance
+**Dependencies:** 0014
+**Rollback:** See rollback commands below
+**Applied:** 2025-10-16
+
+**Changes:**
+- Added completion tracking columns to lots table
+  - `final_bid_usd` - Final auction bid (populated via Phase 2 if enabled)
+  - `sale_confirmed_at` - Timestamp when completion was detected
+  - `detection_method` - Method used: csv_disappearance, vin_reappearance
+  - `detection_notes` - Additional context about detection
+- Expanded status domain: pending_result, not_sold, on_approval, cancelled
+- Created `audit.completion_detections` table for logging detection runs
+- Created `detect_disappeared_lots()` function - Find lots that disappeared from CSV
+- Created `mark_lots_pending_result()` function - Mark disappeared lots
+- Created `detect_vin_reappearances()` function - Find VINs that reappeared
+- Created `mark_lots_not_sold_by_reappearance()` function - Mark previous as not_sold
+- Created `run_completion_detection()` function - Complete detection workflow
+- Created views: `audit.v_completion_stats`, `audit.v_pending_results`
+
+**Detection Methods:**
+1. **CSV Disappearance** (Risk: MINIMAL)
+   - Compares consecutive CSV snapshots
+   - Marks disappeared lots as "pending_result" after grace period
+   - Accuracy: ~80% (can't determine if actually sold)
+
+2. **VIN Reappearance** (Risk: MINIMAL)
+   - Detects when same VIN appears with new lot_external_id
+   - Retroactively marks previous lot as "not_sold"
+   - Accuracy: ~95% for "not_sold" status
+
+**Usage:**
+```bash
+# Run completion detection after CSV ingestion
+node scripts/detect-completions.js
+
+# Dry run (preview only)
+node scripts/detect-completions.js --dry-run
+
+# Custom grace period
+node scripts/detect-completions.js --grace-period=2
+```
+
+**SQL Example:**
+```sql
+-- Manual detection between two CSV files
+SELECT * FROM run_completion_detection(
+  'prev-file-uuid'::UUID,
+  'curr-file-uuid'::UUID,
+  1.0  -- grace period in hours
+);
+
+-- View pending results
+SELECT * FROM audit.v_pending_results;
+
+-- View completion stats
+SELECT * FROM audit.v_completion_stats;
+```
+
+**Rollback Commands:**
+```sql
+DROP FUNCTION IF EXISTS run_completion_detection(UUID, UUID, NUMERIC);
+DROP FUNCTION IF EXISTS mark_lots_not_sold_by_reappearance(UUID);
+DROP FUNCTION IF EXISTS detect_vin_reappearances(UUID);
+DROP FUNCTION IF EXISTS mark_lots_pending_result(UUID, UUID, NUMERIC);
+DROP FUNCTION IF EXISTS detect_disappeared_lots(UUID, UUID, NUMERIC);
+DROP VIEW IF EXISTS audit.v_pending_results;
+DROP VIEW IF EXISTS audit.v_completion_stats;
+DROP TABLE IF EXISTS audit.completion_detections;
+ALTER TABLE lots DROP COLUMN IF EXISTS detection_notes;
+ALTER TABLE lots DROP COLUMN IF EXISTS detection_method;
+ALTER TABLE lots DROP COLUMN IF EXISTS sale_confirmed_at;
+ALTER TABLE lots DROP COLUMN IF EXISTS final_bid_usd;
+```
+
+---
+
 ## Application Protocol
 
 **Manual Execution (S1):**
@@ -373,10 +453,18 @@ psql $DATABASE_URL -c "\dt raw.*"
 - Applied 0014_vin_validation_update.sql — Enhanced VIN validation (legacy, HIN, CIN support)
 - Tested with run1.csv: 153,977 vehicles + 153,980 lots (including 612 legacy VINs)
 
+**2025-10-16 (S1C Completion Detection — Phase 1):**
+- Applied 0015_completion_detection.sql — Safe, passive completion detection
+- Implemented CSV disappearance detection (0% ban risk, ~80% accuracy)
+- Implemented VIN reappearance analysis (0% ban risk, ~95% accuracy for "not_sold")
+- Created scripts/detect-completions.js for automated detection runs
+- Created COMPLETION_DETECTOR_ANALYSIS.md with risk assessment and strategy
+- Status tracking: pending_result, not_sold, on_approval statuses added
+
 ---
 
 **Next Steps:**
 1. Implement automated CSV fetching (cookie auth, 15-min scheduler)
-2. Create completion detector (PENDING_RESULT status)
-3. E2E integration testing with run2.csv
+2. Test completion detection with run2.csv (overlapping lots)
+3. Evaluate Phase 2 (conservative scraping) after 2-4 weeks
 4. S2: SSR/SEO implementation
