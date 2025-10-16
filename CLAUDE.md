@@ -55,12 +55,12 @@ docker-compose up              # – запустить все сервисы (d
 
 ## Code Style
 
-**Workflow для значимых изменений кода:**
+**Workflow for significant code changes:**
 
-1. **Локальное тестирование** — прогнать тесты, линтер, typecheck
-2. **Commit & Push** — если тесты успешны: `git commit` и `git push`
-3. **GitHub Actions** — автоматический запуск CI/CD
-4. **Merge PR** — слияние выполняется вручную автором запроса
+1. **Local testing** — run tests, lint, typecheck
+2. **Commit & Push** — if tests pass: `git commit` and `git push`
+3. **GitHub Actions** — automatic CI/CD run
+4. **Merge PR** — PRs are merged manually by the requester
 
 ## GitHub
 
