@@ -1,11 +1,47 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import PageClient from './PageClient'
+import { fetchVehicles, transformVehicles } from './_api'
 
-export default function Page({ params }: { params: { lang: 'en'|'ru' } }) {
+export default async function Page({
+  params,
+  searchParams
+}: {
+  params: { lang: 'en'|'ru' }
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  const lang = params.lang
+
+  // Extract search parameters
+  const make = typeof searchParams.make === 'string' ? searchParams.make : undefined
+  const model = typeof searchParams.model === 'string' ? searchParams.model : undefined
+  const yearMin = searchParams.yfrom ? Number(searchParams.yfrom) : undefined
+  const yearMax = searchParams.yto ? Number(searchParams.yto) : undefined
+  const page = searchParams.page ? Number(searchParams.page) || 1 : 1
+
+  // Fetch vehicles from API
+  const response = await fetchVehicles({
+    make,
+    model,
+    year_min: yearMin,
+    year_max: yearMax,
+    status: 'active', // Only show active listings
+    limit: 20,
+    lang,
+    sort: 'auction_date_asc'
+  })
+
+  // Transform to VehicleLite format
+  const vehicles = response ? transformVehicles(response) : []
+  const pagination = response?.pagination || { hasMore: false, count: 0, nextCursor: null }
+
   return (
     <Suspense fallback={<div className="container-prose py-8 text-sm text-fg-muted">Loading…</div>}>
-      <PageClient params={params} />
+      <PageClient
+        params={params}
+        initialVehicles={vehicles}
+        initialPagination={pagination}
+      />
     </Suspense>
   )
 }

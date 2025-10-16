@@ -10,29 +10,27 @@ import { buildQuery } from '@/lib/url'
 type Lang = 'en'|'ru'
 const t = (lang:Lang, en:string, ru:string)=> lang==='ru'?ru:en
 
-// Мок-источники опций (достаточно для M1)
-const MAKES = ['Toyota','BMW','Audi','Ford']
-const MODELS: Record<string,string[]> = {
-  Toyota: ['Camry','Corolla','RAV4'],
-  BMW: ['3 Series','5 Series'],
-  Audi: ['A4','A6'],
-  Ford: ['Focus','Fusion'],
-}
+// Popular makes from database (top 15)
+const MAKES = [
+  'FORD', 'TOYOTA', 'CHEVROLET', 'HONDA', 'NISSAN',
+  'HYUNDAI', 'KIA', 'JEEP', 'DODGE', 'GMC',
+  'BMW', 'VOLKSWAGEN', 'RAM', 'AUDI', 'MERCEDES-BENZ'
+]
+const MODELS: Record<string,string[]> = {}
 const GENERATIONS = ['All','I','II','III']
 const YEARS = Array.from({length: 30}).map((_,i)=> String(2025 - i))
 
-// Мок-данные карточек
-const MOCK_ROWS: VehicleLite[] = Array.from({length:18}).map((_,i)=>({
-  year: 2016 + (i % 8),
-  make: ['Toyota','BMW','Audi'][i % 3],
-  model: ['Camry','3 Series','A4'][i % 3],
-  damage:'Front End', title:'Salvage', location:'Dallas, TX',
-  vin: `4T1B11HK0000${3456+i}`,
-  status: i % 3 === 0 ? 'SOLD' : 'ACTIVE',
-  price: i % 3 === 0 ? '$8,900' : '$12,300'
-}))
+interface CatalogPageProps {
+  params: { lang: Lang }
+  initialVehicles: VehicleLite[]
+  initialPagination: {
+    hasMore: boolean
+    count: number
+    nextCursor: string | null
+  }
+}
 
-export default function CatalogPage({ params }: { params: { lang: Lang } }) {
+export default function CatalogPage({ params, initialVehicles, initialPagination }: CatalogPageProps) {
   const lang = params.lang
   const router = useRouter()
   const pathname = usePathname()
@@ -103,36 +101,15 @@ router.replace(`${pathname}${q}` as Route)
   
   }
 
-  // Данные после фильтрации (клиентская имитация)
-  const rowsFiltered = useMemo(()=>{
-    return MOCK_ROWS.filter(r=>{
-      if (make && r.make !== make) return false
-      if (model && r.model !== model) return false
-      // gen на моках не влияет
-      const yf = yFrom ? Number(yFrom) : 0
-      const yt = yTo ? Number(yTo) : 9999
-      if (yf && r.year < yf) return false
-      if (yt && r.year > yt) return false
-      return true
-    })
-  },[make, model, yFrom, yTo])
-
-  // пагинация
-  const pageSize = 9
-  const totalPages = Math.max(1, Math.ceil(rowsFiltered.length / pageSize))
-  const currPage = Math.min(page, totalPages)
-  const paged = rowsFiltered.slice((currPage-1)*pageSize, currPage*pageSize)
+  // Use real data from server
+  const vehicles = initialVehicles
+  const hasMore = initialPagination.hasMore
 
   const goto = (p:number) => {
-    const next = Math.min(Math.max(1,p), totalPages)
+    const next = Math.max(1, p)
     setPage(next)
     const q = buildQuery(sp, { page:String(next) })
-    
-    
-    
-router.replace(`${pathname}${q}` as Route)
-  
-  
+    router.replace(`${pathname}${q}` as Route)
   }
 
   return (
@@ -195,16 +172,22 @@ router.replace(`${pathname}${q}` as Route)
 
       <section className="container mt-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {paged.map((v,idx)=>(<VehicleCard key={idx} v={v}/>))}
+          {vehicles.map((v,idx)=>(<VehicleCard key={v.vin || idx} v={v}/>))}
         </div>
 
-        <nav className="pager">
-          <button className="pager-btn" onClick={()=>goto(currPage-1)}>{t(lang,'Prev','Prev')}</button>
-          <button className={`pager-btn ${currPage===1?'pager-btn-active':''}`} onClick={()=>goto(1)}>1</button>
-          {totalPages>=2 && <button className={`pager-btn ${currPage===2?'pager-btn-active':''}`} onClick={()=>goto(2)}>2</button>}
-          {totalPages>=3 && <button className={`pager-btn ${currPage===3?'pager-btn-active':''}`} onClick={()=>goto(3)}>3</button>}
-          <button className="pager-btn" onClick={()=>goto(currPage+1)}>{t(lang,'Next','Next')}</button>
-        </nav>
+        {vehicles.length === 0 && (
+          <div className="text-center py-12 text-fg-muted">
+            {t(lang, 'No vehicles found. Try adjusting your filters.', 'Автомобили не найдены. Попробуйте изменить фильтры.')}
+          </div>
+        )}
+
+        {vehicles.length > 0 && (
+          <nav className="pager">
+            <button className="pager-btn" onClick={()=>goto(page-1)} disabled={page===1}>{t(lang,'Prev','Назад')}</button>
+            <span className="pager-info">{t(lang,`Page ${page}`,`Страница ${page}`)}</span>
+            <button className="pager-btn" onClick={()=>goto(page+1)} disabled={!hasMore}>{t(lang,'Next','Вперед')}</button>
+          </nav>
+        )}
       </section>
     </main>
   )
