@@ -220,6 +220,79 @@ GROUP BY f.file_id, f.path, f.ingested_at;
 
 ---
 
+### 0011_taxonomies.sql
+**Sprint:** S1B — ETL (Domain Normalization)
+**Purpose:** Create bilingual taxonomy lookup tables for RU/EN support
+**Dependencies:** 0010
+**Rollback:** `DROP SCHEMA IF EXISTS taxonomies CASCADE;`
+**Applied:** 2025-10-16
+
+**Changes:**
+- Created `taxonomies` schema with 10 lookup tables
+- Seeded 100+ bilingual codes (RU/EN)
+- Created `get_taxonomy_label()` helper function
+- Created `api.taxonomies_all` view for API consumption
+- Created `audit.unknown_taxonomy_values` tracking table
+
+**Taxonomy Tables:**
+- `damage_types` (18 codes)
+- `title_types` (11 codes)
+- `statuses` (7 codes)
+- `odometer_brands` (7 codes)
+- `body_styles` (9 codes)
+- `fuel_types` (8 codes)
+- `transmission_types` (4 codes)
+- `drive_types` (4 codes)
+- `colors` (14 codes)
+- `runs_drives_status` (3 codes)
+
+---
+
+### 0012_vehicles_upsert_proc.sql
+**Sprint:** S1B — ETL (Core Upsert)
+**Purpose:** Batch upsert procedure for vehicles table
+**Dependencies:** 0011
+**Rollback:** `DROP FUNCTION IF EXISTS upsert_vehicles_batch(UUID); DROP TABLE IF EXISTS audit.vehicle_conflicts;`
+**Applied:** 2025-10-16
+
+**Changes:**
+- Added columns to vehicles table (trim, color, odometer_value, odometer_unit, odometer_brand)
+- Created `upsert_vehicles_batch(UUID)` stored procedure
+- Implements VIN validation and conflict resolution with COALESCE strategy
+- Logs to `audit.etl_runs` table
+- Created `audit.vehicle_conflicts` table for tracking
+
+**Features:**
+- Batch processing from staging.copart_raw
+- DISTINCT ON VIN with latest window_start_utc
+- ON CONFLICT DO UPDATE with timestamp check
+- Returns inserted/updated/skipped counts
+
+---
+
+### 0013_lots_upsert_proc.sql
+**Sprint:** S1B — ETL (Core Upsert)
+**Purpose:** Batch upsert procedure for lots table with orphan prevention
+**Dependencies:** 0012
+**Rollback:** `DROP FUNCTION IF EXISTS upsert_lots_batch(UUID); DROP TABLE IF EXISTS audit.lot_conflicts;`
+**Applied:** 2025-10-16
+
+**Changes:**
+- Added 30+ columns to lots table (lot_external_id, source_updated_at, yard_name, etc.)
+- Created UNIQUE index on lot_external_id
+- Created `upsert_lots_batch(UUID)` stored procedure
+- Implements EXISTS check to prevent orphan lots
+- Timestamp-based conflict resolution using source_updated_at
+- Created `audit.lot_conflicts` table for tracking
+
+**Features:**
+- Prevents lots without vehicles (EXISTS check)
+- Comprehensive field mapping from Copart CSV
+- Status normalization (PURE SALE → active, SOLD → sold, etc.)
+- Currency and numeric field parsing
+
+---
+
 ### 0014_vin_validation_update.sql
 **Sprint:** S1B — ETL Enhancement
 **Purpose:** Comprehensive VIN validation supporting legacy formats
