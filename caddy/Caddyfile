@@ -1,16 +1,17 @@
 {
-	email admin@vinops.online
+  auto_https off
 }
+
 vinops.online, www.vinops.online {
-	encode zstd gzip
-	@health {
-		path /healthz
-	}
-	respond @health "ok" 200
-	reverse_proxy web:3000
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		X-Content-Type-Options "nosniff"
-	}
+  tls /certs/vinops.crt /certs/vinops.key
+  encode zstd gzip
+  @acme path /.well-known/acme-challenge/*
+  respond @acme 404
+
+  reverse_proxy web:3000 {
+    header_up Host {host}
+    header_up X-Forwarded-Proto https
+    header_up X-Forwarded-Host {host}
+    header_up X-Forwarded-For {remote}
+  }
 }

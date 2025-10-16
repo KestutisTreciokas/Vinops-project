@@ -1,0 +1,2 @@
+[METRIC] vinopsrestore-web-1 ERROR/FATAL count: 0
+[METRIC] vinopsrestore-caddy-1 ERROR/FATAL count: 0

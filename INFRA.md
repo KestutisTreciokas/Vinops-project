@@ -24,3 +24,8 @@ grep -RIn '/health' *.yml
   healthcheck:
     test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/health || exit 1"]
   ```
+
+## Region Update (2025-10-16 09:00 Europe/Warsaw)
+- Target region: **EU / Netherlands** (VPS public 72.56.67.65; private 192.168.0.4). DB: 192.168.0.5:5432 (private).
+- App ↔ DB трафик: приватная сеть RFC1918; публичный доступ к БД запрещён.
+- Деплой: docker-compose.prod.yml (+ override env).

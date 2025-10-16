@@ -1,0 +1,18 @@
+services:
+  web:
+    image: node:20-bullseye
+    working_dir: /app/frontend
+    volumes:
+      - /root/work/vinops.restore:/app:rw
+    env_file:
+      - ./.env.runtime
+    command: bash -lc "npm ci --no-audit --no-fund && npm run build && npm run start"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - vinops_net
+
+networks:
+  vinops_net:
+    driver: bridge
