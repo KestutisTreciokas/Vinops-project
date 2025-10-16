@@ -53,6 +53,15 @@ docker-compose up              # – запустить все сервисы (d
 ./scripts/smoke.sh             # – запустить smoke-тесты
 ```
 
+## Code Style
+
+**Workflow для значимых изменений кода:**
+
+1. **Локальное тестирование** — прогнать тесты, линтер, typecheck
+2. **Commit & Push** — если тесты успешны: `git commit` и `git push`
+3. **GitHub Actions** — автоматический запуск CI/CD
+4. **Merge PR** — слияние выполняется вручную автором запроса
+
 ## GitHub
 
 **Repository:** https://github.com/KestutisTreciokas/Vinops-project
