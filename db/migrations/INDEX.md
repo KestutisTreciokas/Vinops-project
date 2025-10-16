@@ -17,10 +17,14 @@
 - ✅ 0006_vin_normalized_ck_uidx.sql
 - ✅ 0007_canon_domains_columns.sql
 
-**Planned (S1 — ETL Sprint):**
-- 🔄 0008_etl_schemas.sql
-- 🔄 0009_lots_external_id.sql
-- 🔄 0010_audit_views.sql
+**Applied (S1 — ETL Sprint):**
+- ✅ 0008_etl_schemas.sql
+- ✅ 0009_lots_external_id.sql
+- ✅ 0010_audit_views.sql
+- ✅ 0011_taxonomies.sql
+- ✅ 0012_vehicles_upsert_proc.sql
+- ✅ 0013_lots_upsert_proc.sql
+- ✅ 0014_vin_validation_update.sql
 
 ---
 
@@ -216,6 +220,111 @@ GROUP BY f.file_id, f.path, f.ingested_at;
 
 ---
 
+### 0011_taxonomies.sql
+**Sprint:** S1B — ETL (Domain Normalization)
+**Purpose:** Create bilingual taxonomy lookup tables for RU/EN support
+**Dependencies:** 0010
+**Rollback:** `DROP SCHEMA IF EXISTS taxonomies CASCADE;`
+**Applied:** 2025-10-16
+
+**Changes:**
+- Created `taxonomies` schema with 10 lookup tables
+- Seeded 100+ bilingual codes (RU/EN)
+- Created `get_taxonomy_label()` helper function
+- Created `api.taxonomies_all` view for API consumption
+- Created `audit.unknown_taxonomy_values` tracking table
+
+**Taxonomy Tables:**
+- `damage_types` (18 codes)
+- `title_types` (11 codes)
+- `statuses` (7 codes)
+- `odometer_brands` (7 codes)
+- `body_styles` (9 codes)
+- `fuel_types` (8 codes)
+- `transmission_types` (4 codes)
+- `drive_types` (4 codes)
+- `colors` (14 codes)
+- `runs_drives_status` (3 codes)
+
+---
+
+### 0012_vehicles_upsert_proc.sql
+**Sprint:** S1B — ETL (Core Upsert)
+**Purpose:** Batch upsert procedure for vehicles table
+**Dependencies:** 0011
+**Rollback:** `DROP FUNCTION IF EXISTS upsert_vehicles_batch(UUID); DROP TABLE IF EXISTS audit.vehicle_conflicts;`
+**Applied:** 2025-10-16
+
+**Changes:**
+- Added columns to vehicles table (trim, color, odometer_value, odometer_unit, odometer_brand)
+- Created `upsert_vehicles_batch(UUID)` stored procedure
+- Implements VIN validation and conflict resolution with COALESCE strategy
+- Logs to `audit.etl_runs` table
+- Created `audit.vehicle_conflicts` table for tracking
+
+**Features:**
+- Batch processing from staging.copart_raw
+- DISTINCT ON VIN with latest window_start_utc
+- ON CONFLICT DO UPDATE with timestamp check
+- Returns inserted/updated/skipped counts
+
+---
+
+### 0013_lots_upsert_proc.sql
+**Sprint:** S1B — ETL (Core Upsert)
+**Purpose:** Batch upsert procedure for lots table with orphan prevention
+**Dependencies:** 0012
+**Rollback:** `DROP FUNCTION IF EXISTS upsert_lots_batch(UUID); DROP TABLE IF EXISTS audit.lot_conflicts;`
+**Applied:** 2025-10-16
+
+**Changes:**
+- Added 30+ columns to lots table (lot_external_id, source_updated_at, yard_name, etc.)
+- Created UNIQUE index on lot_external_id
+- Created `upsert_lots_batch(UUID)` stored procedure
+- Implements EXISTS check to prevent orphan lots
+- Timestamp-based conflict resolution using source_updated_at
+- Created `audit.lot_conflicts` table for tracking
+
+**Features:**
+- Prevents lots without vehicles (EXISTS check)
+- Comprehensive field mapping from Copart CSV
+- Status normalization (PURE SALE → active, SOLD → sold, etc.)
+- Currency and numeric field parsing
+
+---
+
+### 0014_vin_validation_update.sql
+**Sprint:** S1B — ETL Enhancement
+**Purpose:** Comprehensive VIN validation supporting legacy formats
+**Dependencies:** 0013
+**Rollback:** Revert CHECK constraints and function
+**Applied:** 2025-10-16
+
+**Changes:**
+- Created `is_valid_vin(TEXT)` function with comprehensive regex validation
+- Supports standard 17-character VIN (ISO 3779)
+- Supports EU Craft & Industrial Number (CIN) 14+hyphen format
+- Supports US Hull Identification Number (HIN) 12-14 characters
+- Supports legacy VIN (pre-1981) 3-17 characters
+- Updated CHECK constraints on `vehicles` table to use new function
+- Updated `upsert_vehicles_batch()` and `upsert_lots_batch()` procedures
+
+**Impact:**
+- Reduced skipped records from 625 to 11 (98.2% improvement)
+- Added 612 legacy VIN vehicles (vintage cars, trailers, equipment)
+- Final: 153,977 vehicles, 153,980 lots from run1.csv
+
+**Rollback Commands:**
+```sql
+DROP FUNCTION IF EXISTS is_valid_vin(TEXT);
+ALTER TABLE vehicles DROP CONSTRAINT IF EXISTS vehicles_vin_format_ck;
+ALTER TABLE vehicles DROP CONSTRAINT IF EXISTS vehicles_vin_normalized_format_ck;
+ALTER TABLE vehicles ADD CONSTRAINT vehicles_vin_format_ck CHECK (vin ~ '^[A-HJ-NPR-Z0-9]{11,17}$');
+ALTER TABLE vehicles ADD CONSTRAINT vehicles_vin_normalized_format_ck CHECK (vin_normalized IS NULL OR vin_normalized ~ '^[A-HJ-NPR-Z0-9]{11,17}$');
+```
+
+---
+
 ## Application Protocol
 
 **Manual Execution (S1):**
@@ -252,16 +361,22 @@ psql $DATABASE_URL -c "\dt raw.*"
 
 ## Change Log
 
-**2025-10-16 (S1 Kickoff):**
+**2025-10-16 (S1A Complete):**
 - Created INDEX.md migration registry
 - Documented 0001-0007 (applied)
 - Planned 0008-0010 for S1 ETL sprint
 
+**2025-10-16 (S1B Implementation):**
+- Applied 0011_taxonomies.sql — 10 taxonomy tables with 100+ RU/EN codes
+- Applied 0012_vehicles_upsert_proc.sql — Batch upsert procedure for vehicles
+- Applied 0013_lots_upsert_proc.sql — Batch upsert procedure for lots
+- Applied 0014_vin_validation_update.sql — Enhanced VIN validation (legacy, HIN, CIN support)
+- Tested with run1.csv: 153,977 vehicles + 153,980 lots (including 612 legacy VINs)
+
 ---
 
 **Next Steps:**
-1. Write `0008_etl_schemas.sql` DDL
-2. Write `0009_lots_external_id.sql` DDL
-3. Write `0010_audit_views.sql` DDL
-4. Test on staging database
-5. Update `_registry.json` after successful application
+1. Implement automated CSV fetching (cookie auth, 15-min scheduler)
+2. Create completion detector (PENDING_RESULT status)
+3. E2E integration testing with run2.csv
+4. S2: SSR/SEO implementation

@@ -5,6 +5,16 @@ node_modules/
 # env
 .env
 .env.*
+deploy/.env.production
+deploy/.env.runtime
+
+# secrets and certificates
+certs/*.key
+certs/*.pem
+certs/*.crt
+*.pem
+*.key
+*.crt
 
 # builds
 .next/
