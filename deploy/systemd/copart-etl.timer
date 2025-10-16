@@ -1,0 +1,20 @@
+[Unit]
+Description=Copart CSV ETL Fetcher Timer (every 15 minutes)
+Documentation=https://github.com/KestutisTreciokas/Vinops-project
+Requires=copart-etl.service
+
+[Timer]
+# Run every 15 minutes on the clock (00, 15, 30, 45 minutes past the hour)
+OnCalendar=*:00/15
+
+# Start immediately if the system was powered off during a scheduled run
+Persistent=true
+
+# Random delay up to 2 minutes to avoid exact timing (anti-bot)
+RandomizedDelaySec=120
+
+# Run timer even if service is still running (prevent)
+Unit=copart-etl.service
+
+[Install]
+WantedBy=timers.target

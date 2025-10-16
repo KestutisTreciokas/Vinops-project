@@ -1,8 +1,87 @@
-# Database Testing and Verification Scripts
+# Vinops ETL Scripts
 
-This directory contains scripts for testing and verifying the database connection.
+This directory contains ETL scripts for CSV ingestion, automated fetching, and database testing.
 
-## Available Scripts
+## ETL Scripts
+
+### 1. `fetch-copart-csv.js` - Automated CSV Fetcher (S1B MS-01)
+
+Automatically downloads Copart CSV every ~15 minutes with cookie authentication.
+
+**Usage:**
+```bash
+node scripts/fetch-copart-csv.js
+node scripts/fetch-copart-csv.js --dry-run  # Test without triggering ingestion
+```
+
+**Features:**
+- Cookie-based authentication
+- User-Agent and Referer headers (required by Copart)
+- Timestamped storage: `/var/data/vinops/raw/copart/YYYY/MM/DD/HHmm.csv`
+- Lock file to prevent concurrent runs
+- Automatic ingestion trigger on success
+- Retry logic with exponential backoff (3 attempts)
+
+**Requirements:**
+- Node.js v20+
+- `COPART_SESSION_COOKIE` environment variable (see `docs/COPART_AUTH_FLOW.md`)
+- Write access to `/var/data/vinops/raw/copart/`
+
+**Scheduling:**
+- See `deploy/systemd/README.md` for systemd timer setup (15-minute intervals)
+
+---
+
+### 2. `ingest-copart-csv.js` - CSV Ingestion Script
+
+Ingests Copart CSV file into RAW and Staging tables.
+
+**Usage:**
+```bash
+node scripts/ingest-copart-csv.js /path/to/file.csv
+```
+
+**Features:**
+- SHA256 idempotency (duplicate CSVs skipped)
+- Batch insert (1000 rows per batch)
+- Staging extraction with VIN/lot normalization
+- Audit metrics (ingest_count, unknown_rate, parse_errors)
+
+**Requirements:**
+- Node.js v20+
+- PostgreSQL connection (`DATABASE_URL` in `.env.runtime`)
+- CSV file path
+
+---
+
+### 3. `detect-completions.js` - Auction Completion Detector (S1C Phase 1)
+
+Detects auction completions by comparing consecutive CSV snapshots.
+
+**Usage:**
+```bash
+node scripts/detect-completions.js
+node scripts/detect-completions.js --grace-period=2  # Custom grace period (hours)
+node scripts/detect-completions.js --dry-run  # Preview without updating
+```
+
+**Features:**
+- CSV disappearance detection (~80% accuracy)
+- VIN reappearance detection (~95% accuracy for "not sold")
+- Marks disappeared lots as `pending_result`
+- Marks reappeared VINs as `not_sold`
+- Audit logging to `audit.completion_detections`
+
+**Requirements:**
+- Node.js v20+
+- At least 2 CSV files ingested (for comparison)
+- PostgreSQL connection
+
+**See also:** `docs/COMPLETION_DETECTOR_ANALYSIS.md`
+
+---
+
+## Database Testing Scripts
 
 ### 1. `verify-db.sh` - Shell-based Database Verification
 
