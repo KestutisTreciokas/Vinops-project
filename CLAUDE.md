@@ -10,10 +10,10 @@
 
 **Backend:**
 - Node.js >=20.14 <21
-- PostgreSQL 16 (pg 8.x client)
+- PostgreSQL 17.6 (pg 8.x client)
 
 **Database:**
-- PostgreSQL 16
+- PostgreSQL 17.6
 - SQL migrations (db/migrations/)
 
 **Infrastructure:**
