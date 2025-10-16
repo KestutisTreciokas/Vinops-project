@@ -168,7 +168,7 @@ export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
           ll.lot_id, ll.status, ll.site_code, ll.city, ll.region, ll.country, ll.auction_datetime_utc, ll.retail_value_usd,
           ll.damage_description, ll.title_type, ll.odometer, ll.odometer_brand,
           get_taxonomy_label('statuses', ll.status, $2) as status_label,
-          get_taxonomy_label('damage_types', ll.damage_description, $2) as damage_label,
+          get_taxonomy_label('damage_types', normalize_damage_code(ll.damage_description), $2) as damage_label,
           get_taxonomy_label('title_types', ll.title_type, $2) as title_label,
           get_taxonomy_label('odometer_brands', ll.odometer_brand, $2) as odometer_brand_label,
           get_taxonomy_label('body_styles', vv.body, $2) as body_label,
