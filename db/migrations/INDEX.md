@@ -24,6 +24,7 @@
 - ✅ 0011_taxonomies.sql
 - ✅ 0012_vehicles_upsert_proc.sql
 - ✅ 0013_lots_upsert_proc.sql
+- ✅ 0014_vin_validation_update.sql
 
 ---
 
@@ -219,6 +220,38 @@ GROUP BY f.file_id, f.path, f.ingested_at;
 
 ---
 
+### 0014_vin_validation_update.sql
+**Sprint:** S1B — ETL Enhancement
+**Purpose:** Comprehensive VIN validation supporting legacy formats
+**Dependencies:** 0013
+**Rollback:** Revert CHECK constraints and function
+**Applied:** 2025-10-16
+
+**Changes:**
+- Created `is_valid_vin(TEXT)` function with comprehensive regex validation
+- Supports standard 17-character VIN (ISO 3779)
+- Supports EU Craft & Industrial Number (CIN) 14+hyphen format
+- Supports US Hull Identification Number (HIN) 12-14 characters
+- Supports legacy VIN (pre-1981) 3-17 characters
+- Updated CHECK constraints on `vehicles` table to use new function
+- Updated `upsert_vehicles_batch()` and `upsert_lots_batch()` procedures
+
+**Impact:**
+- Reduced skipped records from 625 to 11 (98.2% improvement)
+- Added 612 legacy VIN vehicles (vintage cars, trailers, equipment)
+- Final: 153,977 vehicles, 153,980 lots from run1.csv
+
+**Rollback Commands:**
+```sql
+DROP FUNCTION IF EXISTS is_valid_vin(TEXT);
+ALTER TABLE vehicles DROP CONSTRAINT IF EXISTS vehicles_vin_format_ck;
+ALTER TABLE vehicles DROP CONSTRAINT IF EXISTS vehicles_vin_normalized_format_ck;
+ALTER TABLE vehicles ADD CONSTRAINT vehicles_vin_format_ck CHECK (vin ~ '^[A-HJ-NPR-Z0-9]{11,17}$');
+ALTER TABLE vehicles ADD CONSTRAINT vehicles_vin_normalized_format_ck CHECK (vin_normalized IS NULL OR vin_normalized ~ '^[A-HJ-NPR-Z0-9]{11,17}$');
+```
+
+---
+
 ## Application Protocol
 
 **Manual Execution (S1):**
@@ -264,7 +297,8 @@ psql $DATABASE_URL -c "\dt raw.*"
 - Applied 0011_taxonomies.sql — 10 taxonomy tables with 100+ RU/EN codes
 - Applied 0012_vehicles_upsert_proc.sql — Batch upsert procedure for vehicles
 - Applied 0013_lots_upsert_proc.sql — Batch upsert procedure for lots
-- Tested with run1.csv: 153,365 vehicles + 153,366 lots inserted successfully
+- Applied 0014_vin_validation_update.sql — Enhanced VIN validation (legacy, HIN, CIN support)
+- Tested with run1.csv: 153,977 vehicles + 153,980 lots (including 612 legacy VINs)
 
 ---
 
