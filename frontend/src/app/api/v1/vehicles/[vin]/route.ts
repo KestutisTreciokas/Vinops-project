@@ -145,7 +145,12 @@ export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
     const pool = await getPool()
     const client = await pool.connect()
     try {
-      // Минимальная агрегирующая выборка; детали и маппинг покрыты MS-02-01
+      // Accept-Language header for taxonomy labels
+      const acceptLang = req.headers.get('accept-language') || 'en'
+      const lang = acceptLang.split(',')[0]?.trim()?.split('-')[0]?.toLowerCase() || 'en'
+      const finalLang = (lang === 'ru' || lang === 'en') ? lang : 'en'
+
+      // Query with taxonomies integration
       const q = `
         with vv as (
           select vin, make, model, year, body, fuel, transmission, drive, engine, updated_at
@@ -153,24 +158,27 @@ export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
         ),
         ll as (
           select id as lot_id, status, site_code, city, region, country, auction_datetime_utc, retail_value_usd,
-                 runs_drives, has_keys, vin
+                 runs_drives, has_keys, vin, damage_description, title_type, odometer, odometer_brand, color
           from lots where vin = $1
           order by auction_datetime_utc desc nulls last
           limit 1
-        ),
-        ii as (
-          select lot_id, vin, seq, variant, url from images where vin = $1 order by seq asc limit 16
-        ),
-        ss as (
-          select vin, event_type, price_usd, occurred_at_utc
-          from sale_events where vin = $1 order by occurred_at_utc desc limit 10
         )
         select
           vv.vin, vv.make, vv.model, vv.year, vv.body, vv.fuel, vv.transmission, vv.drive, vv.engine, vv.updated_at,
-          ll.lot_id, ll.status, ll.site_code, ll.city, ll.region, ll.country, ll.auction_datetime_utc, ll.retail_value_usd, ll.runs_drives, ll.has_keys
+          ll.lot_id, ll.status, ll.site_code, ll.city, ll.region, ll.country, ll.auction_datetime_utc, ll.retail_value_usd, ll.runs_drives, ll.has_keys,
+          ll.damage_description, ll.title_type, ll.odometer, ll.odometer_brand, ll.color,
+          get_taxonomy_label('statuses', ll.status, $2) as status_label,
+          get_taxonomy_label('damage_types', ll.damage_description, $2) as damage_label,
+          get_taxonomy_label('title_types', ll.title_type, $2) as title_label,
+          get_taxonomy_label('odometer_brands', ll.odometer_brand, $2) as odometer_brand_label,
+          get_taxonomy_label('colors', ll.color, $2) as color_label,
+          get_taxonomy_label('body_styles', vv.body, $2) as body_label,
+          get_taxonomy_label('fuel_types', vv.fuel, $2) as fuel_label,
+          get_taxonomy_label('transmission_types', vv.transmission, $2) as transmission_label,
+          get_taxonomy_label('drive_types', vv.drive, $2) as drive_label
         from vv left join ll on ll.vin = vv.vin
       `
-      const r = await client.query(q, [raw])
+      const r = await client.query(q, [raw, finalLang])
       if (!r.rowCount) {
         return json({ error: { code: 'NOT_FOUND', message: 'VIN not found' }, traceId: trace }, {
           status: 404,
@@ -185,17 +193,28 @@ export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
 
       const dto: any = {
         vin: row.vin, year: row.year, make: row.make, model: row.model, trim: null,
-        body: row.body, fuel: row.fuel, transmission: row.transmission, drive: row.drive, engine: row.engine,
+        body: row.body, bodyLabel: row.body_label,
+        fuel: row.fuel, fuelLabel: row.fuel_label,
+        transmission: row.transmission, transmissionLabel: row.transmission_label,
+        drive: row.drive, driveLabel: row.drive_label,
+        engine: row.engine,
         currentLot: row.lot_id ? {
-          lotId: row.lot_id, status: row.status, siteCode: row.site_code, city: row.city, region: row.region, country: row.country,
+          lotId: row.lot_id,
+          status: row.status, statusLabel: row.status_label,
+          siteCode: row.site_code, city: row.city, region: row.region, country: row.country,
           auctionDateTimeUtc: row.auction_datetime_utc, estRetailValueUsd: row.retail_value_usd,
           runsDrives: row.runs_drives, hasKeys: row.has_keys,
+          damageDescription: row.damage_description, damageLabel: row.damage_label,
+          titleType: row.title_type, titleLabel: row.title_label,
+          odometer: row.odometer, odometerBrand: row.odometer_brand, odometerBrandLabel: row.odometer_brand_label,
+          color: row.color, colorLabel: row.color_label,
           primaryImageUrl: imgs.rows[0]?.url ?? null,
           imageCount: imgs.rowCount,
         } : null,
         images: imgs.rows,
         saleEvents: se.rows,
         updatedAt: row.updated_at,
+        lang: finalLang,
       }
 
       const etag = weakETagFor(dto)
