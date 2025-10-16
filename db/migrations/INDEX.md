@@ -461,10 +461,16 @@ psql $DATABASE_URL -c "\dt raw.*"
 - Created COMPLETION_DETECTOR_ANALYSIS.md with risk assessment and strategy
 - Status tracking: pending_result, not_sold, on_approval statuses added
 
+**2025-10-16 (S1B MS-01 — Automated CSV Fetching):**
+- Created scripts/fetch-copart-csv.js — Automated CSV downloader with cookie auth
+- Created deploy/systemd/copart-etl.service and copart-etl.timer for 15-min scheduling
+- Created docs/COPART_AUTH_FLOW.md — Authentication and session management documentation
+- Lock file mechanism prevents concurrent runs
+- Retry logic with exponential backoff (3 attempts)
+
 ---
 
 **Next Steps:**
-1. Implement automated CSV fetching (cookie auth, 15-min scheduler)
-2. Test completion detection with run2.csv (overlapping lots)
-3. Evaluate Phase 2 (conservative scraping) after 2-4 weeks
-4. S2: SSR/SEO implementation
+1. Deploy automated CSV fetching (cookie setup required)
+2. Monitor completion detection accuracy over 2-week period
+3. S2: SSR/SEO implementation
