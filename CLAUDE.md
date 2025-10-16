@@ -57,6 +57,20 @@ docker-compose up              # – запустить все сервисы (d
 
 **Repository:** https://github.com/KestutisTreciokas/Vinops-project
 
+### GitHub CLI Authentication
+
+**Status:** Authenticated as `KestutisTreciokas` via `gh auth login`
+
+**For automated PR creation:**
+- Token stored securely in `gh auth login` session
+- Alternative: Set `GH_TOKEN` environment variable with fine-grained PAT
+- Token location: Stored outside repository (see secrets management docs)
+
+**Usage:**
+```bash
+gh pr create --title "..." --body "..." --base main
+```
+
 ---
 
 ## REPORT — Copart CSV Access (diagnostic) — 2025-10-15
