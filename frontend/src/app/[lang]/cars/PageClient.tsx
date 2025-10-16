@@ -41,7 +41,10 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [model, setModel] = useState(sp.get('model') ?? '')
   const [yFrom, setYFrom] = useState(sp.get('yfrom') ?? '')
   const [yTo, setYTo] = useState(sp.get('yto') ?? '')
-  const [page, setPage] = useState(Number(sp.get('page') ?? '1') || 1)
+  const [displayedVehicles, setDisplayedVehicles] = useState(initialVehicles)
+  const [canLoadMore, setCanLoadMore] = useState(initialPagination.hasMore)
+  const [nextCursor, setNextCursor] = useState<string | null>(initialPagination.nextCursor)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [loadingModels, setLoadingModels] = useState(false)
   const [showMoreDropdown, setShowMoreDropdown] = useState(false)
@@ -95,50 +98,84 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
     ? [...mainTabs, { id: type, label: moreOptions.find(o => o.id === type)?.label || t(lang,'More','Еще') }]
     : [...mainTabs, { id:'more', label: t(lang,'More','Еще') }]
 
-  // Применить -> в URL
+  // Применить -> в URL (reset displayed vehicles)
   const apply = () => {
     const q = buildQuery(sp, {
       type, make, model,
       yfrom: yFrom,
       yto: yTo,
-      page: String(page),
     })
     router.replace(`${pathname}${q}` as Route)
   }
 
   // Сброс -> чистим всё, кроме type
   const reset = () => {
-    setMake(''); setModel(''); setYFrom(''); setYTo(''); setPage(1)
-    const q = buildQuery(sp, { make:'', model:'', yfrom:'', yto:'', page:'1' })
-    
-    
-    
-router.replace(`${pathname}${q}` as Route)
-  
-  
+    setMake(''); setModel(''); setYFrom(''); setYTo('')
+    const q = buildQuery(sp, { make:'', model:'', yfrom:'', yto:'' })
+    router.replace(`${pathname}${q}` as Route)
   }
 
-  // смена таба — сразу в URL (и сбрасываем страницу)
+  // смена таба — сразу в URL
   const onTab = (id:string) => {
     setType(id)
-    const q = buildQuery(sp, { type:id, page:'1' })
-    
-    
-    
-router.replace(`${pathname}${q}` as Route)
-  
-  
+    const q = buildQuery(sp, { type:id })
+    router.replace(`${pathname}${q}` as Route)
   }
 
-  // Use real data from server
-  const vehicles = initialVehicles
-  const hasMore = initialPagination.hasMore
+  // Reset displayed vehicles when filters change
+  useEffect(() => {
+    setDisplayedVehicles(initialVehicles)
+    setCanLoadMore(initialPagination.hasMore)
+    setNextCursor(initialPagination.nextCursor)
+  }, [initialVehicles, initialPagination.hasMore, initialPagination.nextCursor])
 
-  const goto = (p:number) => {
-    const next = Math.max(1, p)
-    setPage(next)
-    const q = buildQuery(sp, { page:String(next) })
-    router.replace(`${pathname}${q}` as Route)
+  // Load more functionality with cursor-based pagination
+  const loadMore = async () => {
+    if (isLoadingMore || !canLoadMore || !nextCursor) return
+
+    setIsLoadingMore(true)
+    try {
+      const params = new URLSearchParams()
+      if (make) params.set('make', make)
+      if (model) params.set('model', model)
+      if (yFrom) params.set('year_min', yFrom)
+      if (yTo) params.set('year_max', yTo)
+      params.set('status', 'active')
+      params.set('lang', lang)
+      params.set('sort', 'auction_date_asc')
+      params.set('limit', '20')
+      params.set('cursor', nextCursor)
+
+      const response = await fetch(`/api/v1/search?${params}`)
+      const data = await response.json()
+
+      if (data.items && data.items.length > 0) {
+        // Transform API response to VehicleLite format
+        const newVehicles = data.items.map((item: any) => ({
+          vin: item.vin,
+          year: item.year || 0,
+          make: item.make || '',
+          model: item.model || '',
+          damage: item.damageLabel || item.damageDescription || 'Unknown',
+          title: item.titleLabel || item.titleType || 'Unknown',
+          location: [item.city, item.region, item.country].filter(Boolean).join(', ') || 'Unknown',
+          status: (item.status === 'active' ? 'ACTIVE' : 'SOLD') as 'ACTIVE' | 'SOLD',
+          price: item.estRetailValueUsd ? `$${item.estRetailValueUsd.toLocaleString()}` : 'N/A',
+        }))
+
+        setDisplayedVehicles(prev => [...prev, ...newVehicles])
+        setCanLoadMore(data.pagination?.hasMore || false)
+        setNextCursor(data.pagination?.nextCursor || null)
+      } else {
+        setCanLoadMore(false)
+        setNextCursor(null)
+      }
+    } catch (error) {
+      console.error('Failed to load more vehicles:', error)
+      setCanLoadMore(false)
+    } finally {
+      setIsLoadingMore(false)
+    }
   }
 
   return (
@@ -238,21 +275,33 @@ router.replace(`${pathname}${q}` as Route)
 
       <section className="container mt-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {vehicles.map((v,idx)=>(<VehicleCard key={v.vin || idx} v={v} lang={lang}/>))}
+          {displayedVehicles.map((v,idx)=>(<VehicleCard key={v.vin || idx} v={v} lang={lang}/>))}
         </div>
 
-        {vehicles.length === 0 && (
+        {displayedVehicles.length === 0 && (
           <div className="text-center py-12 text-fg-muted">
             {t(lang, 'No vehicles found. Try adjusting your filters.', 'Автомобили не найдены. Попробуйте изменить фильтры.')}
           </div>
         )}
 
-        {vehicles.length > 0 && (
-          <nav className="pager">
-            <button className="pager-btn" onClick={()=>goto(page-1)} disabled={page===1}>{t(lang,'Prev','Назад')}</button>
-            <span className="pager-info">{t(lang,`Page ${page}`,`Страница ${page}`)}</span>
-            <button className="pager-btn" onClick={()=>goto(page+1)} disabled={!hasMore}>{t(lang,'Next','Вперед')}</button>
-          </nav>
+        {displayedVehicles.length > 0 && canLoadMore && (
+          <div className="flex justify-center mt-8">
+            <button
+              className="btn btn-primary px-8"
+              onClick={loadMore}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore
+                ? t(lang, 'Loading...', 'Загрузка...')
+                : t(lang, 'Load more', 'Загрузить ещё')}
+            </button>
+          </div>
+        )}
+
+        {displayedVehicles.length > 0 && !canLoadMore && (
+          <div className="text-center py-8 text-fg-muted text-sm">
+            {t(lang, 'All vehicles loaded', 'Все автомобили загружены')}
+          </div>
         )}
       </section>
     </main>
