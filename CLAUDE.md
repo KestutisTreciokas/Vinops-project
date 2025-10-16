@@ -82,6 +82,51 @@ gh pr create --title "..." --body "..." --base main
 
 ---
 
+## S1 ETL Sprint — CSV→PostgreSQL Pipeline
+
+**Status:** ✅ **COMPLETE** — Ready for production deployment
+**Date:** 2025-10-16
+**Scope:** RAW→Staging ingestion pipeline for Copart CSV data
+
+### Key Achievements
+
+- ✅ **153,991 rows ingested** from run1.csv sample (zero errors)
+- ✅ **Complete RAW→Staging pipeline** operational
+- ✅ **Audit metrics validated** (unknown_rate 0.01%, parse_errors 0)
+- ✅ **Idempotence confirmed** (SHA256 duplicate prevention)
+- ✅ **13 documentation files** + 3 database migrations delivered
+
+### Documentation
+
+- **Production Deployment:** `docs/PRODUCTION_HANDOFF.md` — Comprehensive deployment guide, monitoring queries, rollback procedures
+- **Implementation Summary:** `docs/S1_IMPLEMENTATION_SUMMARY.md` — Test results and acceptance criteria
+- **Database Architecture:** `docs/DB_PASSPORT.md` — Schema documentation and credentials
+- **ETL Protocol:** `docs/ETL_RAW_STAGING.md` — Intake pipeline documentation
+- **Migrations:** `db/migrations/INDEX.md` — Migration registry (0008-0010 for S1)
+
+### Usage
+
+**Ingest Copart CSV file:**
+```bash
+node scripts/ingest-copart-csv.js /var/data/vinops/raw/copart/YYYY/MM/DD/HHmm.csv
+```
+
+**Verify ingestion metrics:**
+```sql
+SELECT * FROM audit.v_ingest_count;
+SELECT * FROM audit.v_unknown_rate;
+SELECT * FROM audit.v_parse_errors;
+```
+
+### Next Steps (S2 Scope)
+
+- Core upsert implementation (staging → public.lots)
+- VIN conflict handling with audit logging
+- Database role split (gen_user → etl_rw + app_ro)
+- Automated CSV fetching
+
+---
+
 ## REPORT — Copart CSV Access (diagnostic) — 2025-10-15
 
 - **Generated:** 2025-10-15 08:57 Europe/Warsaw
