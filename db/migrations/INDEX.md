@@ -17,10 +17,13 @@
 - ✅ 0006_vin_normalized_ck_uidx.sql
 - ✅ 0007_canon_domains_columns.sql
 
-**Planned (S1 — ETL Sprint):**
-- 🔄 0008_etl_schemas.sql
-- 🔄 0009_lots_external_id.sql
-- 🔄 0010_audit_views.sql
+**Applied (S1 — ETL Sprint):**
+- ✅ 0008_etl_schemas.sql
+- ✅ 0009_lots_external_id.sql
+- ✅ 0010_audit_views.sql
+- ✅ 0011_taxonomies.sql
+- ✅ 0012_vehicles_upsert_proc.sql
+- ✅ 0013_lots_upsert_proc.sql
 
 ---
 
@@ -252,16 +255,21 @@ psql $DATABASE_URL -c "\dt raw.*"
 
 ## Change Log
 
-**2025-10-16 (S1 Kickoff):**
+**2025-10-16 (S1A Complete):**
 - Created INDEX.md migration registry
 - Documented 0001-0007 (applied)
 - Planned 0008-0010 for S1 ETL sprint
 
+**2025-10-16 (S1B Implementation):**
+- Applied 0011_taxonomies.sql — 10 taxonomy tables with 100+ RU/EN codes
+- Applied 0012_vehicles_upsert_proc.sql — Batch upsert procedure for vehicles
+- Applied 0013_lots_upsert_proc.sql — Batch upsert procedure for lots
+- Tested with run1.csv: 153,365 vehicles + 153,366 lots inserted successfully
+
 ---
 
 **Next Steps:**
-1. Write `0008_etl_schemas.sql` DDL
-2. Write `0009_lots_external_id.sql` DDL
-3. Write `0010_audit_views.sql` DDL
-4. Test on staging database
-5. Update `_registry.json` after successful application
+1. Implement automated CSV fetching (cookie auth, 15-min scheduler)
+2. Create completion detector (PENDING_RESULT status)
+3. E2E integration testing with run2.csv
+4. S2: SSR/SEO implementation
