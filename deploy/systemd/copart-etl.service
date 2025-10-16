@@ -1,0 +1,39 @@
+[Unit]
+Description=Copart CSV ETL Fetcher
+Documentation=https://github.com/KestutisTreciokas/Vinops-project
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/Vinops-project
+EnvironmentFile=/root/Vinops-project/deploy/.env.runtime
+
+# Main fetch command
+ExecStart=/usr/bin/node /root/Vinops-project/scripts/fetch-copart-csv.js
+
+# Timeout after 10 minutes (CSV download + ingestion should complete faster)
+TimeoutStartSec=600
+
+# Restart policy: Don't restart on failure (systemd timer will retry on next schedule)
+Restart=no
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=copart-etl
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=no
+ReadWritePaths=/var/data/vinops/raw /var/run
+
+# Resource limits
+MemoryLimit=2G
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target
