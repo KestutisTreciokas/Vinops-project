@@ -17,7 +17,6 @@ const MAKES = [
   'BMW', 'VOLKSWAGEN', 'RAM', 'AUDI', 'MERCEDES-BENZ'
 ]
 const MODELS: Record<string,string[]> = {}
-const GENERATIONS = ['All','I','II','III']
 const YEARS = Array.from({length: 30}).map((_,i)=> String(2025 - i))
 
 interface CatalogPageProps {
@@ -40,76 +39,145 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [type, setType] = useState(sp.get('type') ?? 'auto')
   const [make, setMake] = useState(sp.get('make') ?? '')
   const [model, setModel] = useState(sp.get('model') ?? '')
-  const [gen, setGen] = useState(sp.get('gen') ?? '')
   const [yFrom, setYFrom] = useState(sp.get('yfrom') ?? '')
   const [yTo, setYTo] = useState(sp.get('yto') ?? '')
-  const [page, setPage] = useState(Number(sp.get('page') ?? '1') || 1)
+  const [displayedVehicles, setDisplayedVehicles] = useState(initialVehicles)
+  const [canLoadMore, setCanLoadMore] = useState(initialPagination.hasMore)
+  const [nextCursor, setNextCursor] = useState<string | null>(initialPagination.nextCursor)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const [loadingModels, setLoadingModels] = useState(false)
+  const [showMoreDropdown, setShowMoreDropdown] = useState(false)
 
-  // если make сменился — сбрасываем model, если её нет среди опций
+  // Fetch models when make changes
   useEffect(()=>{
-    if (!make) { setModel(''); return }
-    const list = MODELS[make] || []
-    if (model && !list.includes(model)) setModel('')
+    if (!make) {
+      setAvailableModels([])
+      setModel('')
+      return
+    }
+
+    setLoadingModels(true)
+    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}`)
+      .then(res => res.json())
+      .then(data => {
+        setAvailableModels(data.models || [])
+        // Reset model if it's not in the new list
+        if (model && data.models && !data.models.includes(model)) {
+          setModel('')
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch models:', err)
+        setAvailableModels([])
+      })
+      .finally(() => setLoadingModels(false))
   },[make])
 
-  // табы
-  const tabs = useMemo(()=>[
+  // табы - основные
+  const mainTabs = useMemo(()=>[
     { id:'auto', label: t(lang,'Auto','Авто') },
     { id:'moto', label: t(lang,'Moto','Мото') },
     { id:'atv',  label: 'ATV' },
-    { id:'more', label: t(lang,'More','Еще') },
   ],[lang])
 
-  // Применить -> в URL
+  // More dropdown options
+  const moreOptions = useMemo(()=>[
+    { id:'dirt_bikes', label: t(lang,'Dirt Bikes','Эндуро') },
+    { id:'bus', label: t(lang,'Bus','Автобусы') },
+    { id:'pickup', label: t(lang,'Pickup Trucks','Пикапы') },
+    { id:'rv', label: t(lang,'RVs','Дома на колесах') },
+    { id:'trailer', label: t(lang,'Trailers','Трейлеры') },
+    { id:'boat', label: t(lang,'Boats','Лодки') },
+    { id:'jet_ski', label: t(lang,'Jet Skis','Гидроциклы') },
+    { id:'snowmobile', label: t(lang,'Snowmobile','Снегоходы') },
+  ],[lang])
+
+  const isMoreType = !['auto', 'moto', 'atv'].includes(type)
+  const tabs = isMoreType
+    ? [...mainTabs, { id: type, label: moreOptions.find(o => o.id === type)?.label || t(lang,'More','Еще') }]
+    : [...mainTabs, { id:'more', label: t(lang,'More','Еще') }]
+
+  // Применить -> в URL (reset displayed vehicles)
   const apply = () => {
     const q = buildQuery(sp, {
       type, make, model,
-      gen,
       yfrom: yFrom,
       yto: yTo,
-      page: String(page),
     })
-    
-    
-    
-router.replace(`${pathname}${q}` as Route)
-  
-  
+    router.replace(`${pathname}${q}` as Route)
   }
 
   // Сброс -> чистим всё, кроме type
   const reset = () => {
-    setMake(''); setModel(''); setGen(''); setYFrom(''); setYTo(''); setPage(1)
-    const q = buildQuery(sp, { make:'', model:'', gen:'', yfrom:'', yto:'', page:'1' })
-    
-    
-    
-router.replace(`${pathname}${q}` as Route)
-  
-  
+    setMake(''); setModel(''); setYFrom(''); setYTo('')
+    const q = buildQuery(sp, { make:'', model:'', yfrom:'', yto:'' })
+    router.replace(`${pathname}${q}` as Route)
   }
 
-  // смена таба — сразу в URL (и сбрасываем страницу)
+  // смена таба — сразу в URL
   const onTab = (id:string) => {
     setType(id)
-    const q = buildQuery(sp, { type:id, page:'1' })
-    
-    
-    
-router.replace(`${pathname}${q}` as Route)
-  
-  
+    const q = buildQuery(sp, { type:id })
+    router.replace(`${pathname}${q}` as Route)
   }
 
-  // Use real data from server
-  const vehicles = initialVehicles
-  const hasMore = initialPagination.hasMore
+  // Reset displayed vehicles when filters change
+  useEffect(() => {
+    setDisplayedVehicles(initialVehicles)
+    setCanLoadMore(initialPagination.hasMore)
+    setNextCursor(initialPagination.nextCursor)
+  }, [initialVehicles, initialPagination.hasMore, initialPagination.nextCursor])
 
-  const goto = (p:number) => {
-    const next = Math.max(1, p)
-    setPage(next)
-    const q = buildQuery(sp, { page:String(next) })
-    router.replace(`${pathname}${q}` as Route)
+  // Load more functionality with cursor-based pagination
+  const loadMore = async () => {
+    if (isLoadingMore || !canLoadMore || !nextCursor) return
+
+    setIsLoadingMore(true)
+    try {
+      const params = new URLSearchParams()
+      if (make) params.set('make', make)
+      if (model) params.set('model', model)
+      if (yFrom) params.set('year_min', yFrom)
+      if (yTo) params.set('year_max', yTo)
+      params.set('status', 'active')
+      params.set('lang', lang)
+      params.set('sort', 'auction_date_asc')
+      params.set('limit', '20')
+      params.set('cursor', nextCursor)
+
+      const response = await fetch(`/api/v1/search?${params}`)
+      const data = await response.json()
+
+      if (data.items && data.items.length > 0) {
+        // Transform API response to VehicleLite format
+        const newVehicles = data.items.map((item: any) => ({
+          vin: item.vin,
+          year: item.year || 0,
+          make: item.make || '',
+          model: item.model || '',
+          damage: item.damageLabel || item.damageDescription || 'Unknown',
+          title: item.titleLabel || item.titleType || 'Unknown',
+          location: [item.city, item.region, item.country].filter(Boolean).join(', ') || 'Unknown',
+          status: item.status || 'unknown',
+          statusLabel: item.statusLabel,
+          estMin: item.estRetailValueUsd,
+          estMax: item.estRetailValueUsd,
+        }))
+
+        setDisplayedVehicles(prev => [...prev, ...newVehicles])
+        setCanLoadMore(data.pagination?.hasMore || false)
+        setNextCursor(data.pagination?.nextCursor || null)
+      } else {
+        setCanLoadMore(false)
+        setNextCursor(null)
+      }
+    } catch (error) {
+      console.error('Failed to load more vehicles:', error)
+      setCanLoadMore(false)
+    } finally {
+      setIsLoadingMore(false)
+    }
   }
 
   return (
@@ -125,7 +193,42 @@ router.replace(`${pathname}${q}` as Route)
       {/* sticky */}
       <div className="filters-sticky">
         <section className="container">
-          <PillTabs items={tabs} value={type} onChange={onTab} className="mb-3" />
+          <div className="mb-3 flex items-center gap-2">
+            <PillTabs items={mainTabs} value={type} onChange={onTab} />
+            <div className="relative">
+              <button
+                className={`pill ${isMoreType ? 'pill-active' : ''}`}
+                onClick={() => {
+                  if (isMoreType) {
+                    onTab('auto')
+                  } else {
+                    setShowMoreDropdown(!showMoreDropdown)
+                  }
+                }}
+              >
+                {isMoreType
+                  ? (moreOptions.find(o => o.id === type)?.label || t(lang,'More','Еще'))
+                  : t(lang,'More','Еще')}
+                <ChevronDown className="inline ml-1 w-4 h-4" />
+              </button>
+              {showMoreDropdown && !isMoreType && (
+                <div className="absolute top-full mt-1 left-0 bg-bg-canvas border border-border-muted rounded-lg shadow-lg z-10 min-w-[180px]">
+                  {moreOptions.map(opt => (
+                    <button
+                      key={opt.id}
+                      className="block w-full text-left px-4 py-2 hover:bg-bg-muted text-sm"
+                      onClick={() => {
+                        onTab(opt.id)
+                        setShowMoreDropdown(false)
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="filters-bar">
             <div className="select-wrap">
               <select className="select" value={make} onChange={e=>setMake(e.target.value)}>
@@ -135,16 +238,18 @@ router.replace(`${pathname}${q}` as Route)
               <span className="chev"><ChevronDown/></span>
             </div>
             <div className="select-wrap">
-              <select className="select" value={model} onChange={e=>setModel(e.target.value)}>
-                <option value="">{t(lang,'All models','Все модели')}</option>
-                {(MODELS[make]||[]).map(m=><option key={m} value={m}>{m}</option>)}
-              </select>
-              <span className="chev"><ChevronDown/></span>
-            </div>
-            <div className="select-wrap">
-              <select className="select" value={gen} onChange={e=>setGen(e.target.value)}>
-                <option value="">{t(lang,'All generations','Все поколения')}</option>
-                {GENERATIONS.map(g=><option key={g} value={g}>{g}</option>)}
+              <select
+                className="select"
+                value={model}
+                onChange={e=>setModel(e.target.value)}
+                disabled={!make || loadingModels}
+              >
+                <option value="">
+                  {loadingModels
+                    ? t(lang,'Loading...','Загрузка...')
+                    : t(lang,'All models','Все модели')}
+                </option>
+                {availableModels.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
               <span className="chev"><ChevronDown/></span>
             </div>
@@ -172,21 +277,33 @@ router.replace(`${pathname}${q}` as Route)
 
       <section className="container mt-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {vehicles.map((v,idx)=>(<VehicleCard key={v.vin || idx} v={v}/>))}
+          {displayedVehicles.map((v,idx)=>(<VehicleCard key={v.vin || idx} v={v} lang={lang}/>))}
         </div>
 
-        {vehicles.length === 0 && (
+        {displayedVehicles.length === 0 && (
           <div className="text-center py-12 text-fg-muted">
             {t(lang, 'No vehicles found. Try adjusting your filters.', 'Автомобили не найдены. Попробуйте изменить фильтры.')}
           </div>
         )}
 
-        {vehicles.length > 0 && (
-          <nav className="pager">
-            <button className="pager-btn" onClick={()=>goto(page-1)} disabled={page===1}>{t(lang,'Prev','Назад')}</button>
-            <span className="pager-info">{t(lang,`Page ${page}`,`Страница ${page}`)}</span>
-            <button className="pager-btn" onClick={()=>goto(page+1)} disabled={!hasMore}>{t(lang,'Next','Вперед')}</button>
-          </nav>
+        {displayedVehicles.length > 0 && canLoadMore && (
+          <div className="flex justify-center mt-8">
+            <button
+              className="btn btn-primary px-8"
+              onClick={loadMore}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore
+                ? t(lang, 'Loading...', 'Загрузка...')
+                : t(lang, 'Load more', 'Загрузить ещё')}
+            </button>
+          </div>
+        )}
+
+        {displayedVehicles.length > 0 && !canLoadMore && (
+          <div className="text-center py-8 text-fg-muted text-sm">
+            {t(lang, 'All vehicles loaded', 'Все автомобили загружены')}
+          </div>
         )}
       </section>
     </main>

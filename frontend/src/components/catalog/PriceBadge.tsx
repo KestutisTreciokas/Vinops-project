@@ -51,50 +51,84 @@ export default function PriceBadge({
   const estMax = num(item?.estMax ?? item?.estimateMax ?? item?.est?.max)
 
   let text = ''
-  let tone: 'tone-violet'|'tone-green'|'tone-blue'|'tone-amber'|'tone-neutral'|'tone-gray' = 'tone-neutral'
+  let tone: 'tone-violet'|'tone-green'|'tone-blue'|'tone-amber'|'tone-neutral'|'tone-gray'|'tone-red' = 'tone-neutral'
   let show = true
+  let icon = ''
 
+  // Priority 1: SOLD (with final price if available)
   if (status==='sold'){
+    icon = '✓'
     if (finalBid!=null){
-      text = nfUsd(finalBid,lang)
+      text = `${icon} ${nfUsd(finalBid,lang)}`
     }else{
-      text = (lang==='ru') ? 'Продано' : 'Sold'
+      text = (lang==='ru') ? `${icon} Продано` : `${icon} Sold`
     }
     tone = 'tone-violet'
   }
-  else if (status==='active'){
-    if (buyNow!=null){
-      text = (lang==='ru') ? `Купить ${nfUsd(buyNow,lang)}` : `Buy ${nfUsd(buyNow,lang)}`
-      tone = 'tone-green'
-    } else if (currentBid!=null){
-      text = (lang==='ru') ? `Ставка ${nfUsd(currentBid,lang)}` : `Bid ${nfUsd(currentBid,lang)}`
-      tone = 'tone-blue'
-    } else if (estMin!=null || estMax!=null){
-      text = usdRange(estMin,estMax,lang)
-      tone = 'tone-neutral'
-    } else {
-      text = (lang==='ru') ? 'Идут торги' : 'Active'
-      tone = 'tone-blue'
-    }
+  // Priority 2: ON APPROVAL / PENDING RESULT (awaiting final decision)
+  else if (status==='pending_result' || status==='on_approval' || status==='approval'){
+    icon = '⏳'
+    text = (lang==='ru') ? `${icon} На утверждении` : `${icon} On Approval`
+    tone = 'tone-amber'
   }
-  else if (status==='upcoming'){
-    if (startingBid!=null){
-      text = (lang==='ru') ? `От ${nfUsd(startingBid,lang)}` : `From ${nfUsd(startingBid,lang)}`
-      tone = 'tone-amber'
-    } else if (estMin!=null || estMax!=null){
-      text = usdRange(estMin,estMax,lang)
-      tone = 'tone-neutral'
-    } else {
-      text = (lang==='ru') ? 'Скоро' : 'Upcoming'
-      tone = 'tone-amber'
-    }
-  }
-  else if (status==='cancelled' || status==='withdrawn'){
-    text = (lang==='ru') ? 'Отменён' : 'Cancelled'
+  // Priority 3: NOT SOLD (auction ended but didn't sell)
+  else if (status==='not_sold' || status==='unsold' || status==='no_sale'){
+    icon = '✗'
+    text = (lang==='ru') ? `${icon} Не продано` : `${icon} Not Sold`
     tone = 'tone-gray'
   }
+  // Priority 4: CANCELLED / WITHDRAWN
+  else if (status==='cancelled' || status==='withdrawn'){
+    icon = '⊘'
+    text = (lang==='ru') ? `${icon} Отменён` : `${icon} Cancelled`
+    tone = 'tone-gray'
+  }
+  // Priority 5: LIVE NOW / ACTIVE (with BUY IT NOW option first)
+  else if (status==='active' || status==='live'){
+    if (buyNow!=null){
+      icon = '⚡'
+      text = (lang==='ru') ? `${icon} Купить ${nfUsd(buyNow,lang)}` : `${icon} Buy Now ${nfUsd(buyNow,lang)}`
+      tone = 'tone-green'
+    } else if (currentBid!=null){
+      icon = '🔴'
+      text = (lang==='ru') ? `${icon} Ставка ${nfUsd(currentBid,lang)}` : `${icon} Bid ${nfUsd(currentBid,lang)}`
+      tone = 'tone-blue'
+    } else if (estMin!=null || estMax!=null){
+      icon = '🔴'
+      text = `${icon} ${usdRange(estMin,estMax,lang)}`
+      tone = 'tone-blue'
+    } else {
+      icon = '🔴'
+      text = (lang==='ru') ? `${icon} Идут торги` : `${icon} Live Now`
+      tone = 'tone-blue'
+    }
+  }
+  // Priority 6: OPEN / PRE-BID (accepting pre-bids before live auction)
+  else if (status==='open' || status==='pre_bid' || status==='prebid'){
+    icon = '📝'
+    if (startingBid!=null){
+      text = (lang==='ru') ? `${icon} От ${nfUsd(startingBid,lang)}` : `${icon} From ${nfUsd(startingBid,lang)}`
+    } else if (estMin!=null || estMax!=null){
+      text = `${icon} ${usdRange(estMin,estMax,lang)}`
+    } else {
+      text = (lang==='ru') ? `${icon} Приём ставок` : `${icon} Pre-Bid`
+    }
+    tone = 'tone-blue'
+  }
+  // Priority 7: UPCOMING (scheduled but not yet started)
+  else if (status==='upcoming' || status==='scheduled'){
+    icon = '📅'
+    if (startingBid!=null){
+      text = (lang==='ru') ? `${icon} От ${nfUsd(startingBid,lang)}` : `${icon} From ${nfUsd(startingBid,lang)}`
+    } else if (estMin!=null || estMax!=null){
+      text = `${icon} ${usdRange(estMin,estMax,lang)}`
+    } else {
+      text = (lang==='ru') ? `${icon} Скоро` : `${icon} Upcoming`
+    }
+    tone = 'tone-amber'
+  }
   else {
-    // «прочее» — можно скрыть, если хочется «чистую» карточку
+    // Unknown status - hide badge
     show = false
   }
 

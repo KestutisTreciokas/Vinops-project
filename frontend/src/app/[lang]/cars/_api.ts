@@ -5,13 +5,14 @@
 
 import type { SearchResponse, SearchQueryParams } from '@/contracts/types/api-v1'
 import { getPool } from '../../api/_lib/db'
+import { getVehicleTypeFilter, type VehicleType } from '@/lib/vehicleTypes'
 
 /**
  * Fetch vehicles directly from database (server-side only)
  * Bypasses HTTP to avoid SSR self-connection issues
  */
 export async function fetchVehicles(
-  params: SearchQueryParams
+  params: SearchQueryParams & { vehicleType?: VehicleType }
 ): Promise<SearchResponse | null> {
   try {
     const pool = await getPool()
@@ -26,6 +27,14 @@ export async function fetchVehicles(
       const conditions: string[] = []
       const values: any[] = []
       let paramIndex = 1
+
+      // Add vehicle type filter
+      if (params.vehicleType) {
+        const bodyTypesIn = getVehicleTypeFilter(params.vehicleType)
+        if (bodyTypesIn) {
+          conditions.push(`v.body IN (${bodyTypesIn})`)
+        }
+      }
 
       if (params.make) {
         conditions.push(`v.make = $${paramIndex++}`)
@@ -158,7 +167,9 @@ export function transformVehicles(response: SearchResponse) {
     damage: item.damageLabel || item.damageDescription || 'Unknown',
     title: item.titleLabel || item.titleType || 'Unknown',
     location: [item.city, item.region, item.country].filter(Boolean).join(', ') || 'Unknown',
-    status: (item.status === 'active' ? 'ACTIVE' : 'SOLD') as 'ACTIVE' | 'SOLD',
-    price: item.estRetailValueUsd ? `$${item.estRetailValueUsd.toLocaleString()}` : 'N/A',
+    status: item.status || 'unknown',
+    statusLabel: item.statusLabel || undefined,
+    estMin: item.estRetailValueUsd || undefined,
+    estMax: item.estRetailValueUsd || undefined,
   }))
 }

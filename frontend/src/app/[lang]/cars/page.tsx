@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import PageClient from './PageClient'
 import { fetchVehicles, transformVehicles } from './_api'
 
+import { type VehicleType } from '@/lib/vehicleTypes'
+
 export default async function Page({
   params,
   searchParams
@@ -13,6 +15,7 @@ export default async function Page({
   const lang = params.lang
 
   // Extract search parameters
+  const type = (typeof searchParams.type === 'string' ? searchParams.type : 'auto') as VehicleType
   const make = typeof searchParams.make === 'string' ? searchParams.make : undefined
   const model = typeof searchParams.model === 'string' ? searchParams.model : undefined
   const yearMin = searchParams.yfrom ? Number(searchParams.yfrom) : undefined
@@ -21,6 +24,7 @@ export default async function Page({
 
   // Fetch vehicles from API
   const response = await fetchVehicles({
+    vehicleType: type,
     make,
     model,
     year_min: yearMin,

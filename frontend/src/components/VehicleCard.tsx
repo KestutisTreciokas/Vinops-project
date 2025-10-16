@@ -1,4 +1,6 @@
+import Link from 'next/link'
 import PriceBadge from '@/components/catalog/PriceBadge'
+
 export type VehicleLite = {
   year: number
   make: string
@@ -8,29 +10,37 @@ export type VehicleLite = {
   location: string
   vin: string
   image?: string | null
-  status?: 'ACTIVE' | 'SOLD'
-  price?: string | null   // форматируем заранее, чтобы не тянуть Intl
+  status?: string
+  statusLabel?: string
+  estMin?: number
+  estMax?: number
+  finalBid?: number
+  buyNow?: number
+  currentBid?: number
+  startingBid?: number
 }
 
-const shortVin = (vin:string) => (vin.length>10 ? `${vin.slice(0,8)}…${vin.slice(-4)}` : vin)
+interface VehicleCardProps {
+  v: VehicleLite
+  lang?: 'en' | 'ru'
+}
 
-export default function VehicleCard({v}:{v:VehicleLite}) {
-  const statusClass = v.status === 'SOLD' ? 'badge badge-sold' : v.status === 'ACTIVE' ? 'badge badge-live' : 'badge'
-  const statusLabel = v.status === 'SOLD' ? 'Sold' : v.status === 'ACTIVE' ? 'Active' : ''
+export default function VehicleCard({ v, lang = 'en' }: VehicleCardProps) {
+  const vinPageUrl = `/${lang}/vin/${v.vin}` as `/en/vin/${string}` | `/ru/vin/${string}`
 
   return (
-    <article className="vehicle-card">
-      <div className="vimgwrap">
-        {/* сюда позже придёт <Image src=.../> */}
-        <div className="vimg" />
-        {statusLabel ? <span className={statusClass}>{statusLabel}</span> : null}
-        {v.price ? <span data-price className="price-chip">{v.price}</span> : null}
-      </div>
-      <div className="vbody">
-        <div className="vtitle">{v.year} {v.make} {v.model}</div>
-        <div className="vmeta">{v.damage} • {v.title} • {v.location}</div>
-        <div className="vvin">VIN {shortVin(v.vin)}</div>
-      </div>
-    </article>
+    <Link href={vinPageUrl} className="vehicle-card-link">
+      <article className="vehicle-card">
+        <div className="vimgwrap">
+          <div className="vimg" />
+          <PriceBadge item={v} lang={lang} className="card-price-badge" />
+        </div>
+        <div className="vbody">
+          <div className="vtitle">{v.year} {v.make} {v.model}</div>
+          <div className="vmeta">{v.damage} • {v.title} • {v.location}</div>
+          <div className="vvin">VIN {v.vin}</div>
+        </div>
+      </article>
+    </Link>
   )
 }

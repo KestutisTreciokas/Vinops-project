@@ -2,6 +2,7 @@
 import FeaturesSSR from './_home/FeaturesSSR';
 import { useState } from 'react'
 import Script from 'next/script'
+import { normalizeVin, isValidVin, getVinErrorMessage } from '@/lib/vinValidation'
 
 export default function Home({ params }: { params: { lang: 'en' | 'ru' } }) {
   const { lang } = params as { lang: "en" | "ru" };
@@ -10,11 +11,13 @@ export default function Home({ params }: { params: { lang: 'en' | 'ru' } }) {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const normalized = vin.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
-    if (normalized.length !== 17) {
-      alert(t('VIN must be 17 characters', 'VIN должен быть 17 символов'))
+    const normalized = normalizeVin(vin)
+
+    if (!isValidVin(normalized)) {
+      alert(getVinErrorMessage(vin, lang))
       return
     }
+
     window.location.href = `/${lang}/vin/${normalized}`
   }
 
@@ -39,8 +42,8 @@ export default function Home({ params }: { params: { lang: 'en' | 'ru' } }) {
         </h1>
         <p className="lead mb-6">
           {t(
-            'Enter a 17-character VIN to view photos and auction history.',
-            'Введите 17-значный VIN, чтобы увидеть фото и историю продаж.'
+            'Enter a VIN (11-17 characters) to view photos and auction history.',
+            'Введите VIN (11-17 символов), чтобы увидеть фото и историю продаж.'
           )}
         </p>
 
