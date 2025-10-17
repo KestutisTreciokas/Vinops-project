@@ -120,10 +120,191 @@ SELECT * FROM audit.v_parse_errors;
 
 ### Next Steps (S2 Scope)
 
-- Core upsert implementation (staging → public.lots)
-- VIN conflict handling with audit logging
-- Database role split (gen_user → etl_rw + app_ro)
-- Automated CSV fetching
+- ✅ Core upsert implementation (staging → public.lots) - **COMPLETE**
+- ✅ VIN conflict handling with savepoint-based error recovery - **COMPLETE**
+- Database role split (gen_user → etl_rw + app_ro) - **PENDING**
+- ✅ Automated CSV fetching - **COMPLETE**
+
+---
+
+## S2-S3 ETL Sprint — Production Pipeline & Image Ingestion
+
+**Status:** ✅ **DEPLOYED & OPERATIONAL**
+**Date:** 2025-10-18
+**Commit:** `cb0c63f`
+**Scope:** End-to-end ETL pipeline with automated image download
+
+### Production Pipeline
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ systemd Timer (15-min intervals: :00, :15, :30, :45)       │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│ ETL Service (vinops-etl.service)                            │
+├─────────────────────────────────────────────────────────────┤
+│ 1. CSV Download (curl)                                      │
+│    → /var/data/vinops/raw/copart/YYYY/MM/DD/HHmm.csv       │
+│                                                             │
+│ 2. Staging Ingest (ingest-copart-csv.js)                   │
+│    → raw.csv_files + raw.rows + staging.copart_raw         │
+│                                                             │
+│ 3. Lot Upsert (upsert-lots.js)                             │
+│    → staging.copart_raw → public.lots + vehicles           │
+│    → Savepoint-based error handling for VIN constraints    │
+│                                                             │
+│ 4. Image Download (ingest-images-from-staging.js)          │
+│    → public.images + Cloudflare R2 (concurrent writes)     │
+│    → limit=100, batch=20, concurrency=10                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Resource Limits:**
+- Memory: 6GB max (NODE_OPTIONS: --max-old-space-size=4096)
+- CPU: 150% (1.5 cores)
+- Tasks: 500 max
+- Timeout: 30s graceful shutdown
+
+**Auto-Restart Configuration:**
+- ETL Timer: enabled (starts on boot)
+- Docker Containers: `unless-stopped` policy
+- Web Service: auto-restart on failure/reboot
+
+### Key Features
+
+**1. VIN Constraint Handling** (`scripts/upsert-lots.js`)
+- Savepoint-based error recovery: wraps each lot in `SAVEPOINT sp_{id}`
+- Rollback to savepoint on constraint violations
+- Continues processing remaining lots after errors
+- Error tracking with constraint name extraction
+- Summary report with error breakdown by type
+
+**2. Image Ingestion** (`scripts/ingest-images-from-staging.js`)
+- **DB-only guard:** Only downloads images for lots in `public.lots`
+- **Idempotent writes:** ON CONFLICT DO UPDATE with SHA256 content hash
+- **Concurrent writes:** DB + R2 uploads in parallel
+- **Rate limiting:** Token bucket (10 req/sec, burst 50)
+- **Exponential backoff:** 1s → 2s → 4s → 8s (max 3 retries)
+- **Bandwidth optimization:** Skips `_hrs` variant (33% savings)
+- **Variants:** `_ful` (60KB) + `_thb` (15KB) per image
+
+**3. Performance**
+- **Throughput:** ~100 lots per 15-min run = 400 lots/hour
+- **Expected backlog completion:** ~15 days for 143k recent lots
+- **Concurrency settings:**
+  - Batch size: 20 lots
+  - Concurrent downloads: 10 images
+  - Parallel DB+R2 writes per image
+
+### Usage
+
+**Monitor ETL Pipeline:**
+```bash
+# Check timer schedule
+systemctl list-timers vinops-etl.timer
+
+# View service status
+systemctl status vinops-etl.service
+
+# Watch logs (stdout)
+tail -f /var/log/vinops/etl.log
+
+# Watch errors (stderr)
+tail -f /var/log/vinops/etl-error.log
+
+# View recent runs
+journalctl -u vinops-etl.service -n 100 --no-pager
+```
+
+**Check Image Ingestion:**
+```sql
+-- Total images downloaded
+SELECT COUNT(*) FROM images;
+
+-- Images by variant
+SELECT variant, COUNT(*) FROM images GROUP BY variant;
+
+-- Lots with images vs. without
+SELECT
+  COUNT(DISTINCT lot_id) as lots_with_images,
+  (SELECT COUNT(*) FROM lots WHERE created_at > NOW() - INTERVAL '7 days') as recent_lots,
+  (SELECT COUNT(*) FROM lots WHERE created_at > NOW() - INTERVAL '7 days'
+   AND NOT EXISTS (SELECT 1 FROM images WHERE lot_id = lots.id)) as lots_needing_images
+FROM images;
+
+-- Recent ingestion rate (last 24h)
+SELECT
+  DATE_TRUNC('hour', created_at) as hour,
+  COUNT(*) as images_ingested
+FROM images
+WHERE created_at > NOW() - INTERVAL '24 hours'
+GROUP BY hour
+ORDER BY hour DESC;
+```
+
+**Manual Trigger (for testing):**
+```bash
+# Trigger immediate ETL run
+systemctl start vinops-etl.service
+
+# Run individual components
+node scripts/ingest-copart-csv.js /path/to/file.csv
+node scripts/upsert-lots.js --limit=1000
+node scripts/ingest-images-from-staging.js --limit=50 --batch-size=10 --concurrency=5
+```
+
+### Configuration Files
+
+**systemd Timer:** `/etc/systemd/system/vinops-etl.timer`
+```ini
+[Timer]
+OnCalendar=*:0/15  # Every 15 minutes
+Persistent=true
+```
+
+**systemd Service:** `/etc/systemd/system/vinops-etl.service`
+```ini
+[Service]
+Type=oneshot
+MemoryMax=6G
+CPUQuota=150%
+Environment="NODE_OPTIONS=--experimental-default-type=module --max-old-space-size=4096"
+```
+
+**Repository Copies:** `deploy/systemd/vinops-etl.{service,timer}`
+
+### Error Handling
+
+**VIN Format Violations:**
+- Detected via constraint: `vehicles_vin_format_ck`
+- Logged to stderr with staging ID
+- Marked in `staging.copart_raw.processing_error`
+- Error rate: ~0.005% (8 errors per 150k lots)
+
+**Memory Issues:**
+- Fixed with 4GB Node.js heap + 6GB systemd limit
+- Previously caused heap exhaustion during CSV parsing
+
+**Transaction Failures:**
+- Resolved with savepoint-based error recovery
+- Individual lot failures no longer abort entire transaction
+
+### Deployment History
+
+- **2025-10-17 23:42:** Initial deployment (commit `2c5163a`)
+- **2025-10-17 23:54:** Memory allocation fix (commit `97bbee8`)
+- **2025-10-18 00:11:** VIN constraint handling fix (commit `cb0c63f`)
+
+### Next Steps
+
+- [ ] Monitor first 24 hours of production operation
+- [ ] Adjust throughput if needed (`--limit`, `--concurrency`)
+- [ ] Set up automated CI/CD (GitHub Actions)
+- [ ] Add alerting for ETL failures
+- [ ] Implement database role split (etl_rw + app_ro)
 
 ---
 

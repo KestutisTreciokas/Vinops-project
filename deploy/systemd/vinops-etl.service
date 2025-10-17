@@ -30,7 +30,7 @@ ExecStart=/bin/bash -c '\
   R2_SECRET_ACCESS_KEY="882639ba38b7075df8463bf1a7676c81d806051beb15eb286b6d4bdbd3192174" \
   R2_BUCKET_NAME="vinops-prod" \
   PGSSL_DISABLE=1 \
-  node scripts/ingest-images-from-staging.js --limit=100 --batch-size=20 --concurrency=10'
+  node scripts/ingest-images-from-staging.js --limit=500 --batch-size=50 --concurrency=20'
 
 # Logging
 StandardOutput=append:/var/log/vinops/etl.log
