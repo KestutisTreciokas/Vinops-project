@@ -21,7 +21,7 @@ export async function fetchVehicles(
     try {
       const lang = params.lang || 'en'
       const limit = Math.min(params.limit || 20, 100)
-      const sort = params.sort || 'auction_date_asc'
+      const sort = params.sort || 'created_at_desc'
 
       // Build WHERE clause
       const conditions: string[] = []
@@ -63,14 +63,23 @@ export async function fetchVehicles(
         case 'auction_date_desc':
           orderBy = 'l.auction_datetime_utc DESC NULLS LAST, v.vin ASC'
           break
+        case 'auction_date_asc':
+          orderBy = 'l.auction_datetime_utc ASC NULLS LAST, v.vin ASC'
+          break
         case 'year_desc':
           orderBy = 'v.year DESC NULLS LAST, v.vin ASC'
           break
         case 'year_asc':
           orderBy = 'v.year ASC NULLS LAST, v.vin ASC'
           break
+        case 'created_at_desc':
+          orderBy = 'l.created_at DESC NULLS LAST, v.vin ASC'
+          break
+        case 'created_at_asc':
+          orderBy = 'l.created_at ASC NULLS LAST, v.vin ASC'
+          break
         default:
-          orderBy = 'l.auction_datetime_utc ASC NULLS LAST, v.vin ASC'
+          orderBy = 'l.created_at DESC NULLS LAST, v.vin ASC'
       }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''

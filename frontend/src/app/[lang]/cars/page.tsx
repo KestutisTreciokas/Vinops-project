@@ -32,7 +32,7 @@ export default async function Page({
     status: 'active', // Only show active listings
     limit: 100,
     lang,
-    sort: 'auction_date_asc'
+    sort: 'created_at_desc' // Show newest lots first
   })
 
   // Transform to VehicleLite format
