@@ -1026,7 +1026,7 @@ html[lang="en"] [data-page="catalog"] .grid:empty::after  { content: "Adjust fil
   /* типографика (шкала) */
   --fs-h1: clamp(28px, 3.0vw, 40px);
   --fs-h2: clamp(24px, 2.4vw, 32px);
-  --fs-h3: clamp(22px, 2.2vw, 26px); /* увеличен размер h3 */
+  --fs-h3: clamp(24px, 2.4vw, 30px); /* увеличен размер h3 */
   --fs-base: 16px;
   --lh-tight: 1.2;
   --lh-base: 1.55;
@@ -1072,9 +1072,9 @@ a:hover { opacity: .9; }
 
 /* Заголовки по шкале */
 h1, .h1 { font-size: var(--fs-h1); line-height: var(--lh-tight); font-weight: 900; letter-spacing: -0.01em; }
-h2, .h2 { font-size: var(--fs-h2); line-height: var(--lh-tight); font-weight: 800; letter-spacing: -0.005em; }
+h2, .h2 { font-size: var(--fs-h2); line-height: var(--lh-tight); font-weight: 900; letter-spacing: -0.005em; }
 h3, .h3 { font-size: var(--fs-h3); line-height: 1.35;        font-weight: 600; }
-h4, .h4 { font-size: clamp(18px, 1.8vw, 22px); line-height: 1.4; font-weight: 600; }
+h4, .h4 { font-size: clamp(20px, 2.0vw, 26px); line-height: 1.4; font-weight: 600; }
 
 /* Мелкие утилиты */
 .text-muted { color: var(--fg-muted); }
