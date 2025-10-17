@@ -28,6 +28,11 @@ interface VehicleCardProps {
 export default function VehicleCard({ v, lang = 'en' }: VehicleCardProps) {
   const vinPageUrl = `/${lang}/vin/${v.vin}` as `/en/vin/${string}` | `/ru/vin/${string}`
 
+  // Убираем слово "повреждение:" из damage для русского языка
+  const damage = lang === 'ru'
+    ? v.damage.replace(/повреждение:\s*/gi, '').trim()
+    : v.damage
+
   return (
     <Link href={vinPageUrl} className="vehicle-card-link">
       <article className="vehicle-card">
@@ -37,7 +42,7 @@ export default function VehicleCard({ v, lang = 'en' }: VehicleCardProps) {
         </div>
         <div className="vbody">
           <div className="vtitle">{v.year} {v.make} {v.model}</div>
-          <div className="vmeta">{v.damage} • {v.title} • {v.location}</div>
+          <div className="vmeta">{damage} • {v.title} • {v.location}</div>
           <div className="vvin">VIN {v.vin}</div>
         </div>
       </article>
