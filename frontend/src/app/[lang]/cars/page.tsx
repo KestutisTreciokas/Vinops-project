@@ -18,6 +18,7 @@ export default async function Page({
   const type = (typeof searchParams.type === 'string' ? searchParams.type : 'auto') as VehicleType
   const make = typeof searchParams.make === 'string' ? searchParams.make : undefined
   const model = typeof searchParams.model === 'string' ? searchParams.model : undefined
+  const modelDetail = typeof searchParams.detail === 'string' ? searchParams.detail : undefined
   const yearMin = searchParams.yfrom ? Number(searchParams.yfrom) : undefined
   const yearMax = searchParams.yto ? Number(searchParams.yto) : undefined
   const page = searchParams.page ? Number(searchParams.page) || 1 : 1
@@ -27,6 +28,7 @@ export default async function Page({
     vehicleType: type,
     make,
     model,
+    model_detail: modelDetail,
     year_min: yearMin,
     year_max: yearMax,
     status: 'active', // Only show active listings

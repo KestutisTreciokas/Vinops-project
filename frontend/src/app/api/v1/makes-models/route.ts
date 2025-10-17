@@ -10,12 +10,14 @@ export const dynamic = 'force-dynamic'
  * Returns list of makes and their models for catalog filters
  * Query params:
  *  - make: optional, if provided returns models for that make
+ *  - model: optional, if provided (with make) returns model_details for that model
  *  - type: vehicle type (auto, moto, etc.)
  */
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams
     const make = searchParams.get('make')?.toUpperCase()
+    const model = searchParams.get('model')?.toUpperCase()
     const vehicleType = (searchParams.get('type') || 'auto') as VehicleType
 
     // Get body type filter for vehicle type
@@ -25,7 +27,33 @@ export async function GET(req: NextRequest) {
     const client = await pool.connect()
 
     try {
-      if (make) {
+      if (make && model) {
+        // Return model_details for specific make+model and vehicle type
+        const bodyFilter = bodyTypesIn ? `AND v.body IN (${bodyTypesIn})` : ''
+        const query = `
+          SELECT v.model_detail, COUNT(*) as count
+          FROM vehicles v
+          WHERE v.make = $1
+            AND v.model = $2
+            AND v.model_detail IS NOT NULL
+            AND v.model_detail <> ''
+            ${bodyFilter}
+          GROUP BY v.model_detail
+          ORDER BY count DESC
+          LIMIT 50
+        `
+        const result = await client.query(query, [make, model])
+
+        return NextResponse.json({
+          make,
+          model,
+          modelDetails: result.rows.map(r => r.model_detail),
+        }, {
+          headers: {
+            'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
+          }
+        })
+      } else if (make) {
         // Return models for specific make and vehicle type
         const bodyFilter = bodyTypesIn ? `AND v.body IN (${bodyTypesIn})` : ''
         const query = `

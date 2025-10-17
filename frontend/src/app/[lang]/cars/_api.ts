@@ -44,6 +44,10 @@ export async function fetchVehicles(
         conditions.push(`v.model = $${paramIndex++}`)
         values.push(params.model.toUpperCase())
       }
+      if (params.model_detail) {
+        conditions.push(`v.model_detail = $${paramIndex++}`)
+        values.push(params.model_detail.toUpperCase())
+      }
       if (params.year_min !== undefined) {
         conditions.push(`v.year >= $${paramIndex++}`)
         values.push(params.year_min)
@@ -160,6 +164,7 @@ export async function fetchVehicles(
         filters: {
           make: params.make,
           model: params.model,
+          modelDetail: params.model_detail,
           yearMin: params.year_min,
           yearMax: params.year_max,
           status: params.status,

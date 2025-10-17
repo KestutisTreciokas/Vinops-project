@@ -247,6 +247,9 @@ export interface SearchQueryParams {
   /** Filter by model (e.g., "CAMRY") */
   model?: string
 
+  /** Filter by model detail/trim (e.g., "I3 BEV", "I8") */
+  model_detail?: string
+
   /** Minimum year (e.g., 2015) */
   year_min?: number
 
@@ -389,6 +392,7 @@ export interface PaginationMetadata {
 export interface AppliedFilters {
   make?: string
   model?: string
+  modelDetail?: string
   yearMin?: number
   yearMax?: number
   status?: string

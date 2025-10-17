@@ -39,6 +39,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [type, setType] = useState(sp.get('type') ?? 'auto')
   const [make, setMake] = useState(sp.get('make') ?? '')
   const [model, setModel] = useState(sp.get('model') ?? '')
+  const [modelDetail, setModelDetail] = useState(sp.get('detail') ?? '')
   const [yFrom, setYFrom] = useState(sp.get('yfrom') ?? '')
   const [yTo, setYTo] = useState(sp.get('yto') ?? '')
   const [displayedVehicles, setDisplayedVehicles] = useState(initialVehicles)
@@ -47,6 +48,8 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [loadingModels, setLoadingModels] = useState(false)
+  const [availableModelDetails, setAvailableModelDetails] = useState<string[]>([])
+  const [loadingModelDetails, setLoadingModelDetails] = useState(false)
   const [availableMakes, setAvailableMakes] = useState<string[]>(MAKES)
   const [loadingMakes, setLoadingMakes] = useState(false)
   const [showMoreDropdown, setShowMoreDropdown] = useState(false)
@@ -96,6 +99,31 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
       .finally(() => setLoadingModels(false))
   },[make, type])
 
+  // Fetch model_details when model changes
+  useEffect(()=>{
+    if (!make || !model) {
+      setAvailableModelDetails([])
+      setModelDetail('')
+      return
+    }
+
+    setLoadingModelDetails(true)
+    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&type=${encodeURIComponent(type)}`)
+      .then(res => res.json())
+      .then(data => {
+        setAvailableModelDetails(data.modelDetails || [])
+        // Reset model_detail if it's not in the new list
+        if (modelDetail && data.modelDetails && !data.modelDetails.includes(modelDetail)) {
+          setModelDetail('')
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch model details:', err)
+        setAvailableModelDetails([])
+      })
+      .finally(() => setLoadingModelDetails(false))
+  },[make, model, type])
+
   // табы - основные
   const mainTabs = useMemo(()=>[
     { id:'auto', label: t(lang,'Auto','Авто') },
@@ -124,6 +152,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const apply = () => {
     const q = buildQuery(sp, {
       type, make, model,
+      detail: modelDetail,
       yfrom: yFrom,
       yto: yTo,
     })
@@ -132,8 +161,8 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
 
   // Сброс -> чистим всё, кроме type
   const reset = () => {
-    setMake(''); setModel(''); setYFrom(''); setYTo('')
-    const q = buildQuery(sp, { make:'', model:'', yfrom:'', yto:'' })
+    setMake(''); setModel(''); setModelDetail(''); setYFrom(''); setYTo('')
+    const q = buildQuery(sp, { make:'', model:'', detail:'', yfrom:'', yto:'' })
     router.replace(`${pathname}${q}` as Route)
   }
 
@@ -161,6 +190,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
       params.set('vehicle_type', type)
       if (make) params.set('make', make)
       if (model) params.set('model', model)
+      if (modelDetail) params.set('model_detail', modelDetail)
       if (yFrom) params.set('year_min', yFrom)
       if (yTo) params.set('year_max', yTo)
       params.set('status', 'active')
@@ -282,6 +312,24 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
               </select>
               <span className="chev"><ChevronDown/></span>
             </div>
+            {availableModelDetails.length > 0 && (
+              <div className="select-wrap">
+                <select
+                  className="select"
+                  value={modelDetail}
+                  onChange={e=>setModelDetail(e.target.value)}
+                  disabled={!model || loadingModelDetails}
+                >
+                  <option value="">
+                    {loadingModelDetails
+                      ? t(lang,'Loading...','Загрузка...')
+                      : t(lang,'Choose','Выберите')}
+                  </option>
+                  {availableModelDetails.map(m=><option key={m} value={m}>{m}</option>)}
+                </select>
+                <span className="chev"><ChevronDown/></span>
+              </div>
+            )}
             <div className="select-wrap" data-size="sm">
               <select className="select" value={yFrom} onChange={e=>setYFrom(e.target.value)}>
                 <option value="">{t(lang,'Year from','От')}</option>
