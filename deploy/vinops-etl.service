@@ -7,6 +7,7 @@ Type=oneshot
 User=root
 WorkingDirectory=/root/Vinops-project
 Environment="NODE_OPTIONS=--experimental-default-type=module"
+Environment="DATABASE_URL=postgresql://gen_user:J4nm7NGq^Rn5pH@192.168.0.5:5432/vinops_db"
 
 # Download and ingest latest Copart CSV
 ExecStart=/bin/bash -c '\
