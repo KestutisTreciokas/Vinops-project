@@ -90,10 +90,16 @@ async function main() {
     let updated = 0;
     let skipped = 0;
     let errors = 0;
+    const errorDetails = [];
 
     // Step 2: Process each record
     for (const record of stagingRecords) {
+      // Use savepoint for individual record processing
+      const savepointName = `sp_${record.id}`;
+
       try {
+        await client.query(`SAVEPOINT ${savepointName}`);
+
         const { id: stagingId, lot_external_id, vin_raw, payload_jsonb } = record;
         const p = payload_jsonb; // shorthand
 
@@ -310,6 +316,9 @@ async function main() {
           WHERE id = $1
         `, [stagingId]);
 
+        // Release savepoint on success
+        await client.query(`RELEASE SAVEPOINT ${savepointName}`);
+
         // Progress indicator
         if ((inserted + updated) % 100 === 0) {
           process.stdout.write(`\r  Processed: ${inserted + updated} (${inserted} new, ${updated} updated)`);
@@ -317,9 +326,23 @@ async function main() {
 
       } catch (err) {
         errors++;
-        console.error(`\n  [ERROR] Staging ID ${record.id}: ${err.message}`);
 
-        // Mark as error in staging
+        // Rollback to savepoint to continue processing
+        await client.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+
+        // Extract constraint name if available
+        const constraintMatch = err.message.match(/constraint "([^"]+)"/);
+        const constraintName = constraintMatch ? constraintMatch[1] : 'unknown';
+
+        // Log error details
+        const errorMsg = `Staging ID ${record.id}: ${constraintName} - ${err.message}`;
+        errorDetails.push({ stagingId: record.id, vin: record.vin_raw, error: errorMsg });
+
+        if (errors <= 10) { // Only print first 10 to avoid log spam
+          console.error(`\n  [ERROR] ${errorMsg}`);
+        }
+
+        // Mark as error in staging (outside savepoint)
         await client.query(`
           UPDATE staging.copart_raw
           SET processing_error = $1
@@ -336,7 +359,24 @@ async function main() {
     console.log(`Total processed: ${inserted + updated + errors}`);
     console.log(`Inserted: ${inserted}`);
     console.log(`Updated: ${updated}`);
-    console.log(`Errors: ${errors}`);
+    console.log(`Errors (skipped): ${errors}`);
+
+    if (errors > 0) {
+      console.log(`\nError Breakdown:`);
+      const errorsByType = {};
+      errorDetails.forEach(e => {
+        const type = e.error.split(':')[1]?.split('-')[0]?.trim() || 'unknown';
+        errorsByType[type] = (errorsByType[type] || 0) + 1;
+      });
+      Object.entries(errorsByType).forEach(([type, count]) => {
+        console.log(`  ${type}: ${count}`);
+      });
+
+      if (errors > 10) {
+        console.log(`\n  (Showing first 10 errors, ${errors - 10} more suppressed)`);
+      }
+    }
+
     console.log(`\n✅ Upsert complete!\n`);
 
   } catch (error) {
