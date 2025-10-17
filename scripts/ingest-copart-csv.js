@@ -5,13 +5,13 @@
  * Usage: node scripts/ingest-copart-csv.js <csv_path>
  */
 
-const fs = require('fs');
-const crypto = require('crypto');
-const { Client } = require('pg');
-const csv = require('csv-parser'); // Install: npm install csv-parser
-const path = require('path');
+import fs from 'fs';
+import crypto from 'crypto';
+import pg from 'pg';
+import csvParser from 'csv-parser';
+import path from 'path';
 
-require('dotenv').config({ path: 'deploy/.env.runtime' });
+const { Client } = pg;
 
 const DB_URL = process.env.DATABASE_URL;
 
@@ -63,7 +63,7 @@ async function main() {
 
     await new Promise((resolve, reject) => {
       fs.createReadStream(csvPath)
-        .pipe(csv())
+        .pipe(csvParser())
         .on('headers', (h) => { headers = h; })
         .on('data', (row) => rows.push(row))
         .on('end', resolve)
