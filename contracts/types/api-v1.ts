@@ -274,8 +274,8 @@ export interface SearchQueryParams {
   /** Language for taxonomy labels ("en" or "ru", default "en") */
   lang?: 'en' | 'ru'
 
-  /** Sort order (default "created_at_desc") */
-  sort?: 'auction_date_asc' | 'auction_date_desc' | 'year_desc' | 'year_asc' | 'created_at_desc' | 'created_at_asc'
+  /** Sort order (default "updated_at_desc") */
+  sort?: 'auction_date_asc' | 'auction_date_desc' | 'year_desc' | 'year_asc' | 'created_at_desc' | 'created_at_asc' | 'updated_at_desc' | 'updated_at_asc'
 }
 
 /**
