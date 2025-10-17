@@ -33,6 +33,24 @@
   --status-success: #22C55E;
   --status-success-fg: #FFFFFF;
 
+  /* Status & Price Badge Colors (Light Theme) */
+  --status-success: #16a34a;  /* green-600 */
+  --price-success: #166534;   /* green-700 */
+  --status-live: #dc2626;     /* red-600 */
+  --price-live: #b91c1c;      /* red-700 */
+  --status-info: #2563eb;     /* blue-600 */
+  --price-info: #1e40af;      /* blue-700 */
+  --status-accent: #7c3aed;   /* violet-600 */
+  --price-accent: #5b21b6;    /* violet-700 */
+  --status-pending: #f59e0b;  /* amber-500 */
+  --price-pending: #b45309;   /* amber-700 */
+  --status-warning: #f97316;  /* orange-600 */
+  --price-warning: #c2410c;   /* orange-700 */
+  --status-neutral: #6b7280;  /* gray-600 */
+  --price-neutral: #4b5563;   /* gray-700 */
+  --status-teal: #0ea5a4;     /* teal-600 */
+  --status-muted: #64748b;    /* slate-600 */
+
   --focus-ring: rgba(79, 69, 229, 0.40);
   --overlay-scrim: rgba(0,0,0,0.5);
 }
@@ -60,6 +78,24 @@
   --status-error-fg: #FFFFFF;
   --status-success: #22C55E;
   --status-success-fg: #FFFFFF;
+
+  /* Status & Price Badge Colors (Dark Theme) - slightly brighter for contrast */
+  --status-success: #22c55e;  /* green-500 */
+  --price-success: #16a34a;   /* green-600 */
+  --status-live: #ef4444;     /* red-500 */
+  --price-live: #dc2626;      /* red-600 */
+  --status-info: #3b82f6;     /* blue-500 */
+  --price-info: #2563eb;      /* blue-600 */
+  --status-accent: #a78bfa;   /* violet-400 */
+  --price-accent: #7c3aed;    /* violet-600 */
+  --status-pending: #fbbf24;  /* amber-400 */
+  --price-pending: #f59e0b;   /* amber-500 */
+  --status-warning: #fb923c;  /* orange-400 */
+  --price-warning: #f97316;   /* orange-600 */
+  --status-neutral: #9ca3af;  /* gray-400 */
+  --price-neutral: #6b7280;   /* gray-600 */
+  --status-teal: #14b8a6;     /* teal-500 */
+  --status-muted: #94a3b8;    /* slate-400 */
 
   --focus-ring: rgba(99,102,241,0.55);
   --overlay-scrim: rgba(0,0,0,0.65);
@@ -631,6 +667,27 @@ a:hover { color: var(--brand-hover); }
   border-radius: 999px; font-size:.75rem; font-weight:600;
   border:1px solid var(--border-muted); background: var(--bg-canvas); color: var(--fg-default);
 }
+/* Position price badge in top-right corner of vehicle card */
+.card-price-badge{
+  position:absolute; right:10px; top:10px; z-index:20;
+}
+
+/* Price badge container: flexbox column layout */
+.price-badge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Price label: small gray text below price value */
+.price-label {
+  font-size: 11px;
+  color: var(--fg-muted);
+  font-weight: 400;
+  text-align: center;
+  line-height: 1.2;
+}
 .badge-live{
   background: color-mix(in hsl, var(--brand) 18%, var(--bg-canvas));
   border-color: color-mix(in hsl, var(--brand) 55%, transparent);
@@ -941,6 +998,8 @@ html[lang="en"] [data-page="catalog"] .grid:empty::after  { content: "Adjust fil
 .badge--active  { color:var(--brand); background: color-mix(in hsl, var(--brand) 12%, transparent); border-color: color-mix(in hsl, var(--brand) 35%, transparent); }
 .badge--pending { color:#eab308; background: color-mix(in hsl, #eab308 12%, transparent); border-color: color-mix(in hsl, #eab308 35%, transparent); }
 .badge--upcoming{ color:#60a5fa; background: color-mix(in hsl, #60a5fa 12%, transparent); border-color: color-mix(in hsl, #60a5fa 35%, transparent); }
+.badge--accent  { color:#a78bfa; background: color-mix(in hsl, #a78bfa 12%, transparent); border-color: color-mix(in hsl, #a78bfa 35%, transparent); }
+.badge--nosale  { color:#9ca3af; background: color-mix(in hsl, #9ca3af 12%, transparent); border-color: color-mix(in hsl, #9ca3af 35%, transparent); }
 
 /* Таблица истории */
 .table-vin thead th { text-align:left; font-weight:600; color: var(--fg-muted); padding:.5rem .5rem; }

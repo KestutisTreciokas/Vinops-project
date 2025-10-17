@@ -193,9 +193,11 @@ export function transformVehicles(response: SearchResponse) {
     location: [item.city, item.region, item.country].filter(Boolean).join(', ') || 'Unknown',
     status: item.status || 'unknown',
     statusLabel: item.statusLabel || undefined,
+    auctionDateTimeUtc: item.auctionDateTimeUtc || undefined,
     estMin: item.estRetailValueUsd || undefined,
     estMax: item.estRetailValueUsd || undefined,
     buyNow: (item as any).buyItNowUsd || undefined,
     currentBid: (item as any).currentBidUsd || undefined,
+    finalBid: undefined,
   }))
 }

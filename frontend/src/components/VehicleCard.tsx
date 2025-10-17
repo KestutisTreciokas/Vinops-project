@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import PriceBadge from '@/components/catalog/PriceBadge'
 import StatusBadge from '@/components/common/StatusBadge'
+import { computeDisplayStatus } from '@/lib/computeDisplayStatus'
 
 export type VehicleLite = {
   year: number
@@ -13,6 +14,7 @@ export type VehicleLite = {
   image?: string | null
   status?: string
   statusLabel?: string
+  auctionDateTimeUtc?: string
   estMin?: number
   estMax?: number
   finalBid?: number
@@ -34,12 +36,20 @@ export default function VehicleCard({ v, lang = 'en' }: VehicleCardProps) {
     ? v.damage.replace(/повреждение:\s*/gi, '').trim()
     : v.damage
 
+  // Compute display status based on auction lifecycle
+  const displayStatus = computeDisplayStatus({
+    status: v.status,
+    auctionDateTimeUtc: v.auctionDateTimeUtc,
+    finalBid: v.finalBid,
+    currentBid: v.currentBid
+  })
+
   return (
     <Link href={vinPageUrl} className="vehicle-card-link">
       <article className="vehicle-card">
         <div className="vimgwrap">
           <div className="vimg" />
-          {v.status && <StatusBadge value={v.status} lang={lang} />}
+          <StatusBadge value={displayStatus} lang={lang} />
           <PriceBadge item={v} lang={lang} className="card-price-badge" />
         </div>
         <div className="vbody">
