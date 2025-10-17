@@ -7,11 +7,11 @@ Wants=network-online.target
 Type=oneshot
 User=root
 WorkingDirectory=/root/Vinops-project
-Environment="NODE_OPTIONS=--experimental-default-type=module"
+Environment="NODE_OPTIONS=--experimental-default-type=module --max-old-space-size=4096"
 Environment="DATABASE_URL=postgresql://gen_user:J4nm7NGq^Rn5pH@192.168.0.5:5432/vinops_db"
 
 # Resource limits
-MemoryMax=2G
+MemoryMax=6G
 CPUQuota=150%
 TasksMax=500
 TimeoutStopSec=30s
