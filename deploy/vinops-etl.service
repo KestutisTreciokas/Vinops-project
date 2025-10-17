@@ -9,13 +9,14 @@ WorkingDirectory=/root/Vinops-project
 Environment="NODE_OPTIONS=--experimental-default-type=module"
 Environment="DATABASE_URL=postgresql://gen_user:J4nm7NGq^Rn5pH@192.168.0.5:5432/vinops_db"
 
-# Download and ingest latest Copart CSV
+# Download, ingest CSV, and upsert to public lots
 ExecStart=/bin/bash -c '\
   CSV_DIR=/var/data/vinops/raw/copart/$(date +%%Y/%%m/%%d) && \
   mkdir -p $CSV_DIR && \
   CSV_FILE=$CSV_DIR/$(date +%%H%%M).csv && \
   curl -L -o $CSV_FILE "https://inventory.copart.io/FTPLSTDM/salesdata.cgi?authKey=YPYU91EI" && \
-  node scripts/ingest-copart-csv.js $CSV_FILE'
+  node scripts/ingest-copart-csv.js $CSV_FILE && \
+  node scripts/upsert-lots.js'
 
 # Logging
 StandardOutput=append:/var/log/vinops/etl.log
