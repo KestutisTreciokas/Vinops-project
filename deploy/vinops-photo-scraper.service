@@ -1,0 +1,31 @@
+[Unit]
+Description=Vinops Photo Scraper Service
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/Vinops-project
+Environment="NODE_OPTIONS=--experimental-default-type=module"
+Environment="DATABASE_URL=postgresql://gen_user:J4nm7NGq^Rn5pH@192.168.0.5:5432/vinops_db"
+Environment="R2_ENDPOINT=https://38501dfb36ea4ff432ff93ace1b04705.r2.cloudflarestorage.com"
+Environment="R2_ACCESS_KEY_ID=3b60a2ba2fdcc4a118f245bedd98b411"
+Environment="R2_SECRET_ACCESS_KEY=882639ba38b7075df8463bf1a7676c81d806051beb15eb286b6d4bdbd3192174"
+Environment="R2_BUCKET_NAME=vinops-prod"
+Environment="COPART_MEMBER_ID=905502"
+Environment="COPART_PASSWORD=ea1!atA7vWqTatqzv"
+
+# Run in batches of 500 lots with restart on completion
+ExecStart=/usr/bin/node scripts/fetch-copart-photos-auth.js --batch 500
+
+# Restart strategy
+Restart=on-success
+RestartSec=300
+
+# Logging
+StandardOutput=append:/var/log/vinops/photo-scraper.log
+StandardError=append:/var/log/vinops/photo-scraper-error.log
+SyslogIdentifier=vinops-photo-scraper
+
+[Install]
+WantedBy=multi-user.target

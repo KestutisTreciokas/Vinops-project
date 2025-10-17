@@ -1,0 +1,22 @@
+[Unit]
+Description=Vinops ETL Service - Copart CSV Ingestion
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/Vinops-project
+Environment="NODE_OPTIONS=--experimental-default-type=module"
+
+# Download and ingest latest Copart CSV
+ExecStart=/bin/bash -c '\
+  CSV_DIR=/var/data/vinops/raw/copart/$(date +%%Y/%%m/%%d) && \
+  mkdir -p $CSV_DIR && \
+  CSV_FILE=$CSV_DIR/$(date +%%H%%M).csv && \
+  curl -L -o $CSV_FILE "https://inventory.copart.io/FTPLSTDM/salesdata.cgi?authKey=YPYU91EI" && \
+  node scripts/ingest-copart-csv.js $CSV_FILE'
+
+# Logging
+StandardOutput=append:/var/log/vinops/etl.log
+StandardError=append:/var/log/vinops/etl-error.log
+SyslogIdentifier=vinops-etl
