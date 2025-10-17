@@ -61,6 +61,8 @@ interface Cursor {
   lastAuctionDate: string | null
   /** Last year (for year sorting) */
   lastYear: number | null
+  /** Last created_at timestamp (for newest lots sorting) */
+  lastCreatedAt: string | null
 }
 
 function encodeCursor(cursor: Cursor): string {
@@ -91,13 +93,13 @@ function parseSearchParams(searchParams: URLSearchParams) {
   const limitStr = searchParams.get('limit')
   const limit = limitStr ? Math.min(Math.max(parseInt(limitStr, 10), 1), 100) : 20
   const cursor = searchParams.get('cursor') || undefined
-  const sort = searchParams.get('sort') || 'auction_date_asc'
+  const sort = searchParams.get('sort') || 'created_at_desc'
   const langParam = searchParams.get('lang') || 'en'
   const lang = (langParam === 'ru' || langParam === 'en') ? langParam : 'en'
 
   // Validate sort
-  const validSorts = ['auction_date_asc', 'auction_date_desc', 'year_desc', 'year_asc']
-  const finalSort = validSorts.includes(sort) ? sort : 'auction_date_asc'
+  const validSorts = ['auction_date_asc', 'auction_date_desc', 'year_desc', 'year_asc', 'created_at_desc', 'created_at_asc']
+  const finalSort = validSorts.includes(sort) ? sort : 'created_at_desc'
 
   // Validate year range
   if (yearMin !== undefined && (isNaN(yearMin) || yearMin < 1900 || yearMin > 2100)) {
@@ -235,6 +237,14 @@ export async function GET(req: NextRequest) {
           conditions.push(`(v.year > $${paramIndex} OR (v.year = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
           values.push(cursorData.lastYear, cursorData.lastVin)
           paramIndex += 2
+        } else if (sort === 'created_at_desc') {
+          conditions.push(`(l.created_at < $${paramIndex} OR (l.created_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
+          values.push(cursorData.lastCreatedAt, cursorData.lastVin)
+          paramIndex += 2
+        } else if (sort === 'created_at_asc') {
+          conditions.push(`(l.created_at > $${paramIndex} OR (l.created_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
+          values.push(cursorData.lastCreatedAt, cursorData.lastVin)
+          paramIndex += 2
         }
       }
 
@@ -253,8 +263,14 @@ export async function GET(req: NextRequest) {
         case 'year_asc':
           orderBy = 'v.year ASC NULLS LAST, v.vin ASC'
           break
+        case 'created_at_desc':
+          orderBy = 'l.created_at DESC NULLS LAST, v.vin ASC'
+          break
+        case 'created_at_asc':
+          orderBy = 'l.created_at ASC NULLS LAST, v.vin ASC'
+          break
         default:
-          orderBy = 'l.auction_datetime_utc ASC NULLS LAST, v.vin ASC'
+          orderBy = 'l.created_at DESC NULLS LAST, v.vin ASC'
       }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -269,7 +285,7 @@ export async function GET(req: NextRequest) {
         SELECT
           v.vin, v.make, v.model, v.year, v.body, v.updated_at,
           l.id as lot_id, l.status, l.site_code, l.city, l.region, l.country,
-          l.auction_datetime_utc, l.retail_value_usd, l.damage_description, l.title_type, l.odometer,
+          l.auction_datetime_utc, l.created_at, l.retail_value_usd, l.damage_description, l.title_type, l.odometer,
           l.buy_it_now_usd, l.current_bid_usd,
           get_taxonomy_label('body_styles', v.body, $${langParamIndex}) as body_label,
           get_taxonomy_label('statuses', l.status, $${langParamIndex}) as status_label,
@@ -298,6 +314,7 @@ export async function GET(req: NextRequest) {
           lastVin: lastItem.vin,
           lastAuctionDate: lastItem.auction_datetime_utc,
           lastYear: lastItem.year,
+          lastCreatedAt: lastItem.created_at,
         })
       }
 
