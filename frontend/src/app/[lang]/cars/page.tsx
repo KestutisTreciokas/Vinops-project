@@ -19,8 +19,7 @@ export default async function Page({
   const make = typeof searchParams.make === 'string' ? searchParams.make : undefined
   const model = typeof searchParams.model === 'string' ? searchParams.model : undefined
   const modelDetail = typeof searchParams.detail === 'string' ? searchParams.detail : undefined
-  const yearMin = searchParams.yfrom ? Number(searchParams.yfrom) : undefined
-  const yearMax = searchParams.yto ? Number(searchParams.yto) : undefined
+  const year = searchParams.year ? Number(searchParams.year) : undefined
   const page = searchParams.page ? Number(searchParams.page) || 1 : 1
 
   // Fetch vehicles from API
@@ -29,8 +28,8 @@ export default async function Page({
     make,
     model,
     model_detail: modelDetail,
-    year_min: yearMin,
-    year_max: yearMax,
+    year_min: year,
+    year_max: year,
     status: 'active', // Only show active listings
     limit: 100,
     lang,

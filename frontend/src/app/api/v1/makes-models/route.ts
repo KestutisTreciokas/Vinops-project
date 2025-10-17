@@ -11,6 +11,8 @@ export const dynamic = 'force-dynamic'
  * Query params:
  *  - make: optional, if provided returns models for that make
  *  - model: optional, if provided (with make) returns model_details for that model
+ *  - model_detail: optional, if provided (with make, model, years=true) filters years by model_detail
+ *  - years: if 'true', returns available years instead of model_details (requires make, optional model, optional model_detail)
  *  - type: vehicle type (auto, moto, etc.)
  */
 export async function GET(req: NextRequest) {
@@ -18,6 +20,8 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams
     const make = searchParams.get('make')?.toUpperCase()
     const model = searchParams.get('model')?.toUpperCase()
+    const modelDetail = searchParams.get('model_detail')?.toUpperCase()
+    const wantYears = searchParams.get('years') === 'true'
     const vehicleType = (searchParams.get('type') || 'auto') as VehicleType
 
     // Get body type filter for vehicle type
@@ -27,7 +31,45 @@ export async function GET(req: NextRequest) {
     const client = await pool.connect()
 
     try {
-      if (make && model) {
+      if (wantYears && make) {
+        // Return available years for make (and optionally model and model_detail) and vehicle type
+        const bodyFilter = bodyTypesIn ? `AND v.body IN (${bodyTypesIn})` : ''
+        const filters: string[] = []
+        const params: any[] = [make]
+        let paramIndex = 2
+
+        if (model) {
+          filters.push(`AND v.model = $${paramIndex++}`)
+          params.push(model)
+        }
+        if (modelDetail) {
+          filters.push(`AND v.model_detail = $${paramIndex++}`)
+          params.push(modelDetail)
+        }
+
+        const query = `
+          SELECT DISTINCT v.year
+          FROM vehicles v
+          WHERE v.make = $1
+            ${filters.join(' ')}
+            AND v.year IS NOT NULL
+            ${bodyFilter}
+          ORDER BY v.year DESC
+          LIMIT 100
+        `
+        const result = await client.query(query, params)
+
+        return NextResponse.json({
+          make,
+          model: model || null,
+          modelDetail: modelDetail || null,
+          years: result.rows.map(r => r.year),
+        }, {
+          headers: {
+            'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
+          }
+        })
+      } else if (make && model) {
         // Return model_details for specific make+model and vehicle type
         const bodyFilter = bodyTypesIn ? `AND v.body IN (${bodyTypesIn})` : ''
         const query = `

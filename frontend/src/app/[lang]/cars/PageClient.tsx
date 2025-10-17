@@ -40,8 +40,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [make, setMake] = useState(sp.get('make') ?? '')
   const [model, setModel] = useState(sp.get('model') ?? '')
   const [modelDetail, setModelDetail] = useState(sp.get('detail') ?? '')
-  const [yFrom, setYFrom] = useState(sp.get('yfrom') ?? '')
-  const [yTo, setYTo] = useState(sp.get('yto') ?? '')
+  const [year, setYear] = useState(sp.get('year') ?? '')
   const [displayedVehicles, setDisplayedVehicles] = useState(initialVehicles)
   const [canLoadMore, setCanLoadMore] = useState(initialPagination.hasMore)
   const [nextCursor, setNextCursor] = useState<string | null>(initialPagination.nextCursor)
@@ -50,6 +49,8 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const [loadingModels, setLoadingModels] = useState(false)
   const [availableModelDetails, setAvailableModelDetails] = useState<string[]>([])
   const [loadingModelDetails, setLoadingModelDetails] = useState(false)
+  const [availableYears, setAvailableYears] = useState<number[]>([])
+  const [loadingYears, setLoadingYears] = useState(false)
   const [availableMakes, setAvailableMakes] = useState<string[]>(MAKES)
   const [loadingMakes, setLoadingMakes] = useState(false)
   const [showMoreDropdown, setShowMoreDropdown] = useState(false)
@@ -124,6 +125,33 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
       .finally(() => setLoadingModelDetails(false))
   },[make, model, type])
 
+  // Fetch available years when make, model, or modelDetail changes
+  useEffect(()=>{
+    if (!make) {
+      setAvailableYears([])
+      setYear('')
+      return
+    }
+
+    setLoadingYears(true)
+    const modelParam = model ? `&model=${encodeURIComponent(model)}` : ''
+    const modelDetailParam = modelDetail ? `&model_detail=${encodeURIComponent(modelDetail)}` : ''
+    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}${modelParam}${modelDetailParam}&years=true&type=${encodeURIComponent(type)}`)
+      .then(res => res.json())
+      .then(data => {
+        setAvailableYears(data.years || [])
+        // Reset year if it's not in the new list
+        if (year && data.years && !data.years.includes(Number(year))) {
+          setYear('')
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch years:', err)
+        setAvailableYears([])
+      })
+      .finally(() => setLoadingYears(false))
+  },[make, model, modelDetail, type])
+
   // табы - основные
   const mainTabs = useMemo(()=>[
     { id:'auto', label: t(lang,'Auto','Авто') },
@@ -153,16 +181,15 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
     const q = buildQuery(sp, {
       type, make, model,
       detail: modelDetail,
-      yfrom: yFrom,
-      yto: yTo,
+      year,
     })
     router.replace(`${pathname}${q}` as Route)
   }
 
   // Сброс -> чистим всё, кроме type
   const reset = () => {
-    setMake(''); setModel(''); setModelDetail(''); setYFrom(''); setYTo('')
-    const q = buildQuery(sp, { make:'', model:'', detail:'', yfrom:'', yto:'' })
+    setMake(''); setModel(''); setModelDetail(''); setYear('')
+    const q = buildQuery(sp, { make:'', model:'', detail:'', year:'' })
     router.replace(`${pathname}${q}` as Route)
   }
 
@@ -191,8 +218,10 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
       if (make) params.set('make', make)
       if (model) params.set('model', model)
       if (modelDetail) params.set('model_detail', modelDetail)
-      if (yFrom) params.set('year_min', yFrom)
-      if (yTo) params.set('year_max', yTo)
+      if (year) {
+        params.set('year_min', year)
+        params.set('year_max', year)
+      }
       params.set('status', 'active')
       params.set('lang', lang)
       params.set('sort', 'auction_date_asc')
@@ -312,35 +341,35 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
               </select>
               <span className="chev"><ChevronDown/></span>
             </div>
-            {availableModelDetails.length > 0 && (
-              <div className="select-wrap">
-                <select
-                  className="select"
-                  value={modelDetail}
-                  onChange={e=>setModelDetail(e.target.value)}
-                  disabled={!model || loadingModelDetails}
-                >
-                  <option value="">
-                    {loadingModelDetails
-                      ? t(lang,'Loading...','Загрузка...')
-                      : t(lang,'Choose','Выберите')}
-                  </option>
-                  {availableModelDetails.map(m=><option key={m} value={m}>{m}</option>)}
-                </select>
-                <span className="chev"><ChevronDown/></span>
-              </div>
-            )}
-            <div className="select-wrap" data-size="sm">
-              <select className="select" value={yFrom} onChange={e=>setYFrom(e.target.value)}>
-                <option value="">{t(lang,'Year from','От')}</option>
-                {YEARS.map(y=><option key={y} value={y}>{y}</option>)}
+            <div className="select-wrap">
+              <select
+                className="select"
+                value={modelDetail}
+                onChange={e=>setModelDetail(e.target.value)}
+                disabled={!model || loadingModelDetails || availableModelDetails.length === 0}
+              >
+                <option value="">
+                  {loadingModelDetails
+                    ? t(lang,'Loading...','Загрузка...')
+                    : t(lang,'Choose model','Выберите модель')}
+                </option>
+                {availableModelDetails.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
               <span className="chev"><ChevronDown/></span>
             </div>
             <div className="select-wrap" data-size="sm">
-              <select className="select" value={yTo} onChange={e=>setYTo(e.target.value)}>
-                <option value="">{t(lang,'Year to','До')}</option>
-                {YEARS.map(y=><option key={y} value={y}>{y}</option>)}
+              <select
+                className="select"
+                value={year}
+                onChange={e=>setYear(e.target.value)}
+                disabled={!make || loadingYears || availableYears.length === 0}
+              >
+                <option value="">
+                  {loadingYears
+                    ? t(lang,'Loading...','Загрузка...')
+                    : t(lang,'Generation','Поколение')}
+                </option>
+                {availableYears.map(y=><option key={y} value={String(y)}>{y}</option>)}
               </select>
               <span className="chev"><ChevronDown/></span>
             </div>
