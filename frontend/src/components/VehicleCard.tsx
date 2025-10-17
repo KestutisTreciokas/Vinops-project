@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import PriceBadge from '@/components/catalog/PriceBadge'
+import StatusBadge from '@/components/common/StatusBadge'
 
 export type VehicleLite = {
   year: number
@@ -38,6 +39,7 @@ export default function VehicleCard({ v, lang = 'en' }: VehicleCardProps) {
       <article className="vehicle-card">
         <div className="vimgwrap">
           <div className="vimg" />
+          {v.status && <StatusBadge value={v.status} lang={lang} />}
           <PriceBadge item={v} lang={lang} className="card-price-badge" />
         </div>
         <div className="vbody">
