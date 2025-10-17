@@ -1,0 +1,38 @@
+[Unit]
+Description=Vinops ETL Service - Copart CSV Ingestion + Image Download
+After=network.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/Vinops-project
+Environment="NODE_OPTIONS=--experimental-default-type=module"
+Environment="DATABASE_URL=postgresql://gen_user:J4nm7NGq^Rn5pH@192.168.0.5:5432/vinops_db"
+
+# Resource limits
+MemoryMax=2G
+CPUQuota=150%
+TasksMax=500
+TimeoutStopSec=30s
+
+# Download CSV, ingest to staging, upsert to public lots, then download images
+ExecStart=/bin/bash -c '\
+  CSV_DIR=/var/data/vinops/raw/copart/$(date +%%Y/%%m/%%d) && \
+  mkdir -p $CSV_DIR && \
+  CSV_FILE=$CSV_DIR/$(date +%%H%%M).csv && \
+  curl -L -o $CSV_FILE "https://inventory.copart.io/FTPLSTDM/salesdata.cgi?authKey=YPYU91EI" && \
+  node scripts/ingest-copart-csv.js $CSV_FILE && \
+  node scripts/upsert-lots.js && \
+  DATABASE_URL="postgresql://gen_user:J4nm7NGq^Rn5pH@192.168.0.5:5432/vinops_db" \
+  R2_ENDPOINT="https://38501dfb36ea4ff432ff93ace1b04705.r2.cloudflarestorage.com" \
+  R2_ACCESS_KEY_ID="3b60a2ba2fdcc4a118f245bedd98b411" \
+  R2_SECRET_ACCESS_KEY="882639ba38b7075df8463bf1a7676c81d806051beb15eb286b6d4bdbd3192174" \
+  R2_BUCKET_NAME="vinops-prod" \
+  PGSSL_DISABLE=1 \
+  node scripts/ingest-images-from-staging.js --limit=100 --batch-size=20 --concurrency=10'
+
+# Logging
+StandardOutput=append:/var/log/vinops/etl.log
+StandardError=append:/var/log/vinops/etl-error.log
+SyslogIdentifier=vinops-etl

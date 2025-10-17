@@ -1,0 +1,11 @@
+[Unit]
+Description=Vinops ETL Timer - Run every 15 minutes
+Requires=vinops-etl.service
+
+[Timer]
+# Run every 15 minutes
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target
