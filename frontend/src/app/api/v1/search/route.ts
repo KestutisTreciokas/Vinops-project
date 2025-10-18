@@ -85,6 +85,7 @@ function decodeCursor(cursorStr: string): Cursor | null {
 function parseSearchParams(searchParams: URLSearchParams) {
   const make = searchParams.get('make')?.toUpperCase() || undefined
   const model = searchParams.get('model')?.toUpperCase() || undefined
+  const modelDetail = searchParams.get('model_detail')?.toUpperCase() || undefined
   const yearMinStr = searchParams.get('year_min')
   const yearMaxStr = searchParams.get('year_max')
   const yearMin = yearMinStr ? parseInt(yearMinStr, 10) : undefined
@@ -118,6 +119,7 @@ function parseSearchParams(searchParams: URLSearchParams) {
   return {
     make,
     model,
+    modelDetail,
     yearMin,
     yearMax,
     status,
@@ -161,7 +163,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const { make, model, yearMin, yearMax, status, siteCode, country, vehicleType, limit, cursor, sort, lang } = params
+  const { make, model, modelDetail, yearMin, yearMax, status, siteCode, country, vehicleType, limit, cursor, sort, lang } = params
 
   // Decode cursor for pagination
   let cursorData: Cursor | null = null
@@ -180,6 +182,7 @@ export async function GET(req: NextRequest) {
     vehicleType,
     make,
     model,
+    modelDetail,
     yearMin,
     yearMax,
     status,
@@ -221,6 +224,10 @@ export async function GET(req: NextRequest) {
       if (model) {
         conditions.push(`v.model = $${paramIndex++}`)
         values.push(model)
+      }
+      if (modelDetail) {
+        conditions.push(`COALESCE(NULLIF(v.trim, ''), v.model_detail) = $${paramIndex++}`)
+        values.push(modelDetail)
       }
       if (yearMin !== undefined) {
         conditions.push(`v.year >= $${paramIndex++}`)

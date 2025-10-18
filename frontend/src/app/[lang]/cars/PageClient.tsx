@@ -128,8 +128,9 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   },[make, model, type, year])
 
   // Fetch available years when make, model, or modelDetail changes
+  // REQUIREMENT: "generation" depends on "choose model" (modelDetail must be selected)
   useEffect(()=>{
-    if (!make) {
+    if (!make || !model || !modelDetail) {
       setAvailableYears([])
       setYear('')
       return
@@ -366,7 +367,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
                 className="select"
                 value={year}
                 onChange={e=>setYear(e.target.value)}
-                disabled={!make || loadingYears || availableYears.length === 0}
+                disabled={!make || !model || !modelDetail || loadingYears || availableYears.length === 0}
               >
                 <option value="">
                   {loadingYears
