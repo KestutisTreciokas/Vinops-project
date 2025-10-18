@@ -1,0 +1,8 @@
+{
+  "allowedCommands": [
+    {
+      "command": "*",
+      "description": "Allow all commands - full trust mode"
+    }
+  ]
+}

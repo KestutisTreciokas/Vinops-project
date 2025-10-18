@@ -1,4 +1,18 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: vinops_redis
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
   db:
     image: postgres:16
     container_name: vinops_db
@@ -42,6 +56,8 @@ services:
     depends_on:
       api:
         condition: service_started
+      redis:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -52,9 +68,11 @@ services:
       DB_DATABASE: ${DB_NAME}
       DB_USERNAME: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: redis://redis:6379
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
     ports:
       - "${PORT_WEB_HOST:-80}:3000"
     restart: unless-stopped
 volumes:
   db_data:
+  redis_data:

@@ -15,25 +15,25 @@ export default async function Page({
   const lang = params.lang
 
   // Extract search parameters
-  const type = (typeof searchParams.type === 'string' ? searchParams.type : 'auto') as VehicleType
+  const type = (typeof searchParams.type === 'string' ? searchParams.type : undefined) as VehicleType | undefined
   const make = typeof searchParams.make === 'string' ? searchParams.make : undefined
   const model = typeof searchParams.model === 'string' ? searchParams.model : undefined
   const modelDetail = typeof searchParams.detail === 'string' ? searchParams.detail : undefined
   const year = searchParams.year ? Number(searchParams.year) : undefined
   const page = searchParams.page ? Number(searchParams.page) || 1 : 1
 
-  // Fetch vehicles from API
+  // Fetch vehicles from API (don't filter by vehicleType unless explicitly provided)
   const response = await fetchVehicles({
-    vehicleType: type,
+    vehicleType: type, // Only filter if explicitly set via ?type= query param
     make,
     model,
     model_detail: modelDetail,
     year_min: year,
     year_max: year,
-    status: 'active', // Only show active listings
-    limit: 100,
+    status: 'active', // Only show active lots
+    limit: 20, // Reduced from 100 to improve page load time
     lang,
-    sort: 'updated_at_desc' // Show recently updated lots first
+    sort: 'auction_date_desc' // Sort by auction date (has index)
   })
 
   // Transform to VehicleLite format
