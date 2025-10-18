@@ -82,11 +82,12 @@ While fully autonomous, Claude still maintains safety:
 
 **Backend:**
 - Node.js >=20.14 <21
-- PostgreSQL 16 (pg 8.x client)
+- PostgreSQL 17.6 (production) / 16 (docker-compose for local dev)
 - Redis 7 Alpine (caching layer)
 
 **Database:**
-- PostgreSQL 16
+- PostgreSQL 17.6 on production server (192.168.0.5)
+- PostgreSQL 16 in docker-compose.yml (local development)
 - SQL migrations (db/migrations/)
 - 16 migrations applied (0001-0016)
 
