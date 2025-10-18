@@ -217,6 +217,79 @@ export async function GET(request: Request) {
     health.services.imageBackfill = { status: 'down', message: e.message }
   }
 
+  // Copart Outcome Detection
+  try {
+    const pool = await getPool()
+    const client = await pool.connect()
+    try {
+      const [eventStats, outcomeStats] = await Promise.all([
+        client.query(`
+          SELECT
+            COUNT(*) as total_events,
+            MAX(created_at) as last_event,
+            COUNT(*) FILTER (WHERE event_type = 'lot.appeared') as appeared,
+            COUNT(*) FILTER (WHERE event_type = 'lot.disappeared') as disappeared,
+            COUNT(*) FILTER (WHERE event_type = 'lot.updated') as updated,
+            COUNT(*) FILTER (WHERE event_type = 'lot.status_change') as status_change
+          FROM audit.auction_events
+        `),
+        client.query(`
+          SELECT
+            COUNT(*) FILTER (WHERE outcome IS NOT NULL) as total_outcomes,
+            COUNT(*) FILTER (WHERE outcome = 'sold') as sold,
+            COUNT(*) FILTER (WHERE outcome = 'not_sold') as not_sold,
+            COUNT(*) FILTER (WHERE outcome = 'on_approval') as on_approval,
+            ROUND(AVG(outcome_confidence) * 100) as avg_confidence,
+            MAX(outcome_date) as last_outcome_date
+          FROM lots
+        `),
+      ])
+
+      const totalEvents = parseInt(eventStats.rows[0].total_events)
+      const lastEvent = eventStats.rows[0].last_event
+      const totalOutcomes = parseInt(outcomeStats.rows[0].total_outcomes)
+      const avgConfidence = outcomeStats.rows[0].avg_confidence
+      const lastOutcomeDate = outcomeStats.rows[0].last_outcome_date
+
+      const hoursSinceLastEvent = lastEvent
+        ? (Date.now() - new Date(lastEvent).getTime()) / 3600000
+        : 999
+
+      health.services.copartOutcomes = {
+        status: hoursSinceLastEvent < 2 ? 'up' : 'degraded',
+        message: totalOutcomes > 0
+          ? `${totalOutcomes} outcomes detected (${avgConfidence}% avg confidence)`
+          : totalEvents > 0
+          ? `${totalEvents} events tracked, 0 outcomes resolved`
+          : 'No events tracked yet',
+        totalEvents,
+        eventBreakdown: {
+          appeared: parseInt(eventStats.rows[0].appeared),
+          disappeared: parseInt(eventStats.rows[0].disappeared),
+          updated: parseInt(eventStats.rows[0].updated),
+          statusChange: parseInt(eventStats.rows[0].status_change),
+        },
+        totalOutcomes,
+        outcomeBreakdown: {
+          sold: parseInt(outcomeStats.rows[0].sold) || 0,
+          notSold: parseInt(outcomeStats.rows[0].not_sold) || 0,
+          onApproval: parseInt(outcomeStats.rows[0].on_approval) || 0,
+        },
+        avgConfidence,
+        lastEvent,
+        lastOutcomeDate,
+      }
+
+      if (hoursSinceLastEvent >= 2) {
+        health.status = 'degraded'
+      }
+    } finally {
+      client.release()
+    }
+  } catch (e: any) {
+    health.services.copartOutcomes = { status: 'down', message: e.message }
+  }
+
   const status = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503
 
   // Return HTML UI for browsers, JSON for API clients
@@ -245,6 +318,32 @@ function generateHealthHTML(health: any): string {
     const sColor = service.status === 'up' ? '#10b981' : service.status === 'degraded' ? '#f59e0b' : '#ef4444'
     const sBg = service.status === 'up' ? '#d1fae5' : service.status === 'degraded' ? '#fef3c7' : '#fee2e2'
 
+    // Special rendering for Copart Outcomes service
+    let extraDetails = ''
+    if (name === 'copartOutcomes' && service.eventBreakdown) {
+      extraDetails = `
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: #374151;">Event Breakdown:</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; color: #6b7280;">
+            <div>Appeared: ${service.eventBreakdown.appeared}</div>
+            <div>Disappeared: ${service.eventBreakdown.disappeared}</div>
+            <div>Updated: ${service.eventBreakdown.updated}</div>
+            <div>Status Change: ${service.eventBreakdown.statusChange}</div>
+          </div>
+        </div>
+        ${service.totalOutcomes > 0 ? `
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+            <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: #374151;">Outcomes Resolved:</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; font-size: 11px; color: #6b7280;">
+              <div>Sold: ${service.outcomeBreakdown.sold}</div>
+              <div>Not Sold: ${service.outcomeBreakdown.notSold}</div>
+              <div>On Approval: ${service.outcomeBreakdown.onApproval}</div>
+            </div>
+          </div>
+        ` : ''}
+      `
+    }
+
     return `
       <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -255,9 +354,11 @@ function generateHealthHTML(health: any): string {
         </div>
         <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">${service.message || 'Operational'}</p>
         ${service.lastRun ? `<p style="margin: 8px 0 0 0; font-size: 12px; color: #9ca3af;">Last run: ${new Date(service.lastRun).toLocaleString()}</p>` : ''}
+        ${service.lastEvent ? `<p style="margin: 8px 0 0 0; font-size: 12px; color: #9ca3af;">Last event: ${new Date(service.lastEvent).toLocaleString()}</p>` : ''}
         ${service.lastActivity ? `<p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">Last activity: ${new Date(service.lastActivity).toLocaleString()}</p>` : ''}
         ${service.lotsRemaining ? `<p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">Lots remaining: ${service.lotsRemaining.toLocaleString()}</p>` : ''}
         ${service.total ? `<p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">Total: ${service.total.toLocaleString()}</p>` : ''}
+        ${extraDetails}
       </div>
     `
   }).join('')
@@ -370,6 +471,7 @@ function formatServiceName(name: string): string {
     etl: 'ETL Pipeline',
     imageBackfill: 'Image Backfill',
     images: 'Images',
+    copartOutcomes: 'Copart Outcome Detection',
   }
   return names[name] || name
 }

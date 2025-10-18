@@ -147,7 +147,7 @@ async function fetchMakesModelsFromDB(
           ${bodyFilter}
           ${yearFilter}
         GROUP BY COALESCE(NULLIF(v.trim, ''), v.model_detail)
-        ORDER BY count DESC
+        ORDER BY model_detail ASC
         LIMIT 50
       `
       const result = await client.query(query, params)
@@ -183,7 +183,7 @@ async function fetchMakesModelsFromDB(
           ${bodyFilter}
           ${yearFilter}
         GROUP BY v.model
-        ORDER BY count DESC
+        ORDER BY v.model ASC
         LIMIT 50
       `
       const result = await client.query(query, params)
@@ -210,7 +210,7 @@ async function fetchMakesModelsFromDB(
           AND l.status = 'active'
           ${bodyFilter}
         GROUP BY v.make
-        ORDER BY count DESC
+        ORDER BY v.make ASC
         LIMIT 20
       `
       const result = await client.query(query)
