@@ -324,8 +324,8 @@ export async function GET(req: NextRequest) {
           get_taxonomy_label('statuses', l.status, $${langParamIndex}) as status_label,
           get_taxonomy_label('damage_types', normalize_damage_code(l.damage_description), $${langParamIndex}) as damage_label,
           get_taxonomy_label('title_types', l.title_type, $${langParamIndex}) as title_label,
-          (SELECT source_url FROM images WHERE vin = v.vin ORDER BY seq ASC LIMIT 1) as primary_image_url,
-          (SELECT COUNT(*) FROM images WHERE vin = v.vin) as image_count
+          (SELECT source_url FROM images WHERE vin = v.vin AND NOT is_removed ORDER BY seq ASC LIMIT 1) as primary_image_url,
+          (SELECT COUNT(*) FROM images WHERE vin = v.vin AND NOT is_removed) as image_count
         FROM vehicles v
         LEFT JOIN lots l ON l.vin = v.vin
         ${whereClause}
