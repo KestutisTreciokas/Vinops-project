@@ -80,6 +80,7 @@ async function fetchMakesModelsFromDB(
 
     if (wantYears && make) {
       // Return available years for make (and optionally model and model_detail) and vehicle type
+      // NOW FILTERS BY ACTIVE LOTS - only shows years with status='active' lots
       // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
       const bodyFilter = bodyTypesIn
         ? vehicleType === 'auto'
@@ -102,9 +103,11 @@ async function fetchMakesModelsFromDB(
       const query = `
         SELECT DISTINCT v.year
         FROM vehicles v
+        INNER JOIN lots l ON l.vin = v.vin
         WHERE v.make = $1
           ${filters.join(' ')}
           AND v.year IS NOT NULL
+          AND l.status = 'active'
           ${bodyFilter}
         ORDER BY v.year DESC
         LIMIT 100
@@ -119,6 +122,7 @@ async function fetchMakesModelsFromDB(
       }
     } else if (make && model) {
       // Return model_details for specific make+model and vehicle type
+      // NOW FILTERS BY ACTIVE LOTS - only shows model_details with status='active' lots
       // Uses COALESCE to prefer trim, fallback to model_detail when trim is empty
       // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
       // Filter by year if provided to show only available combinations
@@ -132,12 +136,14 @@ async function fetchMakesModelsFromDB(
       if (year) params.push(year)
 
       const query = `
-        SELECT COALESCE(NULLIF(v.trim, ''), v.model_detail) as model_detail, COUNT(*) as count
+        SELECT COALESCE(NULLIF(v.trim, ''), v.model_detail) as model_detail, COUNT(DISTINCT l.id) as count
         FROM vehicles v
+        INNER JOIN lots l ON l.vin = v.vin
         WHERE v.make = $1
           AND v.model = $2
           AND COALESCE(NULLIF(v.trim, ''), v.model_detail) IS NOT NULL
           AND COALESCE(NULLIF(v.trim, ''), v.model_detail) <> ''
+          AND l.status = 'active'
           ${bodyFilter}
           ${yearFilter}
         GROUP BY COALESCE(NULLIF(v.trim, ''), v.model_detail)
@@ -153,6 +159,7 @@ async function fetchMakesModelsFromDB(
       }
     } else if (make) {
       // Return models for specific make and vehicle type
+      // NOW FILTERS BY ACTIVE LOTS - only shows models with status='active' lots
       // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
       // Filter by year if provided to show only available combinations
       const bodyFilter = bodyTypesIn
@@ -165,12 +172,14 @@ async function fetchMakesModelsFromDB(
       if (year) params.push(year)
 
       const query = `
-        SELECT v.model, COUNT(*) as count
+        SELECT v.model, COUNT(DISTINCT l.id) as count
         FROM vehicles v
+        INNER JOIN lots l ON l.vin = v.vin
         WHERE v.make = $1
           AND v.model IS NOT NULL
           AND v.model <> ''
           AND v.model <> 'ALL MODELS'
+          AND l.status = 'active'
           ${bodyFilter}
           ${yearFilter}
         GROUP BY v.model
@@ -185,19 +194,22 @@ async function fetchMakesModelsFromDB(
       }
     } else {
       // Return top makes for vehicle type
+      // NOW FILTERS BY ACTIVE LOTS - only shows makes with status='active' lots
       // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
       const bodyFilter = bodyTypesIn
         ? vehicleType === 'auto'
-          ? `AND (body IN (${bodyTypesIn}) OR body IS NULL)`
-          : `AND body IN (${bodyTypesIn})`
+          ? `AND (v.body IN (${bodyTypesIn}) OR v.body IS NULL)`
+          : `AND v.body IN (${bodyTypesIn})`
         : ''
       const query = `
-        SELECT make, COUNT(*) as count
-        FROM vehicles
-        WHERE make IS NOT NULL
-          AND make <> ''
+        SELECT v.make, COUNT(DISTINCT l.id) as count
+        FROM vehicles v
+        INNER JOIN lots l ON l.vin = v.vin
+        WHERE v.make IS NOT NULL
+          AND v.make <> ''
+          AND l.status = 'active'
           ${bodyFilter}
-        GROUP BY make
+        GROUP BY v.make
         ORDER BY count DESC
         LIMIT 20
       `
