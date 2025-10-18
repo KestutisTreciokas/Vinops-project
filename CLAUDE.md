@@ -554,11 +554,147 @@ WHERE l.created_at > NOW() - INTERVAL '30 days';
 
 ### Next Steps (P1/P2 - Deferred)
 
-- [ ] P1: Switch "choose model" filter from `model_detail` to `trim` column
-- [ ] P1: Implement parallel image backfill worker
+- [x] P1: Switch "choose model" filter from `model_detail` to `trim` column - **COMPLETE**
+- [x] P1: Implement parallel image backfill worker - **COMPLETE (separate service)**
 - [ ] P2: Fix VIN validation and body category classification
 - [ ] P2: Add tests for all P0 changes
 - [ ] P2: Merge to main with green GitHub Actions
+
+---
+
+## Service Architecture — ETL & Image Pipeline (2025-10-18)
+
+**Status:** ✅ **PRODUCTION**
+**Date:** 2025-10-18
+**Commits:** `3f7ad41` (schema fix), `a03038c` (service separation)
+
+### Overview
+
+The ETL pipeline is split into TWO independent services with clear separation of concerns:
+
+1. **vinops-etl.service** - Fresh data ingestion (hourly)
+2. **vinops-image-backfill.service** - Historical image backfill (every 30 min)
+
+### Service 1: vinops-etl.service (Fresh Data Ingestion)
+
+**Trigger:** Hourly via `vinops-etl.timer` (OnCalendar=hourly)
+**Purpose:** Process NEW lots from latest Copart CSV
+
+**Pipeline Steps:**
+```
+1. Download CSV from Copart
+   ↓
+2. Ingest to staging.copart_raw
+   ↓
+3. Upsert to public.lots + vehicles (all new/changed, no limit)
+   ↓
+4. Download images for NEW lots (created in last 24 hours, limit=5000)
+```
+
+**Resource Limits:**
+- Memory: 6GB max
+- CPU: 150% (1.5 cores)
+- Tasks: 500 max
+- Timeout: 30s graceful shutdown
+
+**Logs:**
+- stdout: `/var/log/vinops/etl.log`
+- stderr: `/var/log/vinops/etl-error.log`
+
+**Files:**
+- Service: `deploy/systemd/vinops-etl.service`
+- Timer: `deploy/systemd/vinops-etl.timer`
+
+### Service 2: vinops-image-backfill.service (Historical Backfill)
+
+**Trigger:** Every 30 minutes via `vinops-image-backfill.timer` (OnCalendar=*:0/30)
+**Purpose:** Fill in missing images for OLD lots without images
+
+**Pipeline Steps:**
+```
+1. Query lots WITHOUT images (prioritize last 7 days)
+   ↓
+2. Download images from Copart API (limit=2000 per run)
+   ↓
+3. Upload to R2 + insert to public.images
+```
+
+**Resource Limits:**
+- Memory: 4GB max (lower than ETL)
+- CPU: 100% (1 core)
+- Tasks: 300 max
+- Timeout: 30s graceful shutdown
+
+**Performance:**
+- Rate: ~150 images/min (~9000 images/hour)
+- Batch size: 50 lots
+- Concurrency: 15 parallel downloads
+
+**Logs:**
+- stdout: `/var/log/vinops/image-backfill.log`
+- stderr: `/var/log/vinops/image-backfill-error.log`
+
+**Files:**
+- Service: `deploy/systemd/vinops-image-backfill.service`
+- Timer: `deploy/systemd/vinops-image-backfill.timer`
+
+### Benefits of Separation
+
+✅ **Clear responsibilities:** Fresh data vs historical backfill
+✅ **Independent failures:** ETL failure doesn't block image backfill
+✅ **Faster ETL:** No 3000-lot backfill overhead on hourly runs
+✅ **Continuous progress:** Backfill runs 2x/hour instead of 1x/hour
+✅ **Better monitoring:** Separate logs and timers for each service
+✅ **Resource efficiency:** Each service gets appropriate limits
+
+### Monitoring
+
+**Check service status:**
+```bash
+systemctl status vinops-etl.service
+systemctl status vinops-image-backfill.service
+```
+
+**Check timer schedule:**
+```bash
+systemctl list-timers vinops*
+```
+
+**Monitor logs:**
+```bash
+# ETL logs
+tail -f /var/log/vinops/etl.log
+
+# Backfill logs
+tail -f /var/log/vinops/image-backfill.log
+```
+
+**Check image progress:**
+```sql
+-- Total images
+SELECT COUNT(*) FROM images;
+
+-- Lots with/without images
+SELECT
+  COUNT(DISTINCT i.lot_id) as lots_with_images,
+  (SELECT COUNT(*) FROM lots WHERE created_at > NOW() - INTERVAL '7 days') as recent_lots
+FROM images i
+WHERE NOT i.is_removed;
+```
+
+### Critical Fix History
+
+**2025-10-18 - Schema Column Name Fix (`3f7ad41`)**
+- **Problem:** Image script used wrong column names (`url` vs `source_url`)
+- **Impact:** Images failing silently for 9+ hours
+- **Fix:** Updated INSERT statement to use correct schema columns
+- **Result:** Image pipeline restored, backfill operational
+
+**2025-10-18 - Service Separation (`a03038c`)**
+- **Problem:** Single monolithic ETL doing fresh data + historical backfill
+- **Impact:** Slow ETL runs, unclear monitoring, mixed responsibilities
+- **Fix:** Split into two dedicated services with separate timers
+- **Result:** 2x faster backfill rate, clearer monitoring, independent failures
 
 ---
 

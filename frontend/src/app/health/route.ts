@@ -21,6 +21,7 @@ export async function GET() {
       database: { status: 'down' },
       redis: { status: 'down' },
       etl: { status: 'down' },
+      imageBackfill: { status: 'down' },
       images: { status: 'down' },
     },
     metrics: {
@@ -28,6 +29,8 @@ export async function GET() {
       totalLots: 0,
       activeLots: 0,
       vehiclesWithImages: 0,
+      lotsNeedingImages: 0,
+      imagesAddedLast30Min: 0,
       uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),
     },
   }
@@ -98,31 +101,72 @@ export async function GET() {
     health.status = 'degraded'
   }
 
-  // Images
+  // Images & Backfill Status
   try {
     const pool = await getPool()
     const client = await pool.connect()
     try {
-      const result = await client.query(`
-        SELECT COUNT(*) as total, MAX(created_at) as last_added
-        FROM images WHERE NOT is_removed
-      `)
-      const total = parseInt(result.rows[0].total)
+      const [imageStats, backfillStats, recentImages] = await Promise.all([
+        client.query(`
+          SELECT COUNT(*) as total, MAX(created_at) as last_added
+          FROM images WHERE NOT is_removed
+        `),
+        client.query(`
+          SELECT COUNT(*) as lots_needing_images
+          FROM lots l
+          WHERE NOT EXISTS (
+            SELECT 1 FROM images i
+            WHERE i.lot_id = l.id AND NOT i.is_removed
+          )
+          AND l.created_at > NOW() - INTERVAL '7 days'
+        `),
+        client.query(`
+          SELECT COUNT(*) as recent_count
+          FROM images
+          WHERE created_at > NOW() - INTERVAL '30 minutes'
+          AND NOT is_removed
+        `),
+      ])
+
+      const total = parseInt(imageStats.rows[0].total)
       const coverage = health.metrics.totalVehicles > 0
         ? ((health.metrics.vehiclesWithImages / health.metrics.totalVehicles) * 100).toFixed(1)
         : '0.0'
+      const lotsNeedingImages = parseInt(backfillStats.rows[0].lots_needing_images)
+      const imagesAddedLast30Min = parseInt(recentImages.rows[0].recent_count)
+
+      health.metrics.lotsNeedingImages = lotsNeedingImages
+      health.metrics.imagesAddedLast30Min = imagesAddedLast30Min
 
       health.services.images = {
         status: total > 0 ? 'up' : 'degraded',
         message: `${coverage}% coverage`,
         total,
-        lastAdded: result.rows[0].last_added,
+        lastAdded: imageStats.rows[0].last_added,
+      }
+
+      // Image Backfill Service (inferred from recent activity)
+      const lastImageAdded = new Date(imageStats.rows[0].last_added)
+      const minutesSinceLastImage = (Date.now() - lastImageAdded.getTime()) / 60000
+
+      health.services.imageBackfill = {
+        status: minutesSinceLastImage < 35 ? 'up' : 'degraded',
+        message: imagesAddedLast30Min > 0
+          ? `Active: ${imagesAddedLast30Min} images last 30min`
+          : `Idle: ${minutesSinceLastImage.toFixed(0)}min since last image`,
+        lotsRemaining: lotsNeedingImages,
+        lastActivity: imageStats.rows[0].last_added,
+      }
+
+      if (minutesSinceLastImage >= 35) {
+        health.status = 'degraded'
       }
     } finally {
       client.release()
     }
   } catch (e: any) {
     health.services.images = { status: 'down', message: e.message }
+    health.services.imageBackfill = { status: 'down', message: e.message }
   }
 
   const status = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503
