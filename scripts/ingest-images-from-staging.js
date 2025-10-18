@@ -191,7 +191,7 @@ async function processLot(client, lot) {
         const variantType = isThumbNail ? 'thb' : 'ful';
 
         try {
-          // Check if already exists
+          // Check if already exists for this lot
           const existing = await client.query(
             'SELECT 1 FROM images WHERE lot_id = $1 AND seq = $2 AND variant = $3',
             [lotId, sequence, variantType]
@@ -204,9 +204,22 @@ async function processLot(client, lot) {
           // Download image
           const { buffer, sha256, sizeBytes } = await retry(() => downloadImage(url.trim()));
 
-          // Upload to R2
-          const r2Key = `images/${lotId}/${sequence}_${variantType}.jpg`;
-          await retry(() => uploadToR2(r2Key, buffer));
+          // Check if this exact image already exists globally (deduplication by content hash)
+          const duplicate = await client.query(
+            'SELECT storage_key, lot_id FROM images WHERE content_hash = $1 AND variant = $2 LIMIT 1',
+            [sha256, variantType]
+          );
+
+          let r2Key;
+          if (duplicate.rows.length > 0) {
+            // Reuse existing R2 key instead of uploading duplicate
+            r2Key = duplicate.rows[0].storage_key;
+            console.log(`Image ${sequence}_${variantType} for lot ${lotId} is duplicate of lot ${duplicate.rows[0].lot_id} (hash: ${sha256.substring(0, 12)}...) - reusing storage_key`);
+          } else {
+            // Upload new image to R2
+            r2Key = `images/${lotId}/${sequence}_${variantType}.jpg`;
+            await retry(() => uploadToR2(r2Key, buffer));
+          }
 
           // Insert into DB (idempotent)
           await client.query(`

@@ -114,6 +114,9 @@ async function main() {
     let errors = 0;
     const errorDetails = [];
 
+    // VIN validation regex (11-17 chars, excludes I/O/Q)
+    const VIN_REGEX = /^[A-HJ-NPR-Z0-9]{11,17}$/;
+
     // Step 2: Process each record
     for (const record of stagingRecords) {
       // Use savepoint for individual record processing
@@ -124,6 +127,30 @@ async function main() {
 
         const { id: stagingId, lot_external_id, vin_raw, payload_jsonb, record_type } = record;
         const p = payload_jsonb; // shorthand
+
+        // Validate VIN format before processing
+        const normalizedVin = vin_raw.trim().toUpperCase();
+        if (!VIN_REGEX.test(normalizedVin)) {
+          // Skip invalid VINs and mark processing error
+          await client.query(`
+            UPDATE staging.copart_raw
+            SET processing_error = 'Invalid VIN format: ' || $1
+            WHERE id = $2
+          `, [vin_raw, stagingId]);
+
+          skipped++;
+          errorDetails.push({
+            stagingId,
+            lotExternalId: lot_external_id,
+            vin: vin_raw,
+            error: 'INVALID_VIN_FORMAT',
+            message: `VIN must be 11-17 uppercase chars, excluding I/O/Q (got: ${vin_raw})`
+          });
+
+          // Release savepoint and continue to next record
+          await client.query(`RELEASE SAVEPOINT ${savepointName}`);
+          continue;
+        }
 
         // Parse numeric values safely
         const parseNum = (val) => {
@@ -174,12 +201,12 @@ async function main() {
           }
         };
 
-        // Ensure vehicle exists first
+        // Ensure vehicle exists first (use normalized VIN)
         await client.query(`
           INSERT INTO vehicles (vin)
           VALUES ($1)
           ON CONFLICT (vin) DO NOTHING
-        `, [vin_raw]);
+        `, [normalizedVin]);
 
         // Upsert into lots
         const upsertResult = await client.query(`
@@ -276,7 +303,7 @@ async function main() {
             updated_at = NOW()
           RETURNING (xmax = 0) AS inserted
         `, [
-          vin_raw,                                    // $1 vin
+          normalizedVin,                              // $1 vin (normalized and validated)
           'copart',                                   // $2 source
           lot_external_id,                            // $3 lot_external_id
           p['Yard number'],                           // $4 site_code
