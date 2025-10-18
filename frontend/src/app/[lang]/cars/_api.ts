@@ -65,10 +65,15 @@ async function fetchVehiclesFromDB(
       let paramIndex = 1
 
       // Add vehicle type filter
+      // IMPORTANT: Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
       if (params.vehicleType) {
         const bodyTypesIn = getVehicleTypeFilter(params.vehicleType)
         if (bodyTypesIn) {
-          conditions.push(`v.body IN (${bodyTypesIn})`)
+          if (params.vehicleType === 'auto') {
+            conditions.push(`(v.body IN (${bodyTypesIn}) OR v.body IS NULL)`)
+          } else {
+            conditions.push(`v.body IN (${bodyTypesIn})`)
+          }
         }
       }
 
@@ -139,7 +144,7 @@ async function fetchVehiclesFromDB(
           v.vin, v.make, v.model, v.year, v.body, v.updated_at,
           l.id as lot_id, l.status, l.site_code, l.city, l.region, l.country,
           l.auction_datetime_utc, l.retail_value_usd, l.damage_description, l.title_type, l.odometer,
-          l.buy_it_now_usd, l.current_bid_usd,
+          l.buy_it_now_usd, l.current_bid_usd, l.created_at, l.updated_at as lot_updated_at,
           get_taxonomy_label('body_styles', v.body, $${langParamIndex}) as body_label,
           get_taxonomy_label('statuses', l.status, $${langParamIndex}) as status_label,
           get_taxonomy_label('damage_types', normalize_damage_code(l.damage_description), $${langParamIndex}) as damage_label,
@@ -159,6 +164,7 @@ async function fetchVehiclesFromDB(
       const items = result.rows.slice(0, limit)
 
       // Generate next cursor if there are more results
+      // Include all fields that might be needed for different sort orders
       let nextCursor: string | null = null
       if (hasMore && items.length > 0) {
         const lastItem = items[items.length - 1]
@@ -166,6 +172,8 @@ async function fetchVehiclesFromDB(
           lastVin: lastItem.vin,
           lastAuctionDate: lastItem.auction_datetime_utc,
           lastYear: lastItem.year,
+          lastCreatedAt: lastItem.created_at || null,
+          lastUpdatedAt: lastItem.lot_updated_at || null,
         }
         nextCursor = Buffer.from(JSON.stringify(cursorData)).toString('base64url')
       }
