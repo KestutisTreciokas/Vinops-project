@@ -25,6 +25,8 @@ const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.PGSSL_DISABLE === '1' ? false : { rejectUnauthorized: false },
   max: 20,
+  // Override read-only mode for ETL operations
+  options: '-c default_transaction_read_only=off',
 });
 
 const r2 = new S3Client({
