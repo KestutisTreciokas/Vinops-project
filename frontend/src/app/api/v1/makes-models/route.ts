@@ -75,7 +75,12 @@ async function fetchMakesModelsFromDB(
 
     if (wantYears && make) {
       // Return available years for make (and optionally model and model_detail) and vehicle type
-      const bodyFilter = bodyTypesIn ? `AND v.body IN (${bodyTypesIn})` : ''
+      // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
+      const bodyFilter = bodyTypesIn
+        ? vehicleType === 'auto'
+          ? `AND (v.body IN (${bodyTypesIn}) OR v.body IS NULL)`
+          : `AND v.body IN (${bodyTypesIn})`
+        : ''
       const filters: string[] = []
       const params: any[] = [make]
       let paramIndex = 2
@@ -85,7 +90,7 @@ async function fetchMakesModelsFromDB(
         params.push(model)
       }
       if (modelDetail) {
-        filters.push(`AND v.model_detail = $${paramIndex++}`)
+        filters.push(`AND COALESCE(NULLIF(v.trim, ''), v.model_detail) = $${paramIndex++}`)
         params.push(modelDetail)
       }
 
@@ -109,16 +114,22 @@ async function fetchMakesModelsFromDB(
       }
     } else if (make && model) {
       // Return model_details for specific make+model and vehicle type
-      const bodyFilter = bodyTypesIn ? `AND v.body IN (${bodyTypesIn})` : ''
+      // Uses COALESCE to prefer trim, fallback to model_detail when trim is empty
+      // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
+      const bodyFilter = bodyTypesIn
+        ? vehicleType === 'auto'
+          ? `AND (v.body IN (${bodyTypesIn}) OR v.body IS NULL)`
+          : `AND v.body IN (${bodyTypesIn})`
+        : ''
       const query = `
-        SELECT v.model_detail, COUNT(*) as count
+        SELECT COALESCE(NULLIF(v.trim, ''), v.model_detail) as model_detail, COUNT(*) as count
         FROM vehicles v
         WHERE v.make = $1
           AND v.model = $2
-          AND v.model_detail IS NOT NULL
-          AND v.model_detail <> ''
+          AND COALESCE(NULLIF(v.trim, ''), v.model_detail) IS NOT NULL
+          AND COALESCE(NULLIF(v.trim, ''), v.model_detail) <> ''
           ${bodyFilter}
-        GROUP BY v.model_detail
+        GROUP BY COALESCE(NULLIF(v.trim, ''), v.model_detail)
         ORDER BY count DESC
         LIMIT 50
       `
@@ -131,7 +142,12 @@ async function fetchMakesModelsFromDB(
       }
     } else if (make) {
       // Return models for specific make and vehicle type
-      const bodyFilter = bodyTypesIn ? `AND v.body IN (${bodyTypesIn})` : ''
+      // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
+      const bodyFilter = bodyTypesIn
+        ? vehicleType === 'auto'
+          ? `AND (v.body IN (${bodyTypesIn}) OR v.body IS NULL)`
+          : `AND v.body IN (${bodyTypesIn})`
+        : ''
       const query = `
         SELECT v.model, COUNT(*) as count
         FROM vehicles v
@@ -152,7 +168,12 @@ async function fetchMakesModelsFromDB(
       }
     } else {
       // Return top makes for vehicle type
-      const bodyFilter = bodyTypesIn ? `AND body IN (${bodyTypesIn})` : ''
+      // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
+      const bodyFilter = bodyTypesIn
+        ? vehicleType === 'auto'
+          ? `AND (body IN (${bodyTypesIn}) OR body IS NULL)`
+          : `AND body IN (${bodyTypesIn})`
+        : ''
       const query = `
         SELECT make, COUNT(*) as count
         FROM vehicles

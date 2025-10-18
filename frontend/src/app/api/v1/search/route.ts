@@ -202,10 +202,15 @@ export async function GET(req: NextRequest) {
         let paramIndex = 1
 
       // Add vehicle type filter
+      // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
       if (vehicleType) {
         const bodyTypesIn = getVehicleTypeFilter(vehicleType as VehicleType)
         if (bodyTypesIn) {
-          conditions.push(`v.body IN (${bodyTypesIn})`)
+          if (vehicleType === 'auto') {
+            conditions.push(`(v.body IN (${bodyTypesIn}) OR v.body IS NULL)`)
+          } else {
+            conditions.push(`v.body IN (${bodyTypesIn})`)
+          }
         }
       }
 
