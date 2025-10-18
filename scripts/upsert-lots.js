@@ -46,18 +46,31 @@ async function main() {
   try {
     await client.query('BEGIN');
 
-    // Step 1: Get unprocessed staging records
+    // Step 1: Get unprocessed staging records OR records with changes
+    // Strategy: Include records where:
+    //   - Never processed (processed_at IS NULL), OR
+    //   - Staging source_updated_at is newer than lot's source_updated_at
     let query = `
-      SELECT
-        id,
-        lot_external_id,
-        vin_raw,
-        payload_jsonb
-      FROM staging.copart_raw
-      WHERE processed_at IS NULL
-        AND lot_external_id IS NOT NULL
-        AND vin_raw IS NOT NULL
-        AND vin_raw != ''
+      SELECT DISTINCT ON (cr.lot_external_id)
+        cr.id,
+        cr.lot_external_id,
+        cr.vin_raw,
+        cr.payload_jsonb,
+        CASE
+          WHEN cr.processed_at IS NULL THEN 'new'
+          WHEN l.id IS NULL THEN 'new'
+          WHEN (cr.payload_jsonb->>'Last Updated Time')::timestamptz > l.source_updated_at THEN 'updated'
+          ELSE 'unchanged'
+        END as record_type
+      FROM staging.copart_raw cr
+      LEFT JOIN lots l ON cr.lot_external_id = l.lot_external_id
+      WHERE cr.lot_external_id IS NOT NULL
+        AND cr.vin_raw IS NOT NULL
+        AND cr.vin_raw != ''
+        AND (
+          cr.processed_at IS NULL
+          OR (l.id IS NOT NULL AND (cr.payload_jsonb->>'Last Updated Time')::timestamptz > l.source_updated_at)
+        )
     `;
 
     const params = [];
@@ -68,7 +81,7 @@ async function main() {
       params.push(fileId);
     }
 
-    query += ` ORDER BY id`;
+    query += ` ORDER BY cr.lot_external_id, cr.id DESC`;
 
     if (limit) {
       query += ` LIMIT $${paramIndex++}`;
@@ -78,7 +91,12 @@ async function main() {
     const stagingResult = await client.query(query, params);
     const stagingRecords = stagingResult.rows;
 
-    console.log(`Found ${stagingRecords.length} unprocessed records in staging\n`);
+    const newRecords = stagingRecords.filter(r => r.record_type === 'new').length;
+    const updatedRecords = stagingRecords.filter(r => r.record_type === 'updated').length;
+
+    console.log(`Found ${stagingRecords.length} records to process:`);
+    console.log(`  - New lots: ${newRecords}`);
+    console.log(`  - Updated lots: ${updatedRecords}\n`);
 
     if (stagingRecords.length === 0) {
       console.log('No records to process. Exiting.\n');
@@ -100,7 +118,7 @@ async function main() {
       try {
         await client.query(`SAVEPOINT ${savepointName}`);
 
-        const { id: stagingId, lot_external_id, vin_raw, payload_jsonb } = record;
+        const { id: stagingId, lot_external_id, vin_raw, payload_jsonb, record_type } = record;
         const p = payload_jsonb; // shorthand
 
         // Parse numeric values safely
@@ -309,7 +327,7 @@ async function main() {
           updated++;
         }
 
-        // Mark staging record as processed
+        // Mark staging record as processed (update timestamp even for re-processing)
         await client.query(`
           UPDATE staging.copart_raw
           SET processed_at = NOW()
