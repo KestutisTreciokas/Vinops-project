@@ -253,37 +253,90 @@ export async function GET(req: NextRequest) {
       // Add cursor condition for keyset pagination
       if (cursorData) {
         if (sort === 'auction_date_asc') {
-          conditions.push(`(l.auction_datetime_utc > $${paramIndex} OR (l.auction_datetime_utc = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
-          values.push(cursorData.lastAuctionDate, cursorData.lastVin)
-          paramIndex += 2
+          // Handle NULL auction dates: NULLs sort last in ASC with NULLS LAST
+          if (cursorData.lastAuctionDate === null) {
+            conditions.push(`(l.auction_datetime_utc IS NULL AND v.vin > $${paramIndex})`)
+            values.push(cursorData.lastVin)
+            paramIndex += 1
+          } else {
+            conditions.push(`(l.auction_datetime_utc > $${paramIndex} OR (l.auction_datetime_utc = $${paramIndex} AND v.vin > $${paramIndex + 1}) OR l.auction_datetime_utc IS NULL)`)
+            values.push(cursorData.lastAuctionDate, cursorData.lastVin)
+            paramIndex += 2
+          }
         } else if (sort === 'auction_date_desc') {
-          conditions.push(`(l.auction_datetime_utc < $${paramIndex} OR (l.auction_datetime_utc = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
-          values.push(cursorData.lastAuctionDate, cursorData.lastVin)
-          paramIndex += 2
+          // Handle NULL auction dates: NULLs sort last in DESC with NULLS LAST
+          if (cursorData.lastAuctionDate === null) {
+            conditions.push(`(l.auction_datetime_utc IS NULL AND v.vin > $${paramIndex})`)
+            values.push(cursorData.lastVin)
+            paramIndex += 1
+          } else {
+            conditions.push(`(l.auction_datetime_utc < $${paramIndex} OR (l.auction_datetime_utc = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
+            values.push(cursorData.lastAuctionDate, cursorData.lastVin)
+            paramIndex += 2
+          }
         } else if (sort === 'year_desc') {
-          conditions.push(`(v.year < $${paramIndex} OR (v.year = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
-          values.push(cursorData.lastYear, cursorData.lastVin)
-          paramIndex += 2
+          // Handle NULL years: NULLs sort last with NULLS LAST
+          if (cursorData.lastYear === null) {
+            conditions.push(`(v.year IS NULL AND v.vin > $${paramIndex})`)
+            values.push(cursorData.lastVin)
+            paramIndex += 1
+          } else {
+            conditions.push(`(v.year < $${paramIndex} OR (v.year = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
+            values.push(cursorData.lastYear, cursorData.lastVin)
+            paramIndex += 2
+          }
         } else if (sort === 'year_asc') {
-          conditions.push(`(v.year > $${paramIndex} OR (v.year = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
-          values.push(cursorData.lastYear, cursorData.lastVin)
-          paramIndex += 2
+          // Handle NULL years: NULLs sort last with NULLS LAST
+          if (cursorData.lastYear === null) {
+            conditions.push(`(v.year IS NULL AND v.vin > $${paramIndex})`)
+            values.push(cursorData.lastVin)
+            paramIndex += 1
+          } else {
+            conditions.push(`(v.year > $${paramIndex} OR (v.year = $${paramIndex} AND v.vin > $${paramIndex + 1}) OR v.year IS NULL)`)
+            values.push(cursorData.lastYear, cursorData.lastVin)
+            paramIndex += 2
+          }
         } else if (sort === 'created_at_desc') {
-          conditions.push(`(l.created_at < $${paramIndex} OR (l.created_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
-          values.push(cursorData.lastCreatedAt, cursorData.lastVin)
-          paramIndex += 2
+          // created_at should never be NULL (has DEFAULT now()), but handle it anyway
+          if (cursorData.lastCreatedAt === null) {
+            conditions.push(`v.vin > $${paramIndex}`)
+            values.push(cursorData.lastVin)
+            paramIndex += 1
+          } else {
+            conditions.push(`(l.created_at < $${paramIndex} OR (l.created_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
+            values.push(cursorData.lastCreatedAt, cursorData.lastVin)
+            paramIndex += 2
+          }
         } else if (sort === 'created_at_asc') {
-          conditions.push(`(l.created_at > $${paramIndex} OR (l.created_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
-          values.push(cursorData.lastCreatedAt, cursorData.lastVin)
-          paramIndex += 2
+          if (cursorData.lastCreatedAt === null) {
+            conditions.push(`v.vin > $${paramIndex}`)
+            values.push(cursorData.lastVin)
+            paramIndex += 1
+          } else {
+            conditions.push(`(l.created_at > $${paramIndex} OR (l.created_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
+            values.push(cursorData.lastCreatedAt, cursorData.lastVin)
+            paramIndex += 2
+          }
         } else if (sort === 'updated_at_desc') {
-          conditions.push(`(l.updated_at < $${paramIndex} OR (l.updated_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
-          values.push(cursorData.lastUpdatedAt, cursorData.lastVin)
-          paramIndex += 2
+          if (cursorData.lastUpdatedAt === null) {
+            conditions.push(`v.vin > $${paramIndex}`)
+            values.push(cursorData.lastVin)
+            paramIndex += 1
+          } else {
+            conditions.push(`(l.updated_at < $${paramIndex} OR (l.updated_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
+            values.push(cursorData.lastUpdatedAt, cursorData.lastVin)
+            paramIndex += 2
+          }
         } else if (sort === 'updated_at_asc') {
-          conditions.push(`(l.updated_at > $${paramIndex} OR (l.updated_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
-          values.push(cursorData.lastUpdatedAt, cursorData.lastVin)
-          paramIndex += 2
+          if (cursorData.lastUpdatedAt === null) {
+            conditions.push(`v.vin > $${paramIndex}`)
+            values.push(cursorData.lastVin)
+            paramIndex += 1
+          } else {
+            conditions.push(`(l.updated_at > $${paramIndex} OR (l.updated_at = $${paramIndex} AND v.vin > $${paramIndex + 1}))`)
+            values.push(cursorData.lastUpdatedAt, cursorData.lastVin)
+            paramIndex += 2
+          }
         }
       }
 

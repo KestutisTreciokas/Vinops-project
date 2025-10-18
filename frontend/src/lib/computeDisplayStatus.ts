@@ -54,7 +54,7 @@ export function computeDisplayStatus(item: ComputeStatusInput): string {
   }
 
   // 3. Fallback to database status
-  const dbStatus = (status || 'active').toLowerCase()
+  const dbStatus = (status || 'unknown').toLowerCase()
 
   // Map common db statuses
   if (dbStatus === 'pending_result' || dbStatus === 'on_approval') {

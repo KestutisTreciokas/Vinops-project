@@ -226,7 +226,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
         params.set('year_min', year)
         params.set('year_max', year)
       }
-      params.set('status', 'active')
+      // Don't filter by status - show all lots so badges display real statuses
       params.set('lang', lang)
       params.set('sort', 'auction_date_desc')
       params.set('limit', '100')

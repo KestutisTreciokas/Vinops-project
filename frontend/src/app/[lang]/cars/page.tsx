@@ -31,7 +31,7 @@ export default async function Page({
     model_detail: modelDetail,
     year_min: year,
     year_max: year,
-    status: 'active', // Only show active lots
+    // Don't filter by status - show all lots (active, upcoming, etc.) so badges display real statuses
     limit: 100, // Show 100 vehicles initially
     lang,
     sort: 'auction_date_desc' // Sort by auction date (has index)
