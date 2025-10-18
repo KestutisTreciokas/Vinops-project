@@ -86,7 +86,8 @@ async function fetchVehiclesFromDB(
         values.push(params.model.toUpperCase())
       }
       if (params.model_detail) {
-        conditions.push(`v.model_detail = $${paramIndex++}`)
+        // Use COALESCE logic to match filter endpoint and search API
+        conditions.push(`COALESCE(NULLIF(v.trim, ''), v.model_detail) = $${paramIndex++}`)
         values.push(params.model_detail.toUpperCase())
       }
       if (params.year_min !== undefined) {
