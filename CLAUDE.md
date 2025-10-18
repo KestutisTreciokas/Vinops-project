@@ -1,5 +1,71 @@
 # Vinops Project Guide
 
+## Claude Code Workflow — Autonomous Mode
+
+**Status:** ✅ **ENABLED** — Full autonomous operation
+**Config:** `~/.claude/settings.local.json`
+
+### Autonomy Policy
+
+Claude Code operates in **fully autonomous mode** with zero manual prompts for permissions:
+
+- **File Operations:** Read, Write, Edit any file without approval
+- **Git Operations:** Add, commit, push to any branch without approval
+- **Secrets & Credentials:** Full access to environment variables and credentials
+- **System Commands:** Execute bash, docker, npm, systemctl, etc. without approval
+- **GitHub Actions:** Trigger and monitor CI/CD workflows without approval
+
+### When Claude Asks for Input
+
+Claude will **only contact you** for:
+
+1. **Task Intake** - Understanding what you want accomplished
+2. **Major Decisions** - Strategic choices that affect architecture or cost
+   - Will present options with recommendations
+   - Example: "Choose between Redis vs Memcached (I recommend Redis because...)"
+3. **Clarifications** - When requirements are ambiguous or underspecified
+
+### What Claude Does Autonomously
+
+- ✅ Read/write/edit any file in the repository
+- ✅ Execute database migrations
+- ✅ Run tests, builds, and deployments
+- ✅ Commit and push to main or feature branches
+- ✅ Create and merge pull requests
+- ✅ Use secrets (DB passwords, API keys, etc.)
+- ✅ Restart services, rebuild containers
+- ✅ Install dependencies, update configurations
+- ✅ Monitor logs, troubleshoot errors
+- ✅ Update documentation
+
+### Configuration
+
+**Location:** `~/.claude/settings.local.json`
+
+```json
+{
+  "permissions": {
+    "allow": ["*"],
+    "deny": [],
+    "ask": []
+  }
+}
+```
+
+This configuration enables Claude to operate with full autonomy across all tools and operations.
+
+### Safety Mechanisms
+
+While fully autonomous, Claude still maintains safety:
+
+- **Git Safety:** Never force-push to main without explicit request
+- **Destructive Operations:** Logs all destructive commands before execution
+- **Credential Handling:** Uses environment variables, never commits secrets
+- **Rollback Ready:** Creates backups before major schema changes
+- **Verification:** Tests critical changes before deployment
+
+---
+
 ## Tech Stack
 
 **Frontend:**
