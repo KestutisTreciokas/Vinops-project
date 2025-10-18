@@ -382,23 +382,44 @@ Environment="NODE_OPTIONS=--experimental-default-type=module --max-old-space-siz
 
 ### Overview
 
-Comprehensive health check endpoint monitoring all critical systems:
+Comprehensive health check endpoint monitoring all critical systems with content negotiation:
 
 - **Web:** Next.js server status
 - **Database:** PostgreSQL connection + metrics
 - **Redis:** Cache connectivity
-- **ETL:** Last run time + staleness detection
+- **ETL Pipeline:** Last run time + staleness detection (hourly)
+- **Image Backfill:** Last activity + active backfill tracking (every 30min)
 - **Images:** Coverage percentage
 
 ### Access
 
 **Production:** `https://vinops.online/health`
-**Response Format:** JSON with HTTP status codes
+
+**Response Formats:**
+- **HTML UI** (browsers) - Full dashboard with auto-refresh every 30s
+- **JSON API** (API clients) - Clean JSON response
+
+**HTTP Status Codes:**
 - `200` - Healthy or Degraded (operational)
 - `503` - Unhealthy (critical failure)
 
-### Metrics Exposed
+### HTML Dashboard
 
+**URL:** `https://vinops.online/health` (open in browser)
+
+**Features:**
+- Status badges (green=healthy, yellow=degraded, red=unhealthy)
+- Metrics grid: Total Vehicles, Lots, Active Lots, Image Coverage
+- Service cards for all 6 services with real-time status
+- Additional info: Uptime, Images with Vehicles, Lots Needing Images, Images Last 30min
+- Auto-refresh every 30 seconds
+- Responsive design for mobile
+
+### JSON API
+
+**URL:** `https://vinops.online/health` (with `Accept: application/json` header)
+
+**Response Format:**
 ```json
 {
   "status": "healthy|degraded|unhealthy",
@@ -408,6 +429,7 @@ Comprehensive health check endpoint monitoring all critical systems:
     "database": { "status": "up", "message": "..." },
     "redis": { "status": "up", "message": "..." },
     "etl": { "status": "up", "message": "...", "lastRun": "..." },
+    "imageBackfill": { "status": "up", "message": "...", "lotsRemaining": N, "lastActivity": "..." },
     "images": { "status": "up", "message": "X% coverage", "total": N }
   },
   "metrics": {
@@ -415,6 +437,8 @@ Comprehensive health check endpoint monitoring all critical systems:
     "totalLots": N,
     "activeLots": N,
     "vehiclesWithImages": N,
+    "lotsNeedingImages": N,
+    "imagesAddedLast30Min": N,
     "uptimeSeconds": N
   }
 }
@@ -423,17 +447,24 @@ Comprehensive health check endpoint monitoring all critical systems:
 ### Alerting Thresholds
 
 - **ETL:** Degrades if >2 hours since last run
+- **Image Backfill:** Degrades if >35 minutes since last image added
 - **Images:** Degrades if 0 images ingested
 - **Database:** Unhealthy if connection fails
 
 ### Usage
 
 ```bash
-# Check health
-curl https://vinops.online/health | jq
+# Open HTML dashboard in browser
+open https://vinops.online/health
+
+# Check JSON API
+curl -H "Accept: application/json" https://vinops.online/health | jq
 
 # Monitor in loop
-watch -n 30 'curl -s https://vinops.online/health | jq .status'
+watch -n 30 'curl -s -H "Accept: application/json" https://vinops.online/health | jq .status'
+
+# Check specific service
+curl -s -H "Accept: application/json" https://vinops.online/health | jq '.services.imageBackfill'
 ```
 
 ---
