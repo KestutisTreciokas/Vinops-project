@@ -205,13 +205,13 @@ async function processLot(client, lot) {
 
           // Insert into DB (idempotent)
           await client.query(`
-            INSERT INTO images (lot_id, vin, seq, variant, url, sha256, size_bytes, r2_key)
+            INSERT INTO images (lot_id, vin, seq, variant, source_url, content_hash, bytes, storage_key)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            ON CONFLICT (lot_id, seq, variant) DO UPDATE SET
-              url = EXCLUDED.url,
-              sha256 = EXCLUDED.sha256,
-              size_bytes = EXCLUDED.size_bytes,
-              r2_key = EXCLUDED.r2_key,
+            ON CONFLICT (vin, lot_id, seq, COALESCE(variant, '')) DO UPDATE SET
+              source_url = EXCLUDED.source_url,
+              content_hash = EXCLUDED.content_hash,
+              bytes = EXCLUDED.bytes,
+              storage_key = EXCLUDED.storage_key,
               updated_at = NOW()
           `, [lotId, vin, sequence, variantType, url.trim(), sha256, sizeBytes, r2Key]);
 
