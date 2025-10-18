@@ -1,0 +1,11 @@
+[Unit]
+Description=Vinops Image Backfill Timer - Run every 30 minutes
+Requires=vinops-image-backfill.service
+
+[Timer]
+# Run every 30 minutes
+OnCalendar=*:0/30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
