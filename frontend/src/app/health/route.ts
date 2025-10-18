@@ -11,8 +11,11 @@ export const runtime = 'nodejs'
 
 const startTime = Date.now()
 
-export async function GET() {
+export async function GET(request: Request) {
   const timestamp = new Date().toISOString()
+  const acceptHeader = request.headers.get('accept') || ''
+  const wantsHtml = acceptHeader.includes('text/html')
+
   const health: any = {
     status: 'healthy',
     timestamp,
@@ -170,10 +173,158 @@ export async function GET() {
   }
 
   const status = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503
+
+  // Return HTML UI for browsers, JSON for API clients
+  if (wantsHtml) {
+    const html = generateHealthHTML(health)
+    return new Response(html, {
+      status,
+      headers: {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-store',
+      },
+    })
+  }
+
   return NextResponse.json(health, {
     status,
     headers: { 'Cache-Control': 'no-store' },
   })
+}
+
+function generateHealthHTML(health: any): string {
+  const statusColor = health.status === 'healthy' ? '#10b981' : health.status === 'degraded' ? '#f59e0b' : '#ef4444'
+  const statusBg = health.status === 'healthy' ? '#d1fae5' : health.status === 'degraded' ? '#fef3c7' : '#fee2e2'
+
+  const serviceCards = Object.entries(health.services).map(([name, service]: [string, any]) => {
+    const sColor = service.status === 'up' ? '#10b981' : service.status === 'degraded' ? '#f59e0b' : '#ef4444'
+    const sBg = service.status === 'up' ? '#d1fae5' : service.status === 'degraded' ? '#fef3c7' : '#fee2e2'
+
+    return `
+      <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #111827;">${formatServiceName(name)}</h3>
+          <span style="background: ${sBg}; color: ${sColor}; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600;">
+            ${service.status.toUpperCase()}
+          </span>
+        </div>
+        <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">${service.message || 'Operational'}</p>
+        ${service.lastRun ? `<p style="margin: 8px 0 0 0; font-size: 12px; color: #9ca3af;">Last run: ${new Date(service.lastRun).toLocaleString()}</p>` : ''}
+        ${service.lastActivity ? `<p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">Last activity: ${new Date(service.lastActivity).toLocaleString()}</p>` : ''}
+        ${service.lotsRemaining ? `<p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">Lots remaining: ${service.lotsRemaining.toLocaleString()}</p>` : ''}
+        ${service.total ? `<p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">Total: ${service.total.toLocaleString()}</p>` : ''}
+      </div>
+    `
+  }).join('')
+
+  const metrics = health.metrics
+  const coverage = metrics.totalVehicles > 0 ? ((metrics.vehiclesWithImages / metrics.totalVehicles) * 100).toFixed(1) : '0.0'
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="30">
+  <title>System Health - Vinops</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    .header { margin-bottom: 32px; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 16px; }
+    .status-badge { background: ${statusBg}; color: ${statusColor}; padding: 8px 16px; border-radius: 9999px; font-size: 14px; font-weight: 600; }
+    .timestamp { color: #6b7280; font-size: 14px; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .metric-card { background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; }
+    .metric-label { color: #1e40af; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+    .metric-value { color: #1e3a8a; font-size: 28px; font-weight: 700; }
+    .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .info-box { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; font-size: 14px; }
+    .info-label { color: #6b7280; margin-bottom: 4px; }
+    .info-value { color: #111827; font-weight: 500; }
+    .refresh-note { text-align: center; color: #9ca3af; font-size: 12px; margin-top: 16px; }
+    @media (max-width: 640px) {
+      .header-top { flex-direction: column; align-items: flex-start; }
+      .services-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-top">
+        <h1 style="font-size: 32px; font-weight: 700; color: #111827;">System Health Monitor</h1>
+        <span class="status-badge">${health.status.toUpperCase()}</span>
+      </div>
+      <p class="timestamp">Last updated: ${new Date(health.timestamp).toLocaleString()} • Auto-refresh every 30s</p>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total Vehicles</div>
+        <div class="metric-value">${metrics.totalVehicles.toLocaleString()}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Total Lots</div>
+        <div class="metric-value">${metrics.totalLots.toLocaleString()}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Active Lots</div>
+        <div class="metric-value">${metrics.activeLots.toLocaleString()}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Image Coverage</div>
+        <div class="metric-value">${coverage}%</div>
+      </div>
+    </div>
+
+    <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin-bottom: 16px;">Services</h2>
+    <div class="services-grid">
+      ${serviceCards}
+    </div>
+
+    <div class="info-box">
+      <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">Additional Information</h3>
+      <div class="info-grid">
+        <div>
+          <div class="info-label">Uptime</div>
+          <div class="info-value">${Math.floor(metrics.uptimeSeconds / 60)} min</div>
+        </div>
+        <div>
+          <div class="info-label">Images with Vehicles</div>
+          <div class="info-value">${metrics.vehiclesWithImages.toLocaleString()}</div>
+        </div>
+        <div>
+          <div class="info-label">Lots Needing Images</div>
+          <div class="info-value">${metrics.lotsNeedingImages.toLocaleString()}</div>
+        </div>
+        <div>
+          <div class="info-label">Images Last 30min</div>
+          <div class="info-value">${metrics.imagesAddedLast30Min.toLocaleString()}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="refresh-note">
+      API Endpoint: <code>/health</code> • For JSON, use <code>Accept: application/json</code> header
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+function formatServiceName(name: string): string {
+  const names: Record<string, string> = {
+    web: 'Web Server',
+    database: 'Database',
+    redis: 'Redis Cache',
+    etl: 'ETL Pipeline',
+    imageBackfill: 'Image Backfill',
+    images: 'Images',
+  }
+  return names[name] || name
 }
 
 export async function HEAD() {
