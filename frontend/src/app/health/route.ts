@@ -30,7 +30,15 @@ export async function GET(request: Request) {
     metrics: {
       totalVehicles: 0,
       totalLots: 0,
-      activeLots: 0,
+      lotsByStatus: {
+        active: 0,
+        upcoming: 0,
+        sold: 0,
+        live: 0,
+        pending_result: 0,
+        no_bids: 0,
+        unknown: 0,
+      },
       vehiclesWithImages: 0,
       lotsNeedingImages: 0,
       imagesAddedLast30Min: 0,
@@ -44,17 +52,54 @@ export async function GET(request: Request) {
     const client = await pool.connect()
     try {
       await client.query('SELECT 1')
-      const [vehicles, lots, active, images] = await Promise.all([
+
+      // Query status breakdown using SAME logic as computeDisplayStatus() to match catalog
+      const [vehicles, lots, statusBreakdown, images] = await Promise.all([
         client.query('SELECT COUNT(*) as c FROM vehicles WHERE NOT is_removed'),
-        client.query('SELECT COUNT(*) as c FROM lots'),
-        client.query("SELECT COUNT(*) as c FROM lots WHERE status = 'active'"),
+        client.query('SELECT COUNT(*) as c FROM lots WHERE NOT is_removed'),
+        client.query(`
+          SELECT
+            CASE
+              -- Sold (has final bid - will be separate once final_bid column exists)
+              WHEN auction_datetime_utc < NOW() - INTERVAL '24 hours'
+                   AND current_bid_usd > 0 THEN 'pending_result'
+              -- No bids
+              WHEN auction_datetime_utc < NOW() - INTERVAL '24 hours'
+                   AND (current_bid_usd IS NULL OR current_bid_usd = 0) THEN 'no_bids'
+              -- Live (within 24h of auction)
+              WHEN auction_datetime_utc BETWEEN NOW() - INTERVAL '24 hours'
+                   AND NOW() + INTERVAL '24 hours' THEN 'live'
+              -- Upcoming (>24h future)
+              WHEN auction_datetime_utc > NOW() + INTERVAL '24 hours' THEN 'upcoming'
+              -- NULL auction date - fallback to db status
+              ELSE COALESCE(status, 'unknown')
+            END as display_status,
+            COUNT(*) as count
+          FROM lots
+          WHERE NOT is_removed
+          GROUP BY display_status
+        `),
         client.query('SELECT COUNT(DISTINCT vin) as c FROM images WHERE NOT is_removed'),
       ])
+
+      // Build status counts object
+      const statusCounts: Record<string, number> = {
+        active: 0,
+        upcoming: 0,
+        sold: 0,
+        live: 0,
+        pending_result: 0,
+        no_bids: 0,
+        unknown: 0,
+      }
+      statusBreakdown.rows.forEach((row: any) => {
+        statusCounts[row.display_status] = parseInt(row.count)
+      })
 
       health.services.database = { status: 'up', message: 'Connected' }
       health.metrics.totalVehicles = parseInt(vehicles.rows[0].c)
       health.metrics.totalLots = parseInt(lots.rows[0].c)
-      health.metrics.activeLots = parseInt(active.rows[0].c)
+      health.metrics.lotsByStatus = statusCounts
       health.metrics.vehiclesWithImages = parseInt(images.rows[0].c)
     } finally {
       client.release()
@@ -239,6 +284,7 @@ function generateHealthHTML(health: any): string {
     .metric-card { background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; }
     .metric-label { color: #1e40af; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
     .metric-value { color: #1e3a8a; font-size: 28px; font-weight: 700; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
     .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 32px; }
     .info-box { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
     .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; font-size: 14px; }
@@ -271,13 +317,14 @@ function generateHealthHTML(health: any): string {
         <div class="metric-value">${metrics.totalLots.toLocaleString()}</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Active Lots</div>
-        <div class="metric-value">${metrics.activeLots.toLocaleString()}</div>
-      </div>
-      <div class="metric-card">
         <div class="metric-label">Image Coverage</div>
         <div class="metric-value">${coverage}%</div>
       </div>
+    </div>
+
+    <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin-bottom: 16px;">Lot Status Breakdown</h2>
+    <div class="status-grid">
+      ${generateStatusCards(metrics.lotsByStatus, metrics.totalLots)}
     </div>
 
     <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin-bottom: 16px;">Services</h2>
@@ -325,6 +372,35 @@ function formatServiceName(name: string): string {
     images: 'Images',
   }
   return names[name] || name
+}
+
+function generateStatusCards(statusCounts: Record<string, number>, totalLots: number): string {
+  const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
+    active: { label: 'Active', color: '#2563eb', bgColor: '#dbeafe' },
+    upcoming: { label: 'Upcoming', color: '#7c3aed', bgColor: '#ede9fe' },
+    sold: { label: 'Sold', color: '#16a34a', bgColor: '#dcfce7' },
+    live: { label: 'Live', color: '#dc2626', bgColor: '#fee2e2' },
+    pending_result: { label: 'Pending Result', color: '#ea580c', bgColor: '#ffedd5' },
+    no_bids: { label: 'No Bids', color: '#6b7280', bgColor: '#f3f4f6' },
+    unknown: { label: 'Unknown', color: '#4b5563', bgColor: '#f9fafb' },
+  }
+
+  return Object.entries(statusConfig).map(([key, config]) => {
+    const count = statusCounts[key] || 0
+    const percentage = totalLots > 0 ? ((count / totalLots) * 100).toFixed(2) : '0.00'
+
+    return `
+      <div class="status-card" style="background: white; border-left: 4px solid ${config.color}; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${config.label}</h3>
+          <span style="background: ${config.bgColor}; color: ${config.color}; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600;">
+            ${percentage}%
+          </span>
+        </div>
+        <div style="font-size: 28px; font-weight: 700; color: ${config.color};">${count.toLocaleString()}</div>
+      </div>
+    `
+  }).join('')
 }
 
 export async function HEAD() {
