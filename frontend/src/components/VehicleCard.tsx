@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import PriceBadge from '@/components/catalog/PriceBadge'
 import StatusBadge from '@/components/common/StatusBadge'
+import OutcomeBadge from '@/components/vin2/OutcomeBadge'
 import { computeDisplayStatus } from '@/lib/computeDisplayStatus'
 
 export type VehicleLite = {
@@ -21,6 +22,11 @@ export type VehicleLite = {
   buyNow?: number
   currentBid?: number
   startingBid?: number
+  // CSV-only outcome detection fields
+  outcome?: 'sold' | 'not_sold' | 'on_approval' | 'unknown'
+  outcomeConfidence?: number
+  outcomeDate?: string | null
+  relistCount?: number
 }
 
 interface VehicleCardProps {
@@ -56,6 +62,16 @@ export default function VehicleCard({ v, lang = 'en' }: VehicleCardProps) {
           <div className="vtitle">{v.year} {v.make} {v.model}</div>
           <div className="vmeta">{damage} • {v.title} • {v.location}</div>
           <div className="vvin">VIN {v.vin}</div>
+          {v.outcome && (
+            <div className="voutcome" style={{ marginTop: '0.5rem' }}>
+              <OutcomeBadge
+                outcome={v.outcome}
+                confidence={v.outcomeConfidence}
+                lang={lang}
+                showConfidence={false}
+              />
+            </div>
+          )}
         </div>
       </article>
     </Link>

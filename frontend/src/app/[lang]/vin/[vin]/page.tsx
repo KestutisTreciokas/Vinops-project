@@ -4,6 +4,7 @@ import LotInfo from '@/components/vin2/LotInfo'
 import VinSpecs from '@/components/vin2/VinSpecs'
 import History from '@/components/vin2/History'
 import VinGallery from '@/components/vin2/Gallery'
+import AuctionHistoryTimeline from '@/components/vin2/AuctionHistoryTimeline'
 import SeoVinJsonLd from './_SeoVinJsonLd'
 import VinChipCopy from '@/components/VinChipCopy'
 import { fetchVehicleDetails, transformVehicleData } from './_api'
@@ -121,6 +122,27 @@ export default async function VinPage({ params }: { params: { lang: 'ru'|'en', v
           <VinSpecs specs={data.specs} lang={lang} />
           <LotInfo lot={data.lot} history={data.history} lang={lang} />
         </div>
+
+        {/* Auction History Timeline (CSV-only outcome detection) */}
+        {data.lot && (
+          <div className="lg:col-span-12">
+            <AuctionHistoryTimeline
+              currentAttempt={{
+                lotId: data.lot.lotId,
+                outcome: vehicleData.currentLot?.outcome,
+                outcomeConfidence: vehicleData.currentLot?.outcomeConfidence,
+                outcomeDate: vehicleData.currentLot?.outcomeDate,
+                auctionDateTimeUtc: data.lot.auctionDate,
+                currentBidUsd: vehicleData.currentLot?.currentBidUsd,
+                finalBidUsd: vehicleData.currentLot?.finalBidUsd,
+                siteCode: data.lot.siteCode,
+                city: data.lot.location
+              }}
+              relistCount={vehicleData.currentLot?.relistCount}
+              lang={lang}
+            />
+          </div>
+        )}
 
         {/* Ниже — история продаж на всю ширину */}
         <div className="lg:col-span-12">

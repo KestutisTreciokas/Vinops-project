@@ -138,6 +138,24 @@ export interface LotDetails {
 
   /** Total number of images available */
   imageCount: number
+
+  /** Lot outcome (sold/not_sold/on_approval/unknown) - from CSV-only heuristic detection */
+  outcome?: 'sold' | 'not_sold' | 'on_approval' | 'unknown'
+
+  /** Outcome confidence score (0.00-1.00) */
+  outcomeConfidence?: number
+
+  /** When outcome was determined (ISO 8601) */
+  outcomeDate?: string | null
+
+  /** Number of times this VIN was relisted at auction */
+  relistCount?: number
+
+  /** Last known bid from CSV (pre-auction, may not reflect final sale price) */
+  currentBidUsd?: number | null
+
+  /** Final sale price (null for CSV-only, populated if third-party API added) */
+  finalBidUsd?: number | null
 }
 
 /**
@@ -367,6 +385,24 @@ export interface VehicleListingItem {
 
   /** Last update timestamp */
   updatedAt: string
+
+  /** Lot outcome (sold/not_sold/on_approval/unknown) - from CSV-only heuristic detection */
+  outcome?: 'sold' | 'not_sold' | 'on_approval' | 'unknown'
+
+  /** Outcome confidence score (0.00-1.00) */
+  outcomeConfidence?: number
+
+  /** When outcome was determined (ISO 8601) */
+  outcomeDate?: string | null
+
+  /** Number of times this VIN was relisted at auction */
+  relistCount?: number
+
+  /** Last known bid from CSV (pre-auction, may not reflect final sale price) */
+  currentBidUsd?: number | null
+
+  /** Final sale price (null for CSV-only, populated if third-party API added) */
+  finalBidUsd?: number | null
 }
 
 /**

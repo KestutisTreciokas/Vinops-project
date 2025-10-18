@@ -1,0 +1,32 @@
+[Unit]
+Description=Copart Outcome Detection Service (CSV-only)
+After=network.target
+Documentation=https://github.com/KestutisTreciokas/Vinops-project/blob/main/docs/IMPLEMENTATION-CSV-ONLY.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Vinops-project
+
+# Environment variables
+Environment="NODE_ENV=production"
+Environment="DATABASE_URL=postgresql://etl_rw:PASSWORD_HERE@192.168.0.5:5432/vinops_db?sslmode=disable"
+
+# Run both scripts in sequence
+ExecStart=/bin/bash -c 'node scripts/csv-diff.js --auto && node scripts/outcome-resolver.js'
+
+# Logging
+StandardOutput=append:/var/log/vinops/outcome-detection.log
+StandardError=append:/var/log/vinops/outcome-detection-error.log
+
+# Resource limits
+MemoryMax=2G
+CPUQuota=100%
+TasksMax=100
+
+# Timeout and restart behavior
+TimeoutStopSec=30s
+Restart=on-failure
+RestartSec=5min
+
+[Install]
+WantedBy=multi-user.target

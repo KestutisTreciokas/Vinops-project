@@ -158,7 +158,8 @@ export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
         ),
         ll as (
           select id as lot_id, status, site_code, city, region, country, auction_datetime_utc, retail_value_usd,
-                 vin, damage_description, title_type, odometer, odometer_brand
+                 vin, damage_description, title_type, odometer, odometer_brand,
+                 outcome, outcome_confidence, outcome_date, relist_count, current_bid_usd, final_bid_usd
           from lots where vin = $1
           order by auction_datetime_utc desc nulls last
           limit 1
@@ -167,6 +168,7 @@ export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
           vv.vin, vv.make, vv.model, vv.year, vv.body, vv.fuel, vv.transmission, vv.drive, vv.engine, vv.updated_at,
           ll.lot_id, ll.status, ll.site_code, ll.city, ll.region, ll.country, ll.auction_datetime_utc, ll.retail_value_usd,
           ll.damage_description, ll.title_type, ll.odometer, ll.odometer_brand,
+          ll.outcome, ll.outcome_confidence, ll.outcome_date, ll.relist_count, ll.current_bid_usd, ll.final_bid_usd,
           get_taxonomy_label('statuses', ll.status, $2) as status_label,
           get_taxonomy_label('damage_types', normalize_damage_code(ll.damage_description), $2) as damage_label,
           get_taxonomy_label('title_types', ll.title_type, $2) as title_label,
@@ -207,6 +209,12 @@ export async function GET(req: NextRequest, ctx: { params: { vin: string } }) {
           odometer: row.odometer, odometerBrand: row.odometer_brand, odometerBrandLabel: row.odometer_brand_label,
           primaryImageUrl: imgs.rows[0]?.url ?? null,
           imageCount: imgs.rowCount,
+          outcome: row.outcome,
+          outcomeConfidence: row.outcome_confidence,
+          outcomeDate: row.outcome_date,
+          relistCount: row.relist_count,
+          currentBidUsd: row.current_bid_usd,
+          finalBidUsd: row.final_bid_usd,
         } : null,
         images: imgs.rows,
         saleEvents: se.rows,

@@ -1,0 +1,17 @@
+[Unit]
+Description=Copart Outcome Detection Timer (CSV-only)
+Documentation=https://github.com/KestutisTreciokas/Vinops-project/blob/main/docs/IMPLEMENTATION-CSV-ONLY.md
+
+[Timer]
+# Run every hour at :00
+OnCalendar=hourly
+Persistent=true
+
+# Run immediately if system was down during scheduled time
+Persistent=true
+
+# Add random delay 0-5 min to avoid thundering herd
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target
