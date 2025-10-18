@@ -147,7 +147,7 @@ async function fetchMakesModelsFromDB(
           ${bodyFilter}
           ${yearFilter}
         GROUP BY COALESCE(NULLIF(v.trim, ''), v.model_detail)
-        HAVING COUNT(DISTINCT l.id) >= 2
+        HAVING COUNT(DISTINCT l.id) >= 5
         ORDER BY model_detail ASC
         LIMIT 100
       `
@@ -184,7 +184,7 @@ async function fetchMakesModelsFromDB(
           ${bodyFilter}
           ${yearFilter}
         GROUP BY v.model
-        HAVING COUNT(DISTINCT l.id) >= 3
+        HAVING COUNT(DISTINCT l.id) >= 10
         ORDER BY v.model ASC
         LIMIT 100
       `
@@ -212,7 +212,7 @@ async function fetchMakesModelsFromDB(
           AND l.status = 'active'
           ${bodyFilter}
         GROUP BY v.make
-        HAVING COUNT(DISTINCT l.id) >= 5
+        HAVING COUNT(DISTINCT l.id) >= 10
         ORDER BY v.make ASC
         LIMIT 100
       `
