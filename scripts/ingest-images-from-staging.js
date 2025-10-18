@@ -89,12 +89,15 @@ async function retry(fn, maxRetries = 3) {
 async function fetchImageMetadata(imageUrl) {
   await rateLimiter.take();
 
-  const response = await fetch(imageUrl, {
+  // Ensure HTTPS (Copart API redirects HTTP → HTTPS with 302)
+  const httpsUrl = imageUrl.replace(/^http:/, 'https:');
+
+  const response = await fetch(httpsUrl, {
     signal: AbortSignal.timeout(10000),
   });
 
   if (!response.ok) {
-    throw new Error(`API returned ${response.status}: ${imageUrl}`);
+    throw new Error(`API returned ${response.status}: ${httpsUrl}`);
   }
 
   const data = await response.json();
@@ -239,9 +242,11 @@ async function ingestImages() {
     console.log(`Limit: ${args.limit} | Batch size: ${args.batchSize} | Concurrency: ${args.concurrency}`);
 
     // Get lots from staging that need images (DB-only: only lots present in public.lots)
-    // Prioritize recent lots (created in last 7 days) to avoid 404s on old API endpoints
+    // Target lot_external_id range 37M-90M (based on analysis of existing successful downloads)
+    // Lots outside this range are either too old (removed from Copart) or too new (404s)
+    // Use DISTINCT ON to avoid duplicates from multiple staging rows per VIN
     const query = `
-      SELECT
+      SELECT DISTINCT ON (l.id)
         l.id,
         l.vin,
         s.payload_jsonb->>'Image URL' as image_url
@@ -249,11 +254,11 @@ async function ingestImages() {
       INNER JOIN staging.copart_raw s ON s.vin_raw = l.vin
       WHERE s.payload_jsonb->>'Image URL' IS NOT NULL
         AND s.payload_jsonb->>'Image URL' != ''
-        AND l.created_at > NOW() - INTERVAL '7 days'
+        AND l.lot_external_id::bigint BETWEEN 37000000 AND 90000000
         AND NOT EXISTS (
           SELECT 1 FROM images i WHERE i.lot_id = l.id LIMIT 1
         )
-      ORDER BY l.created_at DESC
+      ORDER BY l.id, l.lot_external_id::bigint ASC
       LIMIT $1
     `;
 
