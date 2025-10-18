@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic'
  *  - make: optional, if provided returns models for that make
  *  - model: optional, if provided (with make) returns model_details for that model
  *  - model_detail: optional, if provided (with make, model, years=true) filters years by model_detail
+ *  - year: optional, if provided filters subsequent selections (e.g., models for make+year, model_details for make+model+year)
  *  - years: if 'true', returns available years instead of model_details (requires make, optional model, optional model_detail)
  *  - type: vehicle type (auto, moto, etc.)
  *
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
     const make = searchParams.get('make')?.toUpperCase()
     const model = searchParams.get('model')?.toUpperCase()
     const modelDetail = searchParams.get('model_detail')?.toUpperCase()
+    const year = searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : undefined
     const wantYears = searchParams.get('years') === 'true'
     const vehicleType = (searchParams.get('type') || 'auto') as VehicleType
 
@@ -32,13 +34,14 @@ export async function GET(req: NextRequest) {
       make,
       model,
       modelDetail,
+      year,
       wantYears,
       vehicleType
     })}`
 
     // Use Redis cache with 10-minute TTL (filter options change infrequently)
     const result = await cacheGet(cacheKey, async () => {
-      return await fetchMakesModelsFromDB(make, model, modelDetail, wantYears, vehicleType)
+      return await fetchMakesModelsFromDB(make, model, modelDetail, year, wantYears, vehicleType)
     }, 600) // 600 seconds = 10 minutes
 
     return NextResponse.json(result, {
@@ -58,11 +61,13 @@ export async function GET(req: NextRequest) {
 /**
  * Internal function that queries database for makes/models/years
  * Called by GET when cache misses
+ * Now accepts year parameter to filter results by existing combinations
  */
 async function fetchMakesModelsFromDB(
   make: string | undefined,
   model: string | undefined,
   modelDetail: string | undefined,
+  year: number | undefined,
   wantYears: boolean,
   vehicleType: VehicleType
 ) {
@@ -116,11 +121,16 @@ async function fetchMakesModelsFromDB(
       // Return model_details for specific make+model and vehicle type
       // Uses COALESCE to prefer trim, fallback to model_detail when trim is empty
       // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
+      // Filter by year if provided to show only available combinations
       const bodyFilter = bodyTypesIn
         ? vehicleType === 'auto'
           ? `AND (v.body IN (${bodyTypesIn}) OR v.body IS NULL)`
           : `AND v.body IN (${bodyTypesIn})`
         : ''
+      const yearFilter = year ? `AND v.year = $3` : ''
+      const params: any[] = [make, model]
+      if (year) params.push(year)
+
       const query = `
         SELECT COALESCE(NULLIF(v.trim, ''), v.model_detail) as model_detail, COUNT(*) as count
         FROM vehicles v
@@ -129,11 +139,12 @@ async function fetchMakesModelsFromDB(
           AND COALESCE(NULLIF(v.trim, ''), v.model_detail) IS NOT NULL
           AND COALESCE(NULLIF(v.trim, ''), v.model_detail) <> ''
           ${bodyFilter}
+          ${yearFilter}
         GROUP BY COALESCE(NULLIF(v.trim, ''), v.model_detail)
         ORDER BY count DESC
         LIMIT 50
       `
-      const result = await client.query(query, [make, model])
+      const result = await client.query(query, params)
 
       return {
         make,
@@ -143,11 +154,16 @@ async function fetchMakesModelsFromDB(
     } else if (make) {
       // Return models for specific make and vehicle type
       // Include NULL bodies for 'auto' type (85% of vehicles have NULL body)
+      // Filter by year if provided to show only available combinations
       const bodyFilter = bodyTypesIn
         ? vehicleType === 'auto'
           ? `AND (v.body IN (${bodyTypesIn}) OR v.body IS NULL)`
           : `AND v.body IN (${bodyTypesIn})`
         : ''
+      const yearFilter = year ? `AND v.year = $2` : ''
+      const params: any[] = [make]
+      if (year) params.push(year)
+
       const query = `
         SELECT v.model, COUNT(*) as count
         FROM vehicles v
@@ -156,11 +172,12 @@ async function fetchMakesModelsFromDB(
           AND v.model <> ''
           AND v.model <> 'ALL MODELS'
           ${bodyFilter}
+          ${yearFilter}
         GROUP BY v.model
         ORDER BY count DESC
         LIMIT 50
       `
-      const result = await client.query(query, [make])
+      const result = await client.query(query, params)
 
       return {
         make,

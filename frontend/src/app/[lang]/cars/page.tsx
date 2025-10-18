@@ -15,16 +15,17 @@ export default async function Page({
   const lang = params.lang
 
   // Extract search parameters
-  const type = (typeof searchParams.type === 'string' ? searchParams.type : undefined) as VehicleType | undefined
+  // Default type to 'auto' if not provided to prevent regressions (status badge, filters)
+  const type = (typeof searchParams.type === 'string' ? searchParams.type : 'auto') as VehicleType
   const make = typeof searchParams.make === 'string' ? searchParams.make : undefined
   const model = typeof searchParams.model === 'string' ? searchParams.model : undefined
   const modelDetail = typeof searchParams.detail === 'string' ? searchParams.detail : undefined
   const year = searchParams.year ? Number(searchParams.year) : undefined
   const page = searchParams.page ? Number(searchParams.page) || 1 : 1
 
-  // Fetch vehicles from API (don't filter by vehicleType unless explicitly provided)
+  // Fetch vehicles from API with default type='auto'
   const response = await fetchVehicles({
-    vehicleType: type, // Only filter if explicitly set via ?type= query param
+    vehicleType: type, // Now always has a value (defaults to 'auto')
     make,
     model,
     model_detail: modelDetail,

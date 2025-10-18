@@ -35,12 +35,12 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
   const pathname = usePathname()
   const sp = useSearchParams()
 
-  // URL -> initial state
-  const [type, setType] = useState(sp.get('type') ?? 'auto')
-  const [make, setMake] = useState(sp.get('make') ?? '')
-  const [model, setModel] = useState(sp.get('model') ?? '')
-  const [modelDetail, setModelDetail] = useState(sp.get('detail') ?? '')
-  const [year, setYear] = useState(sp.get('year') ?? '')
+  // URL -> initial state (type defaults to 'auto' to match server-side default)
+  const [type, setType] = useState(sp.get('type') || 'auto')
+  const [make, setMake] = useState(sp.get('make') || '')
+  const [model, setModel] = useState(sp.get('model') || '')
+  const [modelDetail, setModelDetail] = useState(sp.get('detail') || '')
+  const [year, setYear] = useState(sp.get('year') || '')
   const [displayedVehicles, setDisplayedVehicles] = useState(initialVehicles)
   const [canLoadMore, setCanLoadMore] = useState(initialPagination.hasMore)
   const [nextCursor, setNextCursor] = useState<string | null>(initialPagination.nextCursor)
@@ -75,7 +75,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
       .finally(() => setLoadingMakes(false))
   }, [type])
 
-  // Fetch models when make changes
+  // Fetch models when make or year changes
   useEffect(()=>{
     if (!make) {
       setAvailableModels([])
@@ -84,7 +84,8 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
     }
 
     setLoadingModels(true)
-    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}&type=${encodeURIComponent(type)}`)
+    const yearParam = year ? `&year=${encodeURIComponent(year)}` : ''
+    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}&type=${encodeURIComponent(type)}${yearParam}`)
       .then(res => res.json())
       .then(data => {
         setAvailableModels(data.models || [])
@@ -98,9 +99,9 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
         setAvailableModels([])
       })
       .finally(() => setLoadingModels(false))
-  },[make, type])
+  },[make, type, year])
 
-  // Fetch model_details when model changes
+  // Fetch model_details when model or year changes
   useEffect(()=>{
     if (!make || !model) {
       setAvailableModelDetails([])
@@ -109,7 +110,8 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
     }
 
     setLoadingModelDetails(true)
-    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&type=${encodeURIComponent(type)}`)
+    const yearParam = year ? `&year=${encodeURIComponent(year)}` : ''
+    fetch(`/api/v1/makes-models?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&type=${encodeURIComponent(type)}${yearParam}`)
       .then(res => res.json())
       .then(data => {
         setAvailableModelDetails(data.modelDetails || [])
@@ -123,7 +125,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
         setAvailableModelDetails([])
       })
       .finally(() => setLoadingModelDetails(false))
-  },[make, model, type])
+  },[make, model, type, year])
 
   // Fetch available years when make, model, or modelDetail changes
   useEffect(()=>{
@@ -186,10 +188,11 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
     router.replace(`${pathname}${q}` as Route)
   }
 
-  // Сброс -> чистим всё, кроме type
+  // Сброс -> чистим всё, кроме type (keep type to prevent regressions)
   const reset = () => {
     setMake(''); setModel(''); setModelDetail(''); setYear('')
-    const q = buildQuery(sp, { make:'', model:'', detail:'', year:'' })
+    // Keep type in URL to maintain vehicle type context and prevent status badge regression
+    const q = buildQuery(sp, { make:'', model:'', detail:'', year:'', type })
     router.replace(`${pathname}${q}` as Route)
   }
 
