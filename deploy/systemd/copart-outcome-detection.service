@@ -9,7 +9,7 @@ WorkingDirectory=/root/Vinops-project
 
 # Environment variables
 Environment="NODE_ENV=production"
-Environment="DATABASE_URL=postgresql://etl_rw:PASSWORD_HERE@192.168.0.5:5432/vinops_db?sslmode=disable"
+Environment="DATABASE_URL=postgresql://gen_user:PASSWORD_HERE@192.168.0.5:5432/vinops_db?sslmode=disable"
 
 # Run both scripts in sequence
 ExecStart=/bin/bash -c 'node scripts/csv-diff.js --auto && node scripts/outcome-resolver.js'
