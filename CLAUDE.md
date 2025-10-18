@@ -593,6 +593,152 @@ WHERE l.created_at > NOW() - INTERVAL '30 days';
 
 ---
 
+## P1 Sprint — Filter Optimization & Service Separation (2025-10-18)
+
+**Status:** ✅ **COMPLETE & DEPLOYED**
+**Date:** 2025-10-18
+**Commits:** `4957bf8` (trim filter), `3f7ad41` (schema fix), `a03038c` (service separation), `a1ccbe9` (health UI)
+
+### Objective
+
+Improve catalog filter UX and image pipeline reliability:
+1. ✅ Switch model filter from `model_detail` to `trim` with fallback
+2. ✅ Fix NULL body type filtering (85% data loss bug)
+3. ✅ Fix image pipeline schema error (9-hour outage)
+4. ✅ Separate ETL and image backfill into independent services
+5. ✅ Add HTML UI to health monitoring endpoint
+
+### Deliverables
+
+**P1.1: Trim Filter with Model Detail Fallback**
+- **File:** `frontend/src/app/api/v1/makes-models/route.ts`
+- **Status:** ✅ Deployed to production
+- **Implementation:** `COALESCE(NULLIF(v.trim, ''), v.model_detail)`
+- **Impact:**
+  - Ford F150 now shows 14 trim options instead of 1
+  - Filter prioritizes `trim` column, falls back to `model_detail` when empty
+  - Better user experience with actual trim values (XLT, Lariat, etc.)
+
+**P1.2: NULL Body Type Fix**
+- **Files:**
+  - `frontend/src/app/api/v1/makes-models/route.ts` (lines 79-82, 119-123, 146-150, 172-176)
+  - `frontend/src/app/api/v1/search/route.ts` (lines 204-215)
+- **Status:** ✅ Deployed to production
+- **Critical Bug:** 85.79% of vehicles have NULL body type
+- **Fix:** Added `OR v.body IS NULL` condition for 'auto' vehicle type
+- **Impact:** Fixed 85% data loss in Ford F150 results (1 → 14 results)
+
+**P1.3: Image Pipeline Schema Fix**
+- **File:** `scripts/ingest-images-from-staging.js` (lines 208-216)
+- **Status:** ✅ Fixed and operational
+- **Problem:** Script used wrong column names (url/sha256/size_bytes/r2_key)
+- **Actual schema:** source_url/content_hash/bytes/storage_key
+- **Impact:** Restored image downloads after 9-hour outage
+- **Result:** 173 images in test, 3,907 in first hour after fix
+
+**P1.4: Service Separation (ETL + Image Backfill)**
+- **Files:**
+  - `deploy/systemd/vinops-etl.service` - Hourly fresh data ingestion
+  - `deploy/systemd/vinops-image-backfill.service` - Every 30min historical backfill
+  - `deploy/systemd/vinops-image-backfill.timer` - Timer configuration
+- **Status:** ✅ Both services operational
+- **Benefits:**
+  - Clear separation: fresh data vs historical backfill
+  - Independent failures: ETL doesn't block image backfill
+  - 2x backfill frequency: every 30min instead of hourly
+  - Better resource allocation: 6GB ETL, 4GB backfill
+  - Improved monitoring: separate logs and metrics
+
+**P1.5: Health Monitoring HTML UI**
+- **File:** `frontend/src/app/health/route.ts`
+- **Status:** ✅ Deployed to production
+- **Features:**
+  - Content negotiation: HTML for browsers, JSON for API clients
+  - Status badges (green/yellow/red) for all 6 services
+  - Metrics grid: Total Vehicles, Lots, Active Lots, Image Coverage
+  - Service cards with real-time status and metrics
+  - Auto-refresh every 30 seconds
+  - Responsive design for mobile
+  - Shows both ETL and Image Backfill services independently
+- **Access:** `https://vinops.online/health`
+
+### Current Production State (2025-10-18)
+
+**Services:**
+- ✅ ETL Pipeline: Running hourly, processing ~1000 lots/run
+- ✅ Image Backfill: Running every 30min, ~9000 images/hour
+- ✅ Web: Next.js operational
+- ✅ Database: Connected (197k vehicles, 197k lots)
+- ✅ Redis: Connected and caching
+- ✅ Images: 0.6% coverage (1,216 vehicles with images)
+
+**Backfill Progress:**
+- Current: 1,216 vehicles with images (0.6%)
+- Backfill rate: ~9,000 images/hour (sustained)
+- Lots remaining: 196,199 lots need images
+- Expected completion: ~2.75 days for full backfill
+
+**Filter Performance:**
+- Trim filter working correctly with model_detail fallback
+- NULL body handling preventing 85% data loss
+- Ford F150 returning 14 results (was 1 before fix)
+
+### Files Modified
+
+1. `frontend/src/app/api/v1/makes-models/route.ts` — Trim filter + NULL body handling
+2. `frontend/src/app/api/v1/search/route.ts` — NULL body handling for search
+3. `scripts/ingest-images-from-staging.js` — Fixed schema column names
+4. `deploy/systemd/vinops-etl.service` — Removed backfill, focus on fresh data
+5. `deploy/systemd/vinops-image-backfill.service` — New dedicated backfill service
+6. `deploy/systemd/vinops-image-backfill.timer` — Every 30min timer
+7. `frontend/src/app/health/route.ts` — HTML UI with content negotiation
+8. `/etc/systemd/system/vinops-etl.service` — Updated production config
+9. `/etc/systemd/system/vinops-image-backfill.{service,timer}` — New production configs
+
+### Monitoring
+
+**Check Services:**
+```bash
+# List all timers
+systemctl list-timers vinops*
+
+# Check ETL status
+systemctl status vinops-etl.service
+tail -f /var/log/vinops/etl.log
+
+# Check backfill status
+systemctl status vinops-image-backfill.service
+tail -f /var/log/vinops/image-backfill.log
+
+# View health dashboard
+open https://vinops.online/health
+
+# Check JSON API
+curl -H "Accept: application/json" https://vinops.online/health | jq
+```
+
+**Check Image Progress:**
+```sql
+SELECT
+  COUNT(DISTINCT l.id) as total_lots,
+  COUNT(DISTINCT i.lot_id) as lots_with_images,
+  COUNT(*) as total_images,
+  ROUND(100.0 * COUNT(DISTINCT i.lot_id) / COUNT(DISTINCT l.id), 2) as coverage_pct
+FROM lots l
+LEFT JOIN images i ON l.id = i.lot_id AND NOT i.is_removed
+WHERE l.created_at > NOW() - INTERVAL '7 days';
+```
+
+### Key Learnings
+
+1. **NULL Handling Critical:** 85% of vehicles had NULL body - always check data distribution before filtering
+2. **Schema Validation:** Always verify column names match actual schema before deployment
+3. **Service Separation Benefits:** Clear responsibilities improve monitoring and reliability
+4. **Content Negotiation:** Same endpoint can serve both UI and API with proper Accept headers
+5. **COALESCE Pattern:** `COALESCE(NULLIF(trim, ''), model_detail)` handles empty strings and NULL elegantly
+
+---
+
 ## Service Architecture — ETL & Image Pipeline (2025-10-18)
 
 **Status:** ✅ **PRODUCTION**
