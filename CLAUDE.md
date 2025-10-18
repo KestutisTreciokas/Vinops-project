@@ -66,6 +66,12 @@ While fully autonomous, Claude still maintains safety:
 
 ---
 
+## Project Overview
+
+**Vinops** is a VIN history and car sales analytics platform. Users can search vehicles by VIN, view specifications, auction history, and sales data. The platform ingests data from Copart auctions via CSV exports and displays it through a catalog interface.
+
+---
+
 ## Tech Stack
 
 **Frontend:**
@@ -76,16 +82,46 @@ While fully autonomous, Claude still maintains safety:
 
 **Backend:**
 - Node.js >=20.14 <21
-- PostgreSQL 17.6 (pg 8.x client)
+- PostgreSQL 16 (pg 8.x client)
+- Redis 7 Alpine (caching layer)
 
 **Database:**
-- PostgreSQL 17.6
+- PostgreSQL 16
 - SQL migrations (db/migrations/)
+- 16 migrations applied (0001-0016)
 
 **Infrastructure:**
 - Docker & Docker Compose
 - GitHub Actions (CI/CD)
 - Caddy (reverse proxy)
+- systemd timers (ETL scheduling)
+
+---
+
+## Architecture
+
+**Full-Stack Monorepo:**
+- Single repository with embedded API routes in Next.js (no separate backend service)
+- API endpoints live in `frontend/src/app/api/`
+- Database operations occur server-side via Next.js API routes
+- Database connection pool uses read-only `app_ro` role in production
+
+**Key Architectural Decisions:**
+- Server-side only database access (no client-side DB connections)
+- Frozen schema (DDL v1) with non-destructive migrations only
+- Multi-language support via route segments: `/[lang]/` (English/Russian)
+- Self-hosted fonts (PT Sans + PT Mono) to avoid third-party CDN dependencies
+- EU/Netherlands hosting for data residency compliance
+
+**API Architecture:**
+- RESTful endpoints: `/api/v1/vehicles/[vin]`, `/api/v1/search`, `/api/v1/makes-models`
+- CORS whitelist: `vinops.online`, `www.vinops.online`
+- Rate limiting: 60 requests/minute per IP (in-memory)
+- Response caching: `Cache-Control: public, max-age=60, stale-while-revalidate=300`
+- Weak ETags for conditional requests
+- Error responses include `traceId` for observability
+
+---
 
 ## Project Structure
 
@@ -95,10 +131,65 @@ While fully autonomous, Claude still maintains safety:
 - **scripts/** — Утилиты для тестирования подключения к БД и smoke-тесты
 - **docs/** — Техническая документация (архитектура, CI/CD, runbooks)
 - **contracts/** — API-контракты и доменные модели
-- **deploy/** — Скрипты развёртывания
+- **deploy/** — Скрипты развёртывания и systemd service files
 - **security/** — Настройки безопасности (TLS, observability)
 - **.github/** — GitHub Actions workflows
 - **docker-compose.yml** — Оркестрация сервисов (db, api, web)
+
+**Frontend Structure:**
+```
+frontend/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── api/               # API routes (/api/v1/vehicles/[vin])
+│   │   ├── [lang]/            # Localized pages (en, ru)
+│   │   │   ├── vin/[vin]/    # VIN detail pages
+│   │   │   ├── cars/         # Catalog pages
+│   │   │   ├── contacts/     # Contact pages
+│   │   │   └── terms/        # Terms pages
+│   │   └── demo/             # Demo/testing pages
+│   ├── components/
+│   │   ├── vin2/             # VIN card components (gallery, history, lot info)
+│   │   ├── ui/               # Reusable UI primitives
+│   │   ├── common/           # Shared layout/utility components
+│   │   └── catalog/          # Catalog-related components
+│   ├── lib/                   # Utilities (API client, formatting, config)
+│   ├── styles/                # Global CSS, Tailwind variables
+│   ├── types/                 # TypeScript type definitions
+│   └── icons/                 # SVG icon library
+├── public/                    # Static assets (favicon, robots.txt, sitemaps)
+└── package.json
+```
+
+**Key Files:**
+- `frontend/src/app/api/_lib/db.ts` - Database connection pool and query utilities
+- `frontend/src/lib/api-vin.ts` - VIN API client
+- `frontend/src/lib/site.ts` - Site configuration
+- `frontend/src/lib/redis.ts` - Redis caching utilities
+
+**Database & Contracts:**
+```
+db/
+├── migrations/                # Numbered SQL migrations (0001-0016)
+├── sql/                       # Bootstrap scripts (roles, extensions)
+└── README.migrations.md       # Migration conventions
+
+contracts/
+├── api/                       # API specifications
+└── domains/                   # Domain definitions (VIN format, status enums)
+```
+
+**Documentation:**
+```
+docs/
+├── DECISION_LOG.md           # Architectural decisions
+├── ENV_MATRIX.md             # Environment variables reference
+├── RUNBOOKS.md               # Operational procedures
+├── FRONTEND.md               # UI specifications
+└── TOOLCHAIN.md              # Toolchain requirements
+```
+
+---
 
 ## Commands
 
@@ -110,6 +201,29 @@ npm run lint       # – запустить линтер
 npm run typecheck  # – прогнать проверку типов TypeScript
 ```
 
+**Development Commands:**
+All development commands should be run from the `frontend/` directory:
+
+```bash
+cd frontend
+
+# Development
+npm run dev              # Start dev server on port 3000
+npm run build            # Production build
+npm start                # Start production server on port 3000
+
+# Quality checks
+npm run lint             # ESLint check
+npm run typecheck        # TypeScript type checking
+
+# CI commands
+npm run ci:versions      # Show Node/Next/TypeScript versions
+npm run ci:lint          # Lint for CI
+npm run ci:typecheck     # Type check for CI
+```
+
+**Node Version:** Use Node.js 20.x (specified in `.nvmrc`). Required: `>=20.14 <21`, npm `>=10 <11`.
+
 **Root:**
 ```bash
 # Нет npm-скриптов в корне; используйте Docker Compose или скрипты:
@@ -119,6 +233,26 @@ docker-compose up              # – запустить все сервисы (d
 ./scripts/smoke.sh             # – запустить smoke-тесты
 ```
 
+**Docker & Deployment:**
+
+```bash
+# Local development stack
+docker compose up          # Start db, api, and web services
+docker compose down        # Stop services
+
+# Production deployment
+docker compose -f docker-compose.prod.yml up -d
+
+# Database-only
+docker compose -f docker-compose.db.yml up -d
+```
+
+**Health checks:**
+- Endpoint: `GET /health` or `GET /healthz`
+- Returns: `{"status":"healthy|degraded|unhealthy"}` with metrics
+
+---
+
 ## Code Style
 
 **Workflow for significant code changes:**
@@ -127,6 +261,14 @@ docker-compose up              # – запустить все сервисы (d
 2. **Commit & Push** — if tests pass: `git commit` and `git push`
 3. **GitHub Actions** — automatic CI/CD run
 4. **Merge PR** — PRs are merged manually by the requester
+
+**Code Quality:**
+- TypeScript strict mode enforced
+- ESLint with `next/core-web-vitals` config
+- Type checking: `npm run typecheck`
+- Linting: `npm run lint`
+
+---
 
 ## GitHub
 
@@ -145,6 +287,149 @@ docker-compose up              # – запустить все сервисы (d
 ```bash
 gh pr create --title "..." --body "..." --base main
 ```
+
+---
+
+## Database
+
+**Schema Management:**
+- Location: `db/migrations/`
+- Migrations are numbered sequentially: `0001_init.sql`, `0002_constraints.sql`, etc.
+- **Critical Rule:** Non-destructive migrations only (no DROP, TRUNCATE, or data deletion)
+- Migrations are idempotent using `IF NOT EXISTS`/`IF EXISTS`
+
+**Core Tables:**
+1. `vehicles` - VIN specifications (make, model, year, etc.)
+2. `lots` - Auction lot information
+3. `sale_events` - Sales history and bidding events
+4. `images` - Vehicle photos
+
+**Database Roles:**
+- `app_ro` - Read-only application role (used in production)
+- `etl_rw` - ETL/data ingestion role (read/write access)
+- `db_admin` - Administrative role
+
+**Connection Configuration:**
+- Default timeout: 2000ms statement timeout, 1000ms lock timeout, 5000ms idle transaction timeout
+- SSL/TLS: verify-full mode by default (configurable via `PGSSLMODE`)
+- Connection pooling: max 10 connections (configurable via `PGPOOL_MAX`)
+- Timezone: UTC
+- Application name: `vinops.api.v1`
+
+**Running Migrations (from RUNBOOKS.md):**
+```bash
+# Connect to database (production example)
+PSQL_CONN='psql "hostaddr=192.168.0.5 host=<hostname> port=5432 dbname=vinops user=db_admin sslmode=verify-full sslrootcert=/etc/vinops/pg/ca.crt"'
+
+# Apply migrations in order
+eval $PSQL_CONN -f db/sql/extensions_enable.sql
+eval $PSQL_CONN -f db/sql/bootstrap_roles.sql
+eval $PSQL_CONN -f db/migrations/0001_init.sql
+eval $PSQL_CONN -f db/migrations/0002_constraints.sql
+eval $PSQL_CONN -f db/migrations/0003_indexes.sql
+eval $PSQL_CONN -f db/migrations/0004_policy_flags.sql
+# ... continue with additional migrations through 0016
+
+# Verify
+eval $PSQL_CONN -c "\dx"    # Check extensions
+eval $PSQL_CONN -c "\du"    # Check roles
+eval $PSQL_CONN -c "\dt"    # Check tables
+```
+
+---
+
+## Styling
+
+**Tailwind CSS:**
+- Configuration: `frontend/tailwind.config.ts`
+- Global styles: `frontend/src/styles/`
+- Dark mode: class-based + data-attribute `[data-theme="dark"]`
+
+**Design Tokens:**
+- Location: `design/tokens/` (semantic.json, $themes.json)
+- CSS variables for colors: `--fg-default`, `--bg-canvas`, `--brand`, etc.
+
+**Fonts:**
+- PT Sans (400, 700) + PT Mono (400)
+- Self-hosted via `next/font/local` (no googleapis.com)
+- Supports Latin + Cyrillic for i18n
+
+---
+
+## Testing & Quality
+
+**Smoke Testing:**
+- Stub VIN support for testing without live database
+- Environment variables:
+  - `API_SMOKE_STUB_ENABLE=1` - Enable stub responses
+  - `API_SMOKE_WHITELIST_VIN` - Return mock data for specific VIN
+  - `API_SMOKE_SUPPRESS_VIN` - Return 410 Suppressed for specific VIN
+
+---
+
+## Environment Variables
+
+Key environment variables (see `docs/ENV_MATRIX.md` for complete list):
+
+**Database:**
+- `DATABASE_URL` - PostgreSQL connection string (libpq DSN format)
+- `PGSSLMODE` - SSL/TLS verification level (default: `verify-full`)
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_PORT` - Database credentials
+
+**Application:**
+- `NODE_ENV` - Environment mode (`production` or `development`)
+- `NEXT_PUBLIC_API_URL` - Frontend API endpoint URL
+- `NEXT_PUBLIC_API_BASE` - API base path (default: `/api/v1`)
+- `NEXT_TELEMETRY_DISABLED=1` - Disable Next.js telemetry
+- `REDIS_URL` - Redis connection string (e.g., `redis://vinops_redis:6379`)
+
+**Monitoring:**
+- `SENTRY_DSN` - Sentry error tracking DSN
+- `NEXT_PUBLIC_SENTRY_DSN` - Public Sentry DSN
+
+**Docker Images:**
+- `GHCR_IMAGE_API`, `API_IMAGE_TAG` - API container image
+- `GHCR_IMAGE_WEB`, `WEB_IMAGE_TAG` - Web container image
+
+---
+
+## CI/CD
+
+**GitHub Actions Workflows:**
+- `.github/workflows/build.yml` - PR build checks (lint + build)
+- `.github/workflows/cd.yml` - Continuous deployment
+- `.github/workflows/openapi-contracts.yml` - Contract validation
+
+**Build Process:**
+1. Checkout code
+2. Setup Node.js 20
+3. Install dependencies: `npm ci` (or `npm i` fallback)
+4. Build: `npx next build` (in `frontend/` directory)
+
+---
+
+## Important Conventions
+
+**VIN Format:**
+- Normalized to UPPERCASE
+- Validation: `^[A-HJ-NPR-Z0-9]{11,17}$` (excludes I, O, Q)
+
+**Internationalization:**
+- Supported languages: English (`en`), Russian (`ru`)
+- URL structure: `/[lang]/vin/[vin]`
+- Metadata includes hreflang for SEO
+
+**Security:**
+- Read-only database role in production
+- CORS whitelist enforced
+- Security headers: X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- Rate limiting on all public endpoints
+
+**Migration Rules:**
+- Never use destructive operations (DROP, TRUNCATE, DELETE)
+- Use `IF NOT EXISTS`/`IF EXISTS` for idempotency
+- Document rollback strategy in each migration file
+- Update `_registry.json` when adding migrations
 
 ---
 
@@ -205,7 +490,7 @@ SELECT * FROM audit.v_parse_errors;
 **Architecture:**
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ systemd Timer (15-min intervals: :00, :15, :30, :45)       │
+│ systemd Timer (hourly: :00)                                 │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -222,20 +507,46 @@ SELECT * FROM audit.v_parse_errors;
 │    → staging.copart_raw → public.lots + vehicles           │
 │    → Savepoint-based error handling for VIN constraints    │
 │                                                             │
-│ 4. Image Download (ingest-images-from-staging.js)          │
+│ 4. Image Download for NEW lots (ingest-images-from-        │
+│    staging.js --limit=5000 --recent-only)                  │
 │    → public.images + Cloudflare R2 (concurrent writes)     │
-│    → limit=100, batch=20, concurrency=10                   │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ Image Backfill Timer (every 30 min: :00, :30)              │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Image Backfill Service (vinops-image-backfill.service)     │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Query lots WITHOUT images (prioritize last 7 days)      │
+│                                                             │
+│ 2. Download images from Copart API (limit=2000 per run)    │
+│    → Batch size: 50 lots, concurrency: 15 parallel         │
+│                                                             │
+│ 3. Upload to R2 + insert to public.images                  │
+│    → Rate: ~150 images/min (~9000 images/hour)             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 **Resource Limits:**
+
+*ETL Service:*
 - Memory: 6GB max (NODE_OPTIONS: --max-old-space-size=4096)
 - CPU: 150% (1.5 cores)
 - Tasks: 500 max
 - Timeout: 30s graceful shutdown
 
+*Image Backfill Service:*
+- Memory: 4GB max
+- CPU: 100% (1 core)
+- Tasks: 300 max
+- Timeout: 30s graceful shutdown
+
 **Auto-Restart Configuration:**
 - ETL Timer: enabled (starts on boot)
+- Image Backfill Timer: enabled (starts on boot)
 - Docker Containers: `unless-stopped` policy
 - Web Service: auto-restart on failure/reboot
 
@@ -258,11 +569,12 @@ SELECT * FROM audit.v_parse_errors;
 - **Variants:** `_ful` (60KB) + `_thb` (15KB) per image
 
 **3. Performance**
-- **Throughput:** ~100 lots per 15-min run = 400 lots/hour
-- **Expected backlog completion:** ~15 days for 143k recent lots
+- **ETL Throughput:** ~1000 lots per hourly run
+- **Image Backfill:** ~9000 images/hour (sustained rate)
 - **Concurrency settings:**
-  - Batch size: 20 lots
-  - Concurrent downloads: 10 images
+  - ETL batch size: all new/changed lots (no limit)
+  - Backfill batch size: 50 lots
+  - Concurrent downloads: 15 images
   - Parallel DB+R2 writes per image
 
 ### Usage
@@ -283,6 +595,18 @@ tail -f /var/log/vinops/etl-error.log
 
 # View recent runs
 journalctl -u vinops-etl.service -n 100 --no-pager
+```
+
+**Monitor Image Backfill:**
+```bash
+# Check timer schedule
+systemctl list-timers vinops-image-backfill.timer
+
+# View service status
+systemctl status vinops-image-backfill.service
+
+# Watch logs
+tail -f /var/log/vinops/image-backfill.log
 ```
 
 **Check Image Ingestion:**
@@ -316,6 +640,9 @@ ORDER BY hour DESC;
 # Trigger immediate ETL run
 systemctl start vinops-etl.service
 
+# Trigger immediate backfill
+systemctl start vinops-image-backfill.service
+
 # Run individual components
 node scripts/ingest-copart-csv.js /path/to/file.csv
 node scripts/upsert-lots.js --limit=1000
@@ -327,7 +654,7 @@ node scripts/ingest-images-from-staging.js --limit=50 --batch-size=10 --concurre
 **systemd Timer:** `/etc/systemd/system/vinops-etl.timer`
 ```ini
 [Timer]
-OnCalendar=*:0/15  # Every 15 minutes
+OnCalendar=hourly  # Every hour at :00
 Persistent=true
 ```
 
@@ -340,7 +667,7 @@ CPUQuota=150%
 Environment="NODE_OPTIONS=--experimental-default-type=module --max-old-space-size=4096"
 ```
 
-**Repository Copies:** `deploy/systemd/vinops-etl.{service,timer}`
+**Repository Copies:** `deploy/systemd/vinops-etl.{service,timer}`, `deploy/systemd/vinops-image-backfill.{service,timer}`
 
 ### Error Handling
 
@@ -363,6 +690,7 @@ Environment="NODE_OPTIONS=--experimental-default-type=module --max-old-space-siz
 - **2025-10-17 23:42:** Initial deployment (commit `2c5163a`)
 - **2025-10-17 23:54:** Memory allocation fix (commit `97bbee8`)
 - **2025-10-18 00:11:** VIN constraint handling fix (commit `cb0c63f`)
+- **2025-10-18 08:34:** Service separation (commit `a03038c`)
 
 ### Next Steps
 
@@ -488,7 +816,7 @@ Fix critical production issues blocking catalog usability:
 - **File:** `frontend/src/app/health/route.ts`
 - **Status:** ✅ Deployed to production
 - **Features:**
-  - Monitors 5 services: web, database, redis, etl, images
+  - Monitors 6 services: web, database, redis, etl, imageBackfill, images
   - Returns JSON with metrics (totalVehicles, totalLots, activeLots, vehiclesWithImages, uptimeSeconds)
   - ETL staleness detection (degrades if >2h since last run)
   - Image coverage tracking (X% of vehicles have images)
@@ -519,38 +847,6 @@ Fix critical production issues blocking catalog usability:
      - Prevents systemd from killing the service (exit code 137)
 - **Impact:** ETL service completes successfully, images visible once backfill reaches those lots
 
-### Current State
-
-**Production Metrics** (2025-10-18 06:27 UTC):
-```
-Status: healthy
-Services:
-  web: up - Next.js operational
-  database: up - Connected
-  redis: up - Connected
-  etl: up - On schedule
-  images: up - 0.6% coverage
-
-Metrics:
-  totalVehicles: 153,981
-  totalLots: 153,984
-  activeLots: 153,520
-  vehiclesWithImages: 982
-  uptimeSeconds: 0
-```
-
-**Image Coverage Progress:**
-- Current: 982 vehicles with images (0.6%)
-- Images ingested: ~164,000 total images
-- Backfill rate: ~1,000 images/hour (stable)
-- Expected completion: ~15 days for 153k vehicles
-
-**ETL Pipeline Health:**
-- Hourly runs: ✅ Successful
-- Memory usage: 542MB / 6GB limit (stable)
-- Batch size: 1,000 lots per run
-- Processing: ~30% new inserts, ~70% updates
-
 ### Files Modified
 
 1. `frontend/src/app/health/route.ts` — Comprehensive health monitoring endpoint
@@ -558,38 +854,6 @@ Metrics:
 3. `scripts/upsert-lots.js` — Change detection for lot updates
 4. `deploy/systemd/vinops-etl.service` — Added `--limit=1000` to upsert command
 5. `/etc/systemd/system/vinops-etl.service` — Updated and reloaded with `daemon-reload`
-
-### Monitoring & Verification
-
-**Check Health:**
-```bash
-curl -s https://vinops.online/health | jq
-```
-
-**Check ETL Status:**
-```bash
-systemctl status vinops-etl.service
-tail -f /var/log/vinops/etl.log
-```
-
-**Check Image Progress:**
-```sql
-SELECT
-  COUNT(DISTINCT l.id) as total_lots,
-  COUNT(DISTINCT i.lot_id) as lots_with_images,
-  ROUND(100.0 * COUNT(DISTINCT i.lot_id) / COUNT(DISTINCT l.id), 2) as coverage_pct
-FROM lots l
-LEFT JOIN images i ON l.id = i.lot_id AND NOT i.is_removed
-WHERE l.created_at > NOW() - INTERVAL '30 days';
-```
-
-### Next Steps (P1/P2 - Deferred)
-
-- [x] P1: Switch "choose model" filter from `model_detail` to `trim` column - **COMPLETE**
-- [x] P1: Implement parallel image backfill worker - **COMPLETE (separate service)**
-- [ ] P2: Fix VIN validation and body category classification
-- [ ] P2: Add tests for all P0 changes
-- [ ] P2: Merge to main with green GitHub Actions
 
 ---
 
@@ -662,27 +926,6 @@ Improve catalog filter UX and image pipeline reliability:
   - Shows both ETL and Image Backfill services independently
 - **Access:** `https://vinops.online/health`
 
-### Current Production State (2025-10-18)
-
-**Services:**
-- ✅ ETL Pipeline: Running hourly, processing ~1000 lots/run
-- ✅ Image Backfill: Running every 30min, ~9000 images/hour
-- ✅ Web: Next.js operational
-- ✅ Database: Connected (197k vehicles, 197k lots)
-- ✅ Redis: Connected and caching
-- ✅ Images: 0.6% coverage (1,216 vehicles with images)
-
-**Backfill Progress:**
-- Current: 1,216 vehicles with images (0.6%)
-- Backfill rate: ~9,000 images/hour (sustained)
-- Lots remaining: 196,199 lots need images
-- Expected completion: ~2.75 days for full backfill
-
-**Filter Performance:**
-- Trim filter working correctly with model_detail fallback
-- NULL body handling preventing 85% data loss
-- Ford F150 returning 14 results (was 1 before fix)
-
 ### Files Modified
 
 1. `frontend/src/app/api/v1/makes-models/route.ts` — Trim filter + NULL body handling
@@ -694,40 +937,6 @@ Improve catalog filter UX and image pipeline reliability:
 7. `frontend/src/app/health/route.ts` — HTML UI with content negotiation
 8. `/etc/systemd/system/vinops-etl.service` — Updated production config
 9. `/etc/systemd/system/vinops-image-backfill.{service,timer}` — New production configs
-
-### Monitoring
-
-**Check Services:**
-```bash
-# List all timers
-systemctl list-timers vinops*
-
-# Check ETL status
-systemctl status vinops-etl.service
-tail -f /var/log/vinops/etl.log
-
-# Check backfill status
-systemctl status vinops-image-backfill.service
-tail -f /var/log/vinops/image-backfill.log
-
-# View health dashboard
-open https://vinops.online/health
-
-# Check JSON API
-curl -H "Accept: application/json" https://vinops.online/health | jq
-```
-
-**Check Image Progress:**
-```sql
-SELECT
-  COUNT(DISTINCT l.id) as total_lots,
-  COUNT(DISTINCT i.lot_id) as lots_with_images,
-  COUNT(*) as total_images,
-  ROUND(100.0 * COUNT(DISTINCT i.lot_id) / COUNT(DISTINCT l.id), 2) as coverage_pct
-FROM lots l
-LEFT JOIN images i ON l.id = i.lot_id AND NOT i.is_removed
-WHERE l.created_at > NOW() - INTERVAL '7 days';
-```
 
 ### Key Learnings
 
@@ -1139,3 +1348,13 @@ docker ps | grep -E "web|redis"
   2. Go to `https://www.copart.com/downloadSalesData` and click **Download CSV file**.
   3. Capture a HAR and the final URL; download the CSV; record the 200 headers.
   4. After ≥20 minutes, repeat steps 2–3; compare for updates (`CSV_DIFF.md`).
+  5. If needed, deploy automated scraper with session management and anti-bot measures.
+
+---
+
+## Additional Notes
+
+- This guide is intended for Claude Code AI assistant working on this project
+- Keep this file updated as new sprints and features are deployed
+- All paths are relative to repository root unless otherwise specified
+- Production server: EU/Netherlands VPS with Docker + Caddy
