@@ -97,6 +97,12 @@ While fully autonomous, Claude still maintains safety:
 - Caddy (reverse proxy)
 - systemd timers (ETL scheduling)
 
+**Production Deployment:**
+- Live URL: https://vinops.online
+- Web Container: `ghcr.io/kestutistreciokas/vinops-web:prod`
+- Auto-deploy: GitHub Actions builds on push to main, manual container restart required
+- Database credentials: `gen_user` with `sslmode=disable` (192.168.0.5:5432)
+
 ---
 
 ## Architecture
@@ -406,6 +412,55 @@ Key environment variables (see `docs/ENV_MATRIX.md` for complete list):
 2. Setup Node.js 20
 3. Install dependencies: `npm ci` (or `npm i` fallback)
 4. Build: `npx next build` (in `frontend/` directory)
+
+**Docker Build & Push (cd.yml):**
+- Trigger: Push to `main` branch or manual workflow dispatch
+- Registry: GitHub Container Registry (ghcr.io)
+- Image: `ghcr.io/kestutistreciokas/vinops-web:prod` (+ SHA tag)
+- Build context: Root directory with `frontend/Dockerfile`
+- Authentication: `GITHUB_TOKEN` (automatic)
+
+**Production Deployment (Manual):**
+
+After GitHub Actions builds and pushes the image, deploy to production:
+
+```bash
+# 1. Pull latest image from GHCR
+docker pull ghcr.io/kestutistreciokas/vinops-web:prod
+
+# 2. Stop and remove old container
+docker stop web && docker rm web
+
+# 3. Start new container with production credentials
+docker run -d --name web \
+  --network vinopsrestore_webnet \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e DATABASE_URL="postgresql://gen_user:J4nm7NGq%5ERn5pH@192.168.0.5:5432/vinops_db?sslmode=disable" \
+  -e REDIS_URL="redis://vinops_redis:6379" \
+  -e NODE_ENV=production \
+  ghcr.io/kestutistreciokas/vinops-web:prod
+
+# 4. Verify container is running
+docker logs web --tail 20
+```
+
+**Important Notes:**
+- Database user is `gen_user` (NOT `app_ro`)
+- SSL mode must be `sslmode=disable` (self-signed cert on PostgreSQL 17.6)
+- Password contains special chars: URL-encode as `J4nm7NGq%5ERn5pH` (^ = %5E)
+- Redis runs on same Docker network: `vinops_redis:6379`
+- Container restart policy: `unless-stopped` (survives server reboots)
+
+**Deployment Verification:**
+```bash
+# Test status badges (should show mix of active/upcoming)
+curl -s "https://vinops.online/api/v1/search?limit=100" | jq '.items | group_by(.status) | map({status: .[0].status, count: length})'
+
+# Test pagination (page 2 should have items)
+CURSOR=$(curl -s "https://vinops.online/api/v1/search?limit=100" | jq -r '.pagination.nextCursor')
+curl -s "https://vinops.online/api/v1/search?limit=100&cursor=${CURSOR}" | jq '.items | length'
+```
 
 ---
 
@@ -946,6 +1001,125 @@ Improve catalog filter UX and image pipeline reliability:
 3. **Service Separation Benefits:** Clear responsibilities improve monitoring and reliability
 4. **Content Negotiation:** Same endpoint can serve both UI and API with proper Accept headers
 5. **COALESCE Pattern:** `COALESCE(NULLIF(trim, ''), model_detail)` handles empty strings and NULL elegantly
+
+---
+
+## P2 Sprint — Pagination & Status Badge Fixes (2025-10-18)
+
+**Status:** ✅ **COMPLETE & DEPLOYED**
+**Date:** 2025-10-18
+**Commit:** `5bcbdfc`
+**Deployed:** Docker image `ghcr.io/kestutistreciokas/vinops-web:prod`
+
+### Objective
+
+Fix two critical catalog bugs blocking user access to >100k lots:
+1. ✅ Fix pagination to handle >100k lots (broken beyond first 100 items)
+2. ✅ Fix status badges to show real statuses instead of always "active"
+
+### Issue #1: Pagination Broken Beyond 100 Items
+
+**Problem:**
+- "Load more" button falsely showed "All vehicles loaded" after first 100 items
+- Page 2+ returned 0 items despite having 124,886 active lots in database
+- Users could only access first 100 out of 124k+ lots
+
+**Root Cause:**
+- Cursor-based keyset pagination used `l.auction_datetime_utc < NULL` when lastAuctionDate was NULL
+- In SQL, comparison with NULL evaluates to NULL (unknown), filtering out ALL rows
+- **Critical data point:** 99.97% of active lots have NULL auction dates (124,845 out of 124,886)
+
+**Fix Applied:**
+Added NULL-safe keyset pagination logic for all sort fields:
+```typescript
+// Before (BROKEN):
+conditions.push(`(l.auction_datetime_utc < $lastAuctionDate OR ...)`)
+
+// After (FIXED):
+if (cursorData.lastAuctionDate === null) {
+  conditions.push(`(l.auction_datetime_utc IS NULL AND v.vin > $lastVin)`)
+} else {
+  conditions.push(`(l.auction_datetime_utc < $lastAuctionDate OR ...)`)
+}
+```
+
+**Verification:**
+- Tested 5 consecutive pages (500 items total) on production
+- All pages returned 100 items with `hasMore: true`
+- Full access to all 124k+ lots confirmed
+
+### Issue #2: Status Badges Always Show "Active"
+
+**Problem:**
+- All catalog cards showed "Active" badge regardless of actual lot status
+- Users expected to see statuses like "Upcoming", "No Bids", "On Approval"
+
+**Root Cause:**
+- SSR page.tsx hardcoded `status: 'active'` filter (line 34)
+- PageClient.tsx pagination also hardcoded `status: 'active'` (line 229)
+- This filtered out all non-active lots (upcoming, sold, etc.)
+- `computeDisplayStatus()` couldn't show other statuses because they were excluded
+
+**Fix Applied:**
+- Removed `status='active'` filter from both SSR and client-side pagination
+- Now queries ALL lot statuses (active, upcoming, etc.)
+- Allows status badges to display computed statuses based on auction state
+
+**Status Distribution (Production):**
+- 124,886 active lots (63%)
+- 72,626 upcoming lots (37%)
+- Both now visible with correct badges
+
+**Verification:**
+```
+Page 1: active: 59, upcoming: 41
+Page 2: active: 16, upcoming: 84
+Page 3: active: 41, upcoming: 59
+Page 4: active: 60, upcoming: 40
+Page 5: active: 70, upcoming: 30
+```
+
+### Files Modified
+
+1. **frontend/src/app/api/v1/search/route.ts** (lines 253-340)
+   - Added NULL-safe cursor logic for 8 sort field combinations
+   - Handles NULL auction dates, years, created_at, updated_at properly
+
+2. **frontend/src/app/[lang]/cars/page.tsx** (line 34)
+   - Removed `status: 'active'` filter from SSR initial load
+
+3. **frontend/src/app/[lang]/cars/PageClient.tsx** (line 229)
+   - Removed `status: 'active'` filter from "Load more" pagination
+
+4. **frontend/src/lib/computeDisplayStatus.ts** (line 57)
+   - Changed fallback from `'active'` to `'unknown'` when status truly missing
+
+### Deployment Notes
+
+**Database Connection Issue Discovered:**
+- Initial deployment used wrong user (`app_ro` instead of `gen_user`)
+- PostgreSQL 17.6 uses self-signed certificate requiring `sslmode=disable`
+- Password contains special character `^` requiring URL encoding: `J4nm7NGq%5ERn5pH`
+
+**Correct Production Deployment:**
+```bash
+docker run -d --name web \
+  --network vinopsrestore_webnet \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e DATABASE_URL="postgresql://gen_user:J4nm7NGq%5ERn5pH@192.168.0.5:5432/vinops_db?sslmode=disable" \
+  -e REDIS_URL="redis://vinops_redis:6379" \
+  -e NODE_ENV=production \
+  ghcr.io/kestutistreciokas/vinops-web:prod
+```
+
+### Key Learnings
+
+1. **NULL-safe pagination critical:** Always handle NULL values in keyset pagination WHERE clauses
+2. **Data distribution matters:** 99.97% NULL rate made pagination completely broken for all users
+3. **Filter removal for variety:** Hardcoded filters prevent displaying diverse data states
+4. **Production credentials:** Document exact DATABASE_URL format including URL encoding and SSL mode
+5. **Verification testing:** Always test pagination beyond first page with real production data
 
 ---
 
