@@ -2,6 +2,7 @@ import crypto from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '../../_lib/db'
 import { getVehicleTypeFilter, type VehicleType } from '@/lib/vehicleTypes'
+import { cacheGet } from '@/lib/redis'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -174,15 +175,31 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Build SQL query
+  // Create cache key from search parameters (exclude cursor for initial queries)
+  const cacheKey = cursor ? null : `search:${JSON.stringify({
+    vehicleType,
+    make,
+    model,
+    yearMin,
+    yearMax,
+    status,
+    siteCode,
+    country,
+    limit,
+    sort,
+    lang
+  })}`
+
+  // Build SQL query - use cache for initial queries (no cursor), skip cache for pagination
   try {
-    const pool = await getPool()
-    const client = await pool.connect()
-    try {
-      // Build WHERE clause
-      const conditions: string[] = []
-      const values: any[] = []
-      let paramIndex = 1
+    const executeQuery = async () => {
+      const pool = await getPool()
+      const client = await pool.connect()
+      try {
+        // Build WHERE clause
+        const conditions: string[] = []
+        const values: any[] = []
+        let paramIndex = 1
 
       // Add vehicle type filter
       if (vehicleType) {
@@ -335,70 +352,76 @@ export async function GET(req: NextRequest) {
         })
       }
 
-      // Build response
-      const response = {
-        items: items.map((row) => ({
-          vin: row.vin,
-          year: row.year,
-          make: row.make,
-          model: row.model,
-          body: row.body,
-          bodyLabel: row.body_label,
-          lotId: row.lot_id,
-          status: row.status,
-          statusLabel: row.status_label,
-          siteCode: row.site_code,
-          city: row.city,
-          region: row.region,
-          country: row.country,
-          auctionDateTimeUtc: row.auction_datetime_utc,
-          estRetailValueUsd: row.retail_value_usd,
-          buyItNowUsd: row.buy_it_now_usd,
-          currentBidUsd: row.current_bid_usd,
-          damageDescription: row.damage_description,
-          damageLabel: row.damage_label,
-          titleType: row.title_type,
-          titleLabel: row.title_label,
-          odometer: row.odometer,
-          primaryImageUrl: row.primary_image_url,
-          imageCount: parseInt(row.image_count, 10),
-          updatedAt: row.updated_at,
-        })),
-        pagination: {
-          nextCursor,
-          hasMore,
-          count: items.length,
-        },
-        filters: {
-          make,
-          model,
-          yearMin,
-          yearMax,
-          status,
-          siteCode,
-          country,
-          limit,
-          sort,
-        },
-        lang,
+        // Build response
+        return {
+          items: items.map((row) => ({
+            vin: row.vin,
+            year: row.year,
+            make: row.make,
+            model: row.model,
+            body: row.body,
+            bodyLabel: row.body_label,
+            lotId: row.lot_id,
+            status: row.status,
+            statusLabel: row.status_label,
+            siteCode: row.site_code,
+            city: row.city,
+            region: row.region,
+            country: row.country,
+            auctionDateTimeUtc: row.auction_datetime_utc,
+            estRetailValueUsd: row.retail_value_usd,
+            buyItNowUsd: row.buy_it_now_usd,
+            currentBidUsd: row.current_bid_usd,
+            damageDescription: row.damage_description,
+            damageLabel: row.damage_label,
+            titleType: row.title_type,
+            titleLabel: row.title_label,
+            odometer: row.odometer,
+            primaryImageUrl: row.primary_image_url,
+            imageCount: parseInt(row.image_count, 10),
+            updatedAt: row.updated_at,
+          })),
+          pagination: {
+            nextCursor,
+            hasMore,
+            count: items.length,
+          },
+          filters: {
+            make,
+            model,
+            yearMin,
+            yearMax,
+            status,
+            siteCode,
+            country,
+            limit,
+            sort,
+          },
+          lang,
+        }
+      } finally {
+        client.release()
       }
-
-      // Determine cache strategy
-      const filterCount = [make, model, yearMin, yearMax, status, siteCode, country].filter(Boolean).length
-      const cacheControl = filterCount <= 2
-        ? 'public, max-age=60, stale-while-revalidate=300'  // Simple queries: cache 60s
-        : 'public, max-age=30, stale-while-revalidate=120'  // Complex queries: cache 30s
-
-      const headers = {
-        ...corsHeaders(origin),
-        ...rlHeaders,
-        'Cache-Control': cacheControl,
-      }
-
-      return json(response, { status: 200, headers })
-    } finally {
-      client.release()
     }
+
+    // Use Redis cache for initial queries (5-minute TTL), skip cache for pagination (cursor-based)
+    const response = cacheKey
+      ? await cacheGet(cacheKey, executeQuery, 300) // 300s = 5 minutes
+      : await executeQuery()
+
+    // Determine HTTP cache strategy
+    const filterCount = [make, model, yearMin, yearMax, status, siteCode, country].filter(Boolean).length
+    const cacheControl = filterCount <= 2
+      ? 'public, max-age=60, stale-while-revalidate=300'  // Simple queries: cache 60s
+      : 'public, max-age=30, stale-while-revalidate=120'  // Complex queries: cache 30s
+
+    const headers = {
+      ...corsHeaders(origin),
+      ...rlHeaders,
+      'Cache-Control': cacheControl,
+    }
+
+    return json(response, { status: 200, headers })
   } catch (err: any) {
     const rl = rateLimit(`search_err:${Date.now() >> 12}`, 120)
     return json(

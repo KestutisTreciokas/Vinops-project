@@ -31,7 +31,7 @@ export default async function Page({
     year_min: year,
     year_max: year,
     status: 'active', // Only show active lots
-    limit: 20, // Reduced from 100 to improve page load time
+    limit: 100, // Show 100 vehicles initially
     lang,
     sort: 'auction_date_desc' // Sort by auction date (has index)
   })

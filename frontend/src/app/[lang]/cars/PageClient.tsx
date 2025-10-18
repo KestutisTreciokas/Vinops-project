@@ -224,8 +224,8 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
       }
       params.set('status', 'active')
       params.set('lang', lang)
-      params.set('sort', 'auction_date_asc')
-      params.set('limit', '50')
+      params.set('sort', 'auction_date_desc')
+      params.set('limit', '100')
       params.set('cursor', nextCursor)
 
       const response = await fetch(`/api/v1/search?${params}`)
@@ -243,6 +243,7 @@ export default function CatalogPage({ params, initialVehicles, initialPagination
           location: [item.city, item.region, item.country].filter(Boolean).join(', ') || 'Unknown',
           status: item.status || 'unknown',
           statusLabel: item.statusLabel,
+          auctionDateTimeUtc: item.auctionDateTimeUtc,
           estMin: item.estRetailValueUsd,
           estMax: item.estRetailValueUsd,
           buyNow: item.buyItNowUsd,
